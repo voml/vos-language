@@ -1,0 +1,237 @@
+{
+  "micros": [
+    {
+      "kind": "Micro",
+      "name": "normalize_name",
+      "params": [
+        {
+          "name": "value",
+          "ty": {
+            "Builtin": "Utf8"
+          },
+          "span": {
+            "start": 96,
+            "end": 107
+          }
+        }
+      ],
+      "return_ty": {
+        "Builtin": "Utf8"
+      },
+      "body": {
+        "statements": [
+          {
+            "Let": {
+              "name": "name",
+              "ty": null,
+              "value": {
+                "Call": {
+                  "callee": {
+                    "Member": {
+                      "object": {
+                        "Name": {
+                          "name": "value",
+                          "span": {
+                            "start": 134,
+                            "end": 139
+                          }
+                        }
+                      },
+                      "name": "trim",
+                      "sep": "Dot",
+                      "span": {
+                        "start": 140,
+                        "end": 144
+                      }
+                    }
+                  },
+                  "args": [],
+                  "span": {
+                    "start": 140,
+                    "end": 146
+                  }
+                }
+              },
+              "span": {
+                "start": 123,
+                "end": 151
+              }
+            }
+          }
+        ],
+        "result": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Name": {
+                    "name": "name",
+                    "span": {
+                      "start": 151,
+                      "end": 155
+                    }
+                  }
+                },
+                "name": "lower",
+                "sep": "Dot",
+                "span": {
+                  "start": 156,
+                  "end": 161
+                }
+              }
+            },
+            "args": [],
+            "span": {
+              "start": 156,
+              "end": 163
+            }
+          }
+        },
+        "span": {
+          "start": 118,
+          "end": 164
+        }
+      },
+      "span": {
+        "start": 75,
+        "end": 165
+      }
+    }
+  ],
+  "statements": [
+    {
+      "Let": {
+        "name": "users",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Call": {
+                    "callee": {
+                      "Member": {
+                        "object": {
+                          "Name": {
+                            "name": "User",
+                            "span": {
+                              "start": 179,
+                              "end": 188
+                            }
+                          }
+                        },
+                        "name": "filter",
+                        "sep": "Dot",
+                        "span": {
+                          "start": 189,
+                          "end": 195
+                        }
+                      }
+                    },
+                    "args": [
+                      {
+                        "Lambda": {
+                          "params": [
+                            "x"
+                          ],
+                          "body": {
+                            "Binary": {
+                              "op": "Ne",
+                              "left": {
+                                "Call": {
+                                  "callee": {
+                                    "Name": {
+                                      "name": "normalize_name",
+                                      "span": {
+                                        "start": 201,
+                                        "end": 215
+                                      }
+                                    }
+                                  },
+                                  "args": [
+                                    {
+                                      "Member": {
+                                        "object": {
+                                          "Name": {
+                                            "name": "x",
+                                            "span": {
+                                              "start": 216,
+                                              "end": 217
+                                            }
+                                          }
+                                        },
+                                        "name": "user_name",
+                                        "sep": "Dot",
+                                        "span": {
+                                          "start": 218,
+                                          "end": 227
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "span": {
+                                    "start": 201,
+                                    "end": 228
+                                  }
+                                }
+                              },
+                              "right": {
+                                "Literal": {
+                                  "String": ""
+                                }
+                              },
+                              "span": {
+                                "start": 201,
+                                "end": 234
+                              }
+                            }
+                          },
+                          "span": {
+                            "start": 196,
+                            "end": 234
+                          }
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 189,
+                      "end": 235
+                    }
+                  }
+                },
+                "name": "collect",
+                "sep": "Dot",
+                "span": {
+                  "start": 241,
+                  "end": 248
+                }
+              }
+            },
+            "args": [],
+            "span": {
+              "start": 241,
+              "end": 250
+            }
+          }
+        },
+        "span": {
+          "start": 167,
+          "end": 252
+        }
+      }
+    }
+  ],
+  "result": {
+    "Name": {
+      "name": "users",
+      "span": {
+        "start": 252,
+        "end": 258
+      }
+    }
+  },
+  "span": {
+    "start": 0,
+    "end": 258
+  }
+}

@@ -1,0 +1,9 @@
+<%- if docs %>
+/// <% docs %>
+<%- end if %>
+#[derive(Clone, Debug)]
+pub struct <% name %> {
+<%- loop field in fields %>
+    pub <% field.name %>: <% field.ty %>,
+<%- end loop %>
+}

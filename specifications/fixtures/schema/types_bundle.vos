@@ -1,0 +1,25 @@
+namespace demo::catalog
+
+enums Access {
+    Yes = 1,
+    No = 2,
+}
+
+flags Scope {
+    Read = 0x01,
+    Write = 0x10,
+}
+
+class LoginRequest {
+    user_name: utf8,
+    token: utf8,
+}
+
+table User {
+    @@user_id: uuid,
+    @user_name: utf8,
+    manager: &User? = null,
+}
+
+obsolete field User.email;
+obsolete table Dealer;

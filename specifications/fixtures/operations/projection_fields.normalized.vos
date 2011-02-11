@@ -1,0 +1,20 @@
+# Named projection uses `output: expression`.
+let named = User
+    .filter(x => x.user_name != "")
+    .map(x => x.{
+        user_id,
+        name: user_name,
+        has_avatar: avatar != null,
+        normalized_name: user_name.lower(),
+    })
+    .collect()
+
+# Spread: `*` plus a *different* output name is OK.
+let spread = User
+    .map(x => x.{
+        *,
+        display_name: user_name,
+    })
+    .collect()
+
+named

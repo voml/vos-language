@@ -1,0 +1,22 @@
+# Construction alone does not persist.
+let draft = User {
+    user_id: uuid(),
+    user_name: "alice",
+    avatar: null,
+}
+
+# `.insert()` is the write boundary; returns stored User (with DB defaults).
+let stored: User = User {
+    user_id: uuid(),
+    user_name: "alice",
+    avatar: null,
+}.insert()
+
+# Batch: typed list, then insert.
+let users = [
+    User { user_id: uuid(), user_name: "alice" },
+    User { user_id: uuid(), user_name: "bob" },
+]
+let inserted = users.insert()
+
+stored

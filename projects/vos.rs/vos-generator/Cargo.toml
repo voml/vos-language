@@ -1,0 +1,27 @@
+[package]
+name = "vos-generator"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "Internal VOS generator — apps depend on the `vos` crate only (vos::generator)"
+readme = "readme.md"
+
+[features]
+default = ["aot"]
+# Prefetch/parse templates to IR at build time; runtime only renders.
+aot = []
+# Always parse from source at render time (debug / comparison).
+dyn = []
+
+[dependencies]
+dejavu = { workspace = true }
+once_cell = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[build-dependencies]
+dejavu = { workspace = true }
+serde_json = { workspace = true }

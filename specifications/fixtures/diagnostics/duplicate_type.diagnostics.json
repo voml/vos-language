@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "code": null,
+      "message": "duplicate type name `User`",
+      "span": {
+        "start": 37,
+        "end": 67
+      },
+      "hint": "rename one of the conflicting declarations"
+    }
+  ]
+}

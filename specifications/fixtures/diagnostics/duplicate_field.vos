@@ -1,0 +1,5 @@
+table User {
+    @@user_id: uuid,
+    user_name: utf8,
+    user_name: utf8,
+}

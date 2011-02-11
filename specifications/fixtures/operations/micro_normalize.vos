@@ -1,0 +1,11 @@
+# Session-local micro (no if/else in v1 body — expression program only).
+micro normalize_name(value: utf8) -> utf8 {
+    let name = value.trim()
+    name.lower()
+}
+
+let users = User
+    .filter(x => normalize_name(x.user_name) != "")
+    .collect()
+
+users

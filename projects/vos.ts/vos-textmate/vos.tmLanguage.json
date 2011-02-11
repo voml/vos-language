@@ -1,0 +1,99 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "VOS",
+    "scopeName": "source.vos",
+    "fileTypes": ["vos"],
+    "patterns": [
+        { "include": "#comment" },
+        { "include": "#attribute" },
+        { "include": "#string" },
+        { "include": "#number" },
+        { "include": "#keyword" },
+        { "include": "#builtin" },
+        { "include": "#constant" },
+        { "include": "#database" },
+        { "include": "#reference" },
+        { "include": "#field-shorthand" },
+        { "include": "#punctuation" }
+    ],
+    "repository": {
+        "comment": {
+            "name": "comment.line.number-sign.vos",
+            "match": "#.*$"
+        },
+        "attribute": {
+            "name": "meta.attribute.vos",
+            "begin": "\\[",
+            "end": "\\]",
+            "patterns": [
+                {
+                    "name": "entity.name.function.attribute.vos",
+                    "match": "\\b(primary|unique|unknown|tag|authorize|get|post|put|patch|delete|obsolete)\\b"
+                },
+                {
+                    "name": "string.quoted.double.vos",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [{ "name": "constant.character.escape.vos", "match": "\\\\." }]
+                },
+                {
+                    "name": "constant.numeric.vos",
+                    "match": "\\b\\d+\\b"
+                }
+            ]
+        },
+        "string": {
+            "name": "string.quoted.double.vos",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [{ "name": "constant.character.escape.vos", "match": "\\\\." }]
+        },
+        "number": {
+            "name": "constant.numeric.vos",
+            "match": "\\b0x[0-9A-Fa-f]+\\b|\\b\\d+(\\.\\d+)?\\b"
+        },
+        "keyword": {
+            "name": "keyword.control.vos",
+            "match": "\\b(namespace|using|table|class|enums|flags|union|service|const|obsolete|stream|micro|macro|let|if|else)\\b"
+        },
+        "builtin": {
+            "name": "support.type.vos",
+            "match": "\\b(utf8|utf16|bool|bytes|file|i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|uuid|decimal|d128|datetime|DateTime|UTC|vector)\\b"
+        },
+        "constant": {
+            "name": "constant.language.vos",
+            "match": "\\b(null|true|false)\\b"
+        },
+        "database": {
+            "name": "support.class.database.vos",
+            "match": "\\bDatabase\\b"
+        },
+        "reference": {
+            "name": "storage.modifier.reference.vos",
+            "match": "&"
+        },
+        "field-shorthand": {
+            "name": "variable.other.property.vos",
+            "match": "@@?[A-Za-z_][A-Za-z0-9_]*(?=\\s*:)"
+        },
+        "punctuation": {
+            "patterns": [
+                { "name": "punctuation.separator.key-value.vos", "match": ":" },
+                { "name": "keyword.operator.arrow.vos", "match": "->" },
+                { "name": "punctuation.accessor.static.vos", "match": "::" },
+                { "name": "punctuation.accessor.vos", "match": "\\." },
+                { "name": "keyword.operator.optional.vos", "match": "\\?" },
+                { "name": "keyword.operator.lambda.vos", "match": "=>" },
+                { "name": "punctuation.definition.block.begin.vos", "match": "\\{" },
+                { "name": "punctuation.definition.block.end.vos", "match": "\\}" },
+                { "name": "punctuation.definition.list.begin.vos", "match": "\\[" },
+                { "name": "punctuation.definition.list.end.vos", "match": "\\]" },
+                { "name": "punctuation.definition.parameters.begin.vos", "match": "\\(" },
+                { "name": "punctuation.definition.parameters.end.vos", "match": "\\)" },
+                { "name": "punctuation.separator.comma.vos", "match": "," },
+                { "name": "punctuation.terminator.statement.vos", "match": ";" },
+                { "name": "keyword.operator.assignment.vos", "match": "=" }
+            ]
+        }
+    }
+}

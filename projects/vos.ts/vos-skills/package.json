@@ -1,0 +1,36 @@
+{
+    "name": "@game-gpt/vos-skills",
+    "version": "0.1.0",
+    "description": "Agent Skills for users authoring VOS (.vos) schema — install via npx; guides TypeScript, Rust, Iris, and other stacks",
+    "type": "module",
+    "license": "MPL-2.0",
+    "sideEffects": false,
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": {
+            "types": "./src/index.ts",
+            "import": "./src/index.ts",
+            "default": "./src/index.ts"
+        }
+    },
+    "files": [
+        "src",
+        "skills",
+        "README.md"
+    ],
+    "scripts": {
+        "typecheck": "tsc --noEmit -p tsconfig.json"
+    },
+    "devDependencies": {
+        "typescript": "^5.9.2"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/voml/vos-language.git",
+        "directory": "projects/vos.ts/vos-skills"
+    }
+}

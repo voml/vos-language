@@ -1,0 +1,16 @@
+[package]
+name = "vos-inspect"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "Internal VOS inspect engine — apps depend on the `vos` crate (`vos::inspect`) only"
+readme = "readme.md"
+
+[dependencies]
+serde = { workspace = true }
+vos-ast = { workspace = true }
+
+[dev-dependencies]
+vos-parser = { workspace = true }
