@@ -1,0 +1,325 @@
+<template>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="logo" href="/" aria-label={homeAriaLabel}>
+        <span class="logo-mark">{brandShortLabel}</span>
+        <span class="logo-divider" aria-hidden="true"></span>
+        <span class="logo-caption">{brandFullLabel}</span>
+      </a>
+
+      <nav class="nav" aria-label={navPrimaryLabel}>
+        <a href="/">{navHomeLabel}</a>
+        <a href="/model">{navModelLabel}</a>
+        <a href="/playground">{navPlaygroundLabel}</a>
+      </nav>
+
+      <div class="header-aside">
+        <span class="header-status"><i aria-hidden="true"></i> schema language</span>
+        <details class="site-language">
+          <summary aria-label={selectLanguageLabel}>
+            <Icon name="nav.home" size="sm" />
+            <span>{langSummary}</span>
+          </summary>
+          <div class="site-language__menu">
+            <button
+              type="button"
+              aria-current={localeId === 'zh-hans' ? 'true' : null}
+              onClick={() => this.switchLocale('zh-hans')}
+            >
+              {langZhFullLabel}
+            </button>
+            <button
+              type="button"
+              aria-current={localeId === 'en-us' ? 'true' : null}
+              onClick={() => this.switchLocale('en-us')}
+            >
+              {langEnLabel}
+            </button>
+          </div>
+        </details>
+        <a class="header-cta" href="/playground">
+          {navTryLabel}
+          <Icon name="action.search" size="sm" />
+        </a>
+      </div>
+    </div>
+  </header>
+</template>
+
+<style>
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--vos-border);
+  background: rgba(16, 20, 27, 0.88);
+  backdrop-filter: blur(16px);
+}
+
+.header-inner {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) auto minmax(13rem, 1fr);
+  align-items: center;
+  gap: 1rem;
+  width: min(1240px, calc(100% - 3rem));
+  min-height: 4.2rem;
+  margin-inline: auto;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.logo-mark {
+  color: var(--vos-ink);
+  font-family: var(--vos-font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.logo-divider {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--vos-border-strong);
+}
+
+.logo-caption {
+  overflow: hidden;
+  color: var(--vos-muted);
+  font-family: var(--vos-font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.45rem;
+}
+
+.nav a {
+  position: relative;
+  padding: 1.45rem 0;
+  color: var(--vos-muted);
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: var(--vos-ink);
+}
+
+.header-aside {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+.header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--vos-muted);
+  font-family: var(--vos-font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.header-status i {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: var(--vos-ok);
+  box-shadow: 0 0 0 0.22rem rgba(102, 211, 154, 0.12);
+}
+
+.site-language {
+  position: relative;
+}
+
+.site-language summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  list-style: none;
+  cursor: pointer;
+  color: var(--vos-muted);
+  font-size: 0.78rem;
+}
+
+.site-language summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-language__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  display: grid;
+  min-width: 8rem;
+  padding: 0.35rem;
+  border: 1px solid var(--vos-border);
+  background: var(--vos-surface);
+  z-index: 30;
+}
+
+.site-language__menu button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--vos-ink);
+  text-align: left;
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+}
+
+.site-language__menu button[aria-current='true'],
+.site-language__menu button:hover {
+  background: var(--vos-surface-2);
+}
+
+.header-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0 0.8rem;
+  background: var(--vos-accent);
+  color: #18120e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.header-cta:hover {
+  background: #ffa16e;
+}
+
+@media (max-width: 980px) {
+  .header-inner {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .header-status,
+  .logo-caption,
+  .logo-divider {
+    display: none;
+  }
+
+  .nav {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 700px) {
+  .header-inner {
+    width: min(100% - 2rem, 42rem);
+    grid-template-columns: auto 1fr;
+    padding-block: 0.7rem;
+  }
+
+  .nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    gap: 1.1rem;
+    overflow-x: auto;
+  }
+
+  .nav a {
+    padding: 0.2rem 0 0.65rem;
+    white-space: nowrap;
+  }
+
+  .header-aside {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+</style>
+
+<script client>
+import {
+  brandShort,
+  brandFull,
+  navHome,
+  navModel,
+  navPlayground,
+  navTry,
+  navPrimary,
+  selectLanguage,
+  langZh,
+  langZhFull,
+  langEn,
+} from '#locales/common';
+import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
+
+export default class SiteHeader {
+  localeId = 'zh-hans';
+  brandShortLabel = '';
+  brandFullLabel = '';
+  homeAriaLabel = '';
+  navHomeLabel = '';
+  navModelLabel = '';
+  navPlaygroundLabel = '';
+  navTryLabel = '';
+  navPrimaryLabel = '';
+  selectLanguageLabel = '';
+  langSummary = '';
+  langZhFullLabel = '';
+  langEnLabel = '';
+  _unwatchLocale = null;
+
+  onMount() {
+    this.applyLocaleCopy();
+    this._unwatchLocale = watchDocumentLocale((id) => this.applyLocaleCopy(id));
+  }
+
+  onDestroy() {
+    if (typeof this._unwatchLocale === 'function') this._unwatchLocale();
+    this._unwatchLocale = null;
+  }
+
+  refreshCopy() {
+    this.brandShortLabel = brandShort();
+    this.brandFullLabel = brandFull();
+    this.homeAriaLabel = `${brandShort()} home`;
+    this.navHomeLabel = navHome();
+    this.navModelLabel = navModel();
+    this.navPlaygroundLabel = navPlayground();
+    this.navTryLabel = navTry();
+    this.navPrimaryLabel = navPrimary();
+    this.selectLanguageLabel = selectLanguage();
+    this.langSummary = this.localeId === 'en-us' ? langEn() : langZh();
+    this.langZhFullLabel = langZhFull();
+    this.langEnLabel = langEn();
+  }
+
+  applyLocaleCopy(preferred) {
+    this.localeId = readLocaleId(preferred);
+    withLocaleHint(this.localeId, () => this.refreshCopy());
+  }
+
+  async switchLocale(to) {
+    if (typeof window === 'undefined') return;
+    const fn = window.__vmzTransitionLocale;
+    if (typeof fn !== 'function') return;
+    const r = await fn(to);
+    if (r && r.status === 'committed') {
+      this.applyLocaleCopy(to);
+      queueMicrotask(() => this.applyLocaleCopy(to));
+    }
+  }
+}
+</script>

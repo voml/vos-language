@@ -1,0 +1,829 @@
+<template>
+  <div class="vos-home">
+    <section class="hero vos-rail">
+      <div class="hero-copy">
+        <p class="vos-kicker"><span class="pulse" aria-hidden="true"></span> {heroKicker}</p>
+        <h1>
+          {heroTitleA}<br />
+          <span>{heroTitleB}</span>
+        </h1>
+        <p class="hero-lede">{heroLede}</p>
+        <div class="hero-actions vos-actions">
+          <a href="/playground">
+            <Button type="button" variant="primary">{openPlayground} <span aria-hidden="true">↗</span></Button>
+          </a>
+          <a href="/model">
+            <Button type="button" variant="secondary">{readModel}</Button>
+          </a>
+        </div>
+        <div class="hero-meta">
+          <span class="meta-key">VOS / 0.1</span>
+          <span>{heroMeta}</span>
+        </div>
+      </div>
+
+      <div class="model-board" aria-label="VOS model relationship preview">
+        <div class="board-topline">
+          <span>
+            <i class="window-dot orange" aria-hidden="true"></i>
+            <i class="window-dot cyan" aria-hidden="true"></i>
+            <i class="window-dot violet" aria-hidden="true"></i>
+          </span>
+          <span class="board-file">identity.vos</span>
+          <span class="board-version">SCHEMA / V2</span>
+        </div>
+        <div class="board-body">
+          <div class="board-label">{boardLabel}</div>
+          <div class="map">
+            <span class="connector connector-main" aria-hidden="true"></span>
+            <span class="connector connector-left" aria-hidden="true"></span>
+            <span class="connector connector-right" aria-hidden="true"></span>
+            <span class="connector connector-bottom" aria-hidden="true"></span>
+            <div class="map-node node-root">
+              <span class="node-type">TABLE</span>
+              <strong>User</strong>
+              <small>identity · durable</small>
+            </div>
+            <div class="map-node node-profile">
+              <span class="node-type">CLASS</span>
+              <strong>Profile</strong>
+              <small>inline value</small>
+            </div>
+            <div class="map-node node-session">
+              <span class="node-type">TABLE</span>
+              <strong>Session</strong>
+              <small>reference</small>
+            </div>
+            <div class="map-node node-service">
+              <span class="node-type">SERVICE</span>
+              <strong>Identity</strong>
+              <small>named params</small>
+            </div>
+          </div>
+          <div class="board-footer">
+            <span><b class="legend-dot cyan" aria-hidden="true"></b>{boardRelation}</span>
+            <span><b class="legend-dot orange" aria-hidden="true"></b>{boardPersistent}</span>
+            <span class="board-status">✓ {boardReady}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="system-strip">
+      <div class="vos-rail strip-inner">
+        <p class="strip-lede">{stripTitle}</p>
+        <div class="strip-stats">
+          <span><b>01</b>{stripNamespace}</span>
+          <span><b>02</b>{stripRelations}</span>
+          <span><b>03</b>{stripLifecycle}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="anatomy vos-rail section-block">
+      <div class="section-intro">
+        <p class="vos-eyebrow">{anatomyEyebrow}</p>
+        <h2>{anatomyTitle}</h2>
+        <p>{anatomyLede}</p>
+        <div class="intro-note"><span aria-hidden="true">→</span>{anatomyNote}</div>
+      </div>
+      <div class="schema-card">
+        <div class="schema-card-head">
+          <span class="mono">{schemaCaption}</span>
+          <span class="schema-chip">{schemaChip}</span>
+        </div>
+        <CodeBlock code={heroSample} caption={schemaCaption} copyLabel={copyLabel} onCopy={() => this.copyHero()} />
+        <div class="schema-card-foot">
+          <span><b class="legend-dot orange" aria-hidden="true"></b>table</span>
+          <span><b class="legend-dot cyan" aria-hidden="true"></b>reference</span>
+          <span><b class="legend-dot violet" aria-hidden="true"></b>namespace</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="surfaces vos-rail section-block">
+      <div class="section-intro wide-intro">
+        <p class="vos-eyebrow">{surfaceEyebrow}</p>
+        <h2>{surfaceTitle}</h2>
+        <p>{surfaceLede}</p>
+      </div>
+      <div class="surface-grid">
+        <article class="surface-card" data-tone="orange">
+          <div class="surface-card-top"><span class="surface-mark">NS</span><span class="surface-index">01</span></div>
+          <h3>{surfaceNamespaceTitle}</h3>
+          <p>{surfaceNamespaceBody}</p>
+          <code>{surfaceNamespaceCode}</code>
+        </article>
+        <article class="surface-card" data-tone="cyan">
+          <div class="surface-card-top"><span class="surface-mark">TB</span><span class="surface-index">02</span></div>
+          <h3>{surfaceTableTitle}</h3>
+          <p>{surfaceTableBody}</p>
+          <code>{surfaceTableCode}</code>
+        </article>
+        <article class="surface-card" data-tone="violet">
+          <div class="surface-card-top"><span class="surface-mark">SV</span><span class="surface-index">03</span></div>
+          <h3>{surfaceServiceTitle}</h3>
+          <p>{surfaceServiceBody}</p>
+          <code>{surfaceServiceCode}</code>
+        </article>
+      </div>
+    </section>
+
+    <section class="lifecycle vos-rail section-block">
+      <div class="lifecycle-head">
+        <div class="section-intro">
+          <p class="vos-eyebrow">{lifecycleEyebrow}</p>
+          <h2>{lifecycleTitle}</h2>
+        </div>
+        <p class="lifecycle-note">{lifecycleLede}</p>
+      </div>
+      <ol class="lifecycle-track">
+        <li>
+          <span class="step-number">01</span>
+          <span class="step-line" aria-hidden="true"></span>
+          <strong>{lifecycleDefineTitle}</strong>
+          <p>{lifecycleDefineBody}</p>
+        </li>
+        <li>
+          <span class="step-number">02</span>
+          <span class="step-line" aria-hidden="true"></span>
+          <strong>{lifecycleConnectTitle}</strong>
+          <p>{lifecycleConnectBody}</p>
+        </li>
+        <li>
+          <span class="step-number">03</span>
+          <span class="step-line" aria-hidden="true"></span>
+          <strong>{lifecycleValidateTitle}</strong>
+          <p>{lifecycleValidateBody}</p>
+        </li>
+        <li>
+          <span class="step-number">04</span>
+          <span class="step-line" aria-hidden="true"></span>
+          <strong>{lifecycleEvolveTitle}</strong>
+          <p>{lifecycleEvolveBody}</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="toolchain vos-rail section-block">
+      <div class="toolchain-copy">
+        <p class="vos-eyebrow">{toolchainEyebrow}</p>
+        <h2>{toolchainTitle}</h2>
+        <p>{toolchainLede}</p>
+      </div>
+      <div class="package-stack">
+        <article>
+          <div><span class="package-icon">TS</span><code>@game-gpt/vos</code></div>
+          <p>{pkgVos}</p>
+          <span class="package-role">TYPE CHECKS · RUNTIME</span>
+        </article>
+        <article>
+          <div><span class="package-icon rust">Rs</span><code>vos</code></div>
+          <p>{pkgRs}</p>
+          <span class="package-role">AST · NATIVE</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="final-cta vos-rail">
+      <div>
+        <p class="vos-eyebrow">{finalEyebrow}</p>
+        <h2>{finalTitle}</h2>
+        <p>{finalLede}</p>
+      </div>
+      <a href="/playground">
+        <Button type="button" variant="primary">{finalCta} <span aria-hidden="true">↗</span></Button>
+      </a>
+    </section>
+  </div>
+</template>
+
+<style>
+.vos-home {
+  overflow: hidden;
+  background: var(--vos-page);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(32rem, 1.12fr);
+  gap: clamp(2rem, 5vw, 5.5rem);
+  align-items: center;
+  min-height: min(720px, calc(100vh - 4.2rem));
+  padding-block: clamp(3.5rem, 8vw, 7rem);
+}
+
+.hero-copy {
+  max-width: 38rem;
+}
+
+.vos-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--vos-accent);
+  box-shadow: 0 0 0 0.25rem rgba(255, 139, 77, 0.15);
+}
+
+.hero h1 {
+  max-width: 35rem;
+  margin: 1.25rem 0 1.4rem;
+  font-size: clamp(3.2rem, 6.5vw, 6.5rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  color: var(--vos-ink);
+}
+
+.hero h1 span {
+  color: var(--vos-accent);
+}
+
+.hero-lede {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--vos-muted);
+  font-size: clamp(1rem, 1.35vw, 1.18rem);
+  line-height: 1.7;
+}
+
+.hero-actions {
+  margin-top: 2rem;
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.1rem;
+  align-items: center;
+  margin-top: 2.4rem;
+  color: var(--vos-muted);
+  font-size: 0.78rem;
+}
+
+.meta-key {
+  color: var(--vos-cyan);
+  font-family: var(--vos-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.model-board {
+  position: relative;
+  min-height: 31rem;
+  border: 1px solid var(--vos-border);
+  background: var(--vos-surface);
+  box-shadow: 0 1.5rem 4rem rgba(3, 7, 14, 0.22);
+}
+
+.board-topline,
+.board-footer,
+.schema-card-head,
+.schema-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.board-topline {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--vos-border);
+  background: var(--vos-surface-2);
+  color: var(--vos-muted);
+  font-family: var(--vos-font-mono);
+  font-size: 0.72rem;
+}
+
+.window-dot {
+  display: inline-block;
+  width: 0.48rem;
+  height: 0.48rem;
+  margin-right: 0.32rem;
+  border-radius: 999px;
+  background: var(--vos-muted);
+}
+
+.window-dot.orange { background: var(--vos-accent); }
+.window-dot.cyan { background: var(--vos-cyan); }
+.window-dot.violet { background: var(--vos-violet); }
+
+.board-file { color: var(--vos-ink); }
+.board-version { color: var(--vos-muted); font-size: 0.64rem; }
+
+.board-body {
+  padding: 1.25rem 1.3rem 1rem;
+}
+
+.board-label {
+  color: var(--vos-muted);
+  font-family: var(--vos-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.map {
+  position: relative;
+  min-height: 22.5rem;
+  margin-top: 0.8rem;
+}
+
+.map-node {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 0.18rem;
+  width: 9.8rem;
+  padding: 0.8rem 0.9rem 0.85rem;
+  border: 1px solid var(--vos-border-strong);
+  background: var(--vos-surface);
+  box-shadow: 0 0.7rem 1.5rem rgba(3, 7, 14, 0.12);
+}
+
+.map-node strong { color: var(--vos-ink); font-size: 1.03rem; font-weight: 650; }
+.map-node small { color: var(--vos-muted); font-size: 0.72rem; }
+.node-type { color: var(--vos-accent); font-family: var(--vos-font-mono); font-size: 0.62rem; letter-spacing: 0.1em; }
+.node-root { top: 6.2rem; left: 50%; transform: translateX(-50%); border-color: rgba(255, 139, 77, 0.68); }
+.node-profile { top: 1.7rem; left: 0.8rem; }
+.node-session { top: 1.7rem; right: 0.8rem; border-color: rgba(89, 217, 221, 0.62); }
+.node-service { bottom: 0.8rem; left: 50%; transform: translateX(-50%); border-color: rgba(156, 140, 255, 0.62); }
+
+.connector { position: absolute; z-index: 1; display: block; background: var(--vos-cyan); opacity: 0.68; }
+.connector-main { top: 5.4rem; left: 50%; width: 1px; height: 1rem; }
+.connector-left { top: 4.9rem; left: 25%; width: 25%; height: 1px; transform: rotate(18deg); transform-origin: right; }
+.connector-right { top: 4.9rem; right: 25%; width: 25%; height: 1px; transform: rotate(-18deg); transform-origin: left; }
+.connector-bottom { top: 15rem; left: 50%; width: 1px; height: 6rem; }
+
+.board-footer {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--vos-border);
+  color: var(--vos-muted);
+  font-family: var(--vos-font-mono);
+  font-size: 0.68rem;
+}
+
+.board-footer > span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.board-status { margin-left: auto; color: var(--vos-ok); }
+.legend-dot { display: inline-block; width: 0.42rem; height: 0.42rem; border-radius: 999px; background: var(--vos-muted); }
+.legend-dot.orange { background: var(--vos-accent); }
+.legend-dot.cyan { background: var(--vos-cyan); }
+.legend-dot.violet { background: var(--vos-violet); }
+
+.system-strip {
+  border-block: 1px solid var(--vos-border);
+  background: var(--vos-surface-2);
+}
+
+.strip-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-block: 1.05rem;
+}
+
+.strip-lede { max-width: 25rem; margin: 0; color: var(--vos-ink); font-size: 0.94rem; font-weight: 600; }
+.strip-stats { display: flex; gap: clamp(1rem, 4vw, 3.25rem); color: var(--vos-muted); font-family: var(--vos-font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.strip-stats span { display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+.strip-stats b { color: var(--vos-accent); font-weight: 500; }
+
+.section-block { padding-block: clamp(4rem, 8vw, 7rem); }
+.section-intro { max-width: 31rem; }
+.wide-intro { max-width: 42rem; }
+.section-intro h2,
+.toolchain h2,
+.final-cta h2 {
+  margin: 0;
+  color: var(--vos-ink);
+  font-size: clamp(2rem, 4vw, 3.8rem);
+  font-weight: 680;
+  letter-spacing: -0.045em;
+  line-height: 1.03;
+}
+.section-intro > p:not(.vos-eyebrow),
+.toolchain-copy > p:not(.vos-eyebrow),
+.final-cta p {
+  margin: 1rem 0 0;
+  color: var(--vos-muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.anatomy {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2.5rem, 8vw, 8rem);
+  align-items: center;
+  border-bottom: 1px solid var(--vos-border);
+}
+
+.intro-note {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 1.8rem;
+  color: var(--vos-cyan);
+  font-family: var(--vos-font-mono);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.intro-note span { color: var(--vos-accent); font-size: 1rem; }
+
+.schema-card {
+  overflow: hidden;
+  border: 1px solid var(--vos-border);
+  background: var(--vos-surface);
+  box-shadow: 0 1.2rem 3rem rgba(3, 7, 14, 0.16);
+}
+
+.schema-card-head {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--vos-border);
+  background: var(--vos-surface-2);
+}
+
+.mono { color: var(--vos-ink); font-family: var(--vos-font-mono); font-size: 0.76rem; }
+.schema-chip {
+  padding: 0.2rem 0.45rem;
+  color: var(--vos-cyan);
+  border: 1px solid rgba(89, 217, 221, 0.38);
+  font-family: var(--vos-font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.schema-card-foot {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid var(--vos-border);
+  color: var(--vos-muted);
+  font-family: var(--vos-font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.schema-card-foot span { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+.surfaces { border-bottom: 1px solid var(--vos-border); }
+.surface-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 2.2rem;
+}
+
+.surface-card {
+  min-height: 17.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--vos-border);
+  background: var(--vos-surface);
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.surface-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--vos-accent);
+}
+
+.surface-card-top { display: flex; align-items: center; justify-content: space-between; }
+.surface-mark {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--vos-border-strong);
+  color: var(--vos-ink);
+  font-family: var(--vos-font-mono);
+  font-size: 0.68rem;
+}
+.surface-index { color: var(--vos-muted); font-family: var(--vos-font-mono); font-size: 0.72rem; }
+.surface-card h3 { margin: 3.1rem 0 0.55rem; color: var(--vos-ink); font-size: 1.28rem; font-weight: 650; }
+.surface-card p { min-height: 3.3rem; margin: 0; color: var(--vos-muted); font-size: 0.9rem; line-height: 1.55; }
+.surface-card code { display: block; margin-top: 1.8rem; color: var(--vos-cyan); font-family: var(--vos-font-mono); font-size: 0.76rem; }
+.surface-card[data-tone='cyan'] .surface-mark { border-color: rgba(89, 217, 221, 0.58); color: var(--vos-cyan); }
+.surface-card[data-tone='violet'] .surface-mark { border-color: rgba(156, 140, 255, 0.58); color: var(--vos-violet); }
+.surface-card[data-tone='orange'] .surface-mark { border-color: rgba(255, 139, 77, 0.58); color: var(--vos-accent); }
+
+.lifecycle { border-bottom: 1px solid var(--vos-border); }
+.lifecycle-head { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.lifecycle-note { max-width: 23rem; margin: 0; color: var(--vos-muted); line-height: 1.65; }
+.lifecycle-track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 2.7rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--vos-border-strong);
+}
+.lifecycle-track li { position: relative; min-height: 9rem; padding: 1rem 1.2rem 0 0; }
+.lifecycle-track li + li { padding-left: 1.2rem; border-left: 1px solid var(--vos-border); }
+.step-number { color: var(--vos-accent); font-family: var(--vos-font-mono); font-size: 0.7rem; }
+.step-line {
+  position: absolute;
+  top: -0.32rem;
+  left: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 2px solid var(--vos-accent);
+  background: var(--vos-page);
+  transform: rotate(45deg);
+}
+.lifecycle-track li:first-child .step-line { left: -0.02rem; }
+.lifecycle-track strong { display: block; margin-top: 1.55rem; color: var(--vos-ink); font-size: 1.05rem; }
+.lifecycle-track p { max-width: 12rem; margin: 0.4rem 0 0; color: var(--vos-muted); font-size: 0.82rem; line-height: 1.5; }
+
+.toolchain {
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+  gap: clamp(2rem, 8vw, 8rem);
+  align-items: center;
+  border-bottom: 1px solid var(--vos-border);
+}
+
+.package-stack { display: grid; gap: 0.7rem; }
+.package-stack article { padding: 1.15rem 1.25rem; border: 1px solid var(--vos-border); background: var(--vos-surface); }
+.package-stack article > div { display: flex; align-items: center; gap: 0.7rem; }
+.package-stack code { color: var(--vos-ink); font-family: var(--vos-font-mono); font-size: 0.9rem; }
+.package-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--vos-page);
+  background: var(--vos-accent);
+  font-family: var(--vos-font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.package-icon.rust { background: var(--vos-violet); }
+.package-stack p { margin: 0.8rem 0 0.75rem 2.7rem; color: var(--vos-muted); font-size: 0.87rem; }
+.package-role { display: block; margin-left: 2.7rem; color: var(--vos-cyan); font-size: 0.62rem; font-family: var(--vos-font-mono); letter-spacing: 0.08em; }
+
+.final-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-block: clamp(3.5rem, 8vw, 6rem);
+}
+
+.final-cta h2 { max-width: 38rem; }
+
+@media (max-width: 1000px) {
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+  .hero-copy { max-width: 44rem; }
+  .model-board { max-width: 54rem; }
+  .anatomy, .toolchain { grid-template-columns: 1fr; gap: 2.5rem; }
+}
+
+@media (max-width: 760px) {
+  .strip-inner, .lifecycle-head, .final-cta { align-items: flex-start; flex-direction: column; }
+  .strip-stats { flex-wrap: wrap; gap: 0.8rem 1.4rem; }
+  .surface-grid, .lifecycle-track { grid-template-columns: 1fr; }
+  .surface-card { min-height: 0; }
+  .surface-card h3 { margin-top: 2rem; }
+  .lifecycle-track li, .lifecycle-track li + li {
+    min-height: 0;
+    padding: 1rem 0 1.2rem 1.2rem;
+    border-left: 1px solid var(--vos-border);
+    border-bottom: 1px solid var(--vos-border);
+  }
+  .lifecycle-track li:last-child { border-bottom: 0; }
+  .step-line, .lifecycle-track li:first-child .step-line { top: 1rem; left: -0.32rem; }
+  .lifecycle-track strong { margin-top: 0.7rem; }
+  .lifecycle-track p { max-width: none; }
+}
+
+@media (max-width: 520px) {
+  .hero h1 { font-size: clamp(2.65rem, 14vw, 4rem); }
+  .hero { padding-block: 3rem 3.5rem; }
+  .model-board { min-height: 28rem; }
+  .map { min-height: 20.5rem; }
+  .map-node { width: 8rem; padding: 0.65rem 0.7rem; }
+  .node-profile { left: 0; }
+  .node-session { right: 0; }
+  .board-status { margin-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surface-card { transition: none; }
+}
+</style>
+
+<script client>
+import {
+  homeHeroKicker,
+  homeHeroTitleA,
+  homeHeroTitleB,
+  homeHeroLede,
+  homeHeroMeta,
+  homeBoardLabel,
+  homeBoardRelation,
+  homeBoardPersistent,
+  homeBoardReady,
+  homeStripTitle,
+  homeStripNamespace,
+  homeStripRelations,
+  homeStripLifecycle,
+  homeAnatomyEyebrow,
+  homeAnatomyTitle,
+  homeAnatomyLede,
+  homeAnatomyNote,
+  homeSchemaChip,
+  homeSchemaCaption,
+  homeSurfaceEyebrow,
+  homeSurfaceTitle,
+  homeSurfaceLede,
+  homeSurfaceNamespaceTitle,
+  homeSurfaceNamespaceBody,
+  homeSurfaceNamespaceCode,
+  homeSurfaceTableTitle,
+  homeSurfaceTableBody,
+  homeSurfaceTableCode,
+  homeSurfaceServiceTitle,
+  homeSurfaceServiceBody,
+  homeSurfaceServiceCode,
+  homeLifecycleEyebrow,
+  homeLifecycleTitle,
+  homeLifecycleLede,
+  homeLifecycleDefineTitle,
+  homeLifecycleDefineBody,
+  homeLifecycleConnectTitle,
+  homeLifecycleConnectBody,
+  homeLifecycleValidateTitle,
+  homeLifecycleValidateBody,
+  homeLifecycleEvolveTitle,
+  homeLifecycleEvolveBody,
+  homeToolchainEyebrow,
+  homeToolchainTitle,
+  homeToolchainLede,
+  homePkgVos,
+  homePkgRs,
+  homeFinalEyebrow,
+  homeFinalTitle,
+  homeFinalLede,
+  homeFinalCta,
+  homeOpenPlayground,
+  homeReadModel,
+  playgroundCopy,
+  titlesHome,
+} from '#locales/common';
+import { SAMPLE_HERO } from '../lib/samples.ts';
+import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
+
+export default class IndexPage {
+  heroKicker = '';
+  heroTitleA = '';
+  heroTitleB = '';
+  heroLede = '';
+  heroMeta = '';
+  boardLabel = '';
+  boardRelation = '';
+  boardPersistent = '';
+  boardReady = '';
+  stripTitle = '';
+  stripNamespace = '';
+  stripRelations = '';
+  stripLifecycle = '';
+  anatomyEyebrow = '';
+  anatomyTitle = '';
+  anatomyLede = '';
+  anatomyNote = '';
+  schemaChip = '';
+  schemaCaption = '';
+  surfaceEyebrow = '';
+  surfaceTitle = '';
+  surfaceLede = '';
+  surfaceNamespaceTitle = '';
+  surfaceNamespaceBody = '';
+  surfaceNamespaceCode = '';
+  surfaceTableTitle = '';
+  surfaceTableBody = '';
+  surfaceTableCode = '';
+  surfaceServiceTitle = '';
+  surfaceServiceBody = '';
+  surfaceServiceCode = '';
+  lifecycleEyebrow = '';
+  lifecycleTitle = '';
+  lifecycleLede = '';
+  lifecycleDefineTitle = '';
+  lifecycleDefineBody = '';
+  lifecycleConnectTitle = '';
+  lifecycleConnectBody = '';
+  lifecycleValidateTitle = '';
+  lifecycleValidateBody = '';
+  lifecycleEvolveTitle = '';
+  lifecycleEvolveBody = '';
+  toolchainEyebrow = '';
+  toolchainTitle = '';
+  toolchainLede = '';
+  pkgVos = '';
+  pkgRs = '';
+  finalEyebrow = '';
+  finalTitle = '';
+  finalLede = '';
+  finalCta = '';
+  openPlayground = '';
+  readModel = '';
+  copyLabel = 'Copy';
+  heroSample = SAMPLE_HERO;
+  _unwatchLocale = null;
+
+  onMount() {
+    this.applyLocaleCopy();
+    this._unwatchLocale = watchDocumentLocale((id) => this.applyLocaleCopy(id));
+  }
+
+  onDestroy() {
+    if (typeof this._unwatchLocale === 'function') this._unwatchLocale();
+    this._unwatchLocale = null;
+  }
+
+  refreshCopy() {
+    this.heroKicker = homeHeroKicker();
+    this.heroTitleA = homeHeroTitleA();
+    this.heroTitleB = homeHeroTitleB();
+    this.heroLede = homeHeroLede();
+    this.heroMeta = homeHeroMeta();
+    this.boardLabel = homeBoardLabel();
+    this.boardRelation = homeBoardRelation();
+    this.boardPersistent = homeBoardPersistent();
+    this.boardReady = homeBoardReady();
+    this.stripTitle = homeStripTitle();
+    this.stripNamespace = homeStripNamespace();
+    this.stripRelations = homeStripRelations();
+    this.stripLifecycle = homeStripLifecycle();
+    this.anatomyEyebrow = homeAnatomyEyebrow();
+    this.anatomyTitle = homeAnatomyTitle();
+    this.anatomyLede = homeAnatomyLede();
+    this.anatomyNote = homeAnatomyNote();
+    this.schemaChip = homeSchemaChip();
+    this.schemaCaption = homeSchemaCaption();
+    this.surfaceEyebrow = homeSurfaceEyebrow();
+    this.surfaceTitle = homeSurfaceTitle();
+    this.surfaceLede = homeSurfaceLede();
+    this.surfaceNamespaceTitle = homeSurfaceNamespaceTitle();
+    this.surfaceNamespaceBody = homeSurfaceNamespaceBody();
+    this.surfaceNamespaceCode = homeSurfaceNamespaceCode();
+    this.surfaceTableTitle = homeSurfaceTableTitle();
+    this.surfaceTableBody = homeSurfaceTableBody();
+    this.surfaceTableCode = homeSurfaceTableCode();
+    this.surfaceServiceTitle = homeSurfaceServiceTitle();
+    this.surfaceServiceBody = homeSurfaceServiceBody();
+    this.surfaceServiceCode = homeSurfaceServiceCode();
+    this.lifecycleEyebrow = homeLifecycleEyebrow();
+    this.lifecycleTitle = homeLifecycleTitle();
+    this.lifecycleLede = homeLifecycleLede();
+    this.lifecycleDefineTitle = homeLifecycleDefineTitle();
+    this.lifecycleDefineBody = homeLifecycleDefineBody();
+    this.lifecycleConnectTitle = homeLifecycleConnectTitle();
+    this.lifecycleConnectBody = homeLifecycleConnectBody();
+    this.lifecycleValidateTitle = homeLifecycleValidateTitle();
+    this.lifecycleValidateBody = homeLifecycleValidateBody();
+    this.lifecycleEvolveTitle = homeLifecycleEvolveTitle();
+    this.lifecycleEvolveBody = homeLifecycleEvolveBody();
+    this.toolchainEyebrow = homeToolchainEyebrow();
+    this.toolchainTitle = homeToolchainTitle();
+    this.toolchainLede = homeToolchainLede();
+    this.pkgVos = homePkgVos();
+    this.pkgRs = homePkgRs();
+    this.finalEyebrow = homeFinalEyebrow();
+    this.finalTitle = homeFinalTitle();
+    this.finalLede = homeFinalLede();
+    this.finalCta = homeFinalCta();
+    this.openPlayground = homeOpenPlayground();
+    this.readModel = homeReadModel();
+    this.copyLabel = playgroundCopy();
+    if (typeof document !== 'undefined') {
+      document.title = titlesHome();
+    }
+  }
+
+  applyLocaleCopy(preferred) {
+    withLocaleHint(readLocaleId(preferred), () => this.refreshCopy());
+  }
+
+  async copyHero() {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(this.heroSample);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+</script>

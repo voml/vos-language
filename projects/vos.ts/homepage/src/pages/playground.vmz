@@ -1,0 +1,298 @@
+<template>
+  <div class="playground">
+    <header class="page-head">
+      <div>
+        <p class="vos-eyebrow">{eyebrow}</p>
+        <h1>{title}</h1>
+        <p class="lede">{lede}</p>
+      </div>
+      <Button type="button" variant="secondary" onClick={() => this.resetSample()}>{resetLabel}</Button>
+    </header>
+
+    <div class="tabs" role="tablist">
+      <Button
+        type="button"
+        variant={sampleKind === 'persistence' ? 'primary' : 'ghost'}
+        onClick={() => this.selectSample('persistence')}
+      >
+        {samplePersistence}
+      </Button>
+      <Button
+        type="button"
+        variant={sampleKind === 'service' ? 'primary' : 'ghost'}
+        onClick={() => this.selectSample('service')}
+      >
+        {sampleService}
+      </Button>
+    </div>
+
+    <p class="hint">{hint}</p>
+
+    <div class="play-grid">
+      <div class="editor">
+        <span class="panel-label">
+          <Icon name="tool.base64" size="sm" />
+          {sourceLabel}
+        </span>
+        <TextArea
+          label={sourceLabel}
+          controlId="vos-playground-source"
+          descriptionId="vos-playground-source-desc"
+          description={hint}
+          value={source}
+          rows={18}
+          onInput={(e) => this.onSourceInput(e)}
+        />
+      </div>
+
+      <div class="preview">
+        <span class="panel-label">
+          <Icon name="status.info" size="sm" />
+          {previewLabel}
+        </span>
+        <CodeBlock
+          code={source}
+          caption={previewLabel}
+          copyLabel={copyLabel}
+          onCopy={() => this.copySource()}
+        />
+      </div>
+    </div>
+
+    <div class="status" data-ok={resultOk ? 'true' : 'false'}>
+      <strong>
+        <Icon name={resultOk ? 'status.success' : 'status.warning'} size="sm" />
+        {resultOk ? okLabel : failedLabel}
+      </strong>
+      <ul if={!resultOk}>
+        <li each={diagnostics} as="item" key={item}>{item}</li>
+      </ul>
+    </div>
+  </div>
+</template>
+
+<style>
+.playground {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2.25rem 1.25rem 3rem;
+  background: var(--vos-page);
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 0.85rem;
+}
+
+.page-head h1 {
+  margin: 0 0 0.45rem;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--vos-ink);
+}
+
+.lede,
+.hint {
+  margin: 0;
+  color: var(--vos-muted);
+}
+
+.hint {
+  margin: 0.85rem 0 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.play-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.editor,
+.preview {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.panel-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--vos-cyan);
+  font-family: var(--vos-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.editor textarea,
+.editor .vmz-ui-textarea__control {
+  min-height: 22rem;
+  font-family: var(--vos-font-mono);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.status {
+  margin-top: 1.1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--vos-border);
+  background: var(--vos-surface);
+}
+
+.status strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--vos-warn);
+}
+
+.status[data-ok='true'] strong {
+  color: var(--vos-ok);
+}
+
+.status ul {
+  margin: 0.7rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--vos-muted);
+}
+
+@media (max-width: 900px) {
+  .play-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script client>
+import { checkSource } from '@game-gpt/vos';
+import { SAMPLES } from '../lib/samples.ts';
+import {
+  playgroundEyebrow,
+  playgroundTitle,
+  playgroundLede,
+  playgroundReset,
+  playgroundSource,
+  playgroundPreview,
+  playgroundOk,
+  playgroundFailed,
+  playgroundHint,
+  playgroundSamplePersistence,
+  playgroundSampleService,
+  playgroundCopy,
+  titlesPlayground,
+} from '#locales/common';
+import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
+
+export default class PlaygroundPage {
+  sampleKind = 'persistence';
+  source = SAMPLES.persistence;
+  resultOk = true;
+  diagnostics = [];
+  eyebrow = '';
+  title = '';
+  lede = '';
+  resetLabel = '';
+  sourceLabel = '';
+  previewLabel = '';
+  okLabel = '';
+  failedLabel = '';
+  hint = '';
+  samplePersistence = '';
+  sampleService = '';
+  copyLabel = 'Copy';
+  _unwatchLocale = null;
+
+  onMount() {
+    this.applyLocaleCopy();
+    this.runCheck();
+    this._unwatchLocale = watchDocumentLocale((id) => this.applyLocaleCopy(id));
+  }
+
+  onDestroy() {
+    if (typeof this._unwatchLocale === 'function') this._unwatchLocale();
+    this._unwatchLocale = null;
+  }
+
+  refreshCopy() {
+    this.eyebrow = playgroundEyebrow();
+    this.title = playgroundTitle();
+    this.lede = playgroundLede();
+    this.resetLabel = playgroundReset();
+    this.sourceLabel = playgroundSource();
+    this.previewLabel = playgroundPreview();
+    this.okLabel = playgroundOk();
+    this.failedLabel = playgroundFailed();
+    this.hint = playgroundHint();
+    this.samplePersistence = playgroundSamplePersistence();
+    this.sampleService = playgroundSampleService();
+    this.copyLabel = playgroundCopy();
+    if (typeof document !== 'undefined') {
+      document.title = titlesPlayground();
+    }
+  }
+
+  applyLocaleCopy(preferred) {
+    withLocaleHint(readLocaleId(preferred), () => this.refreshCopy());
+  }
+
+  selectSample(kind) {
+    this.sampleKind = kind;
+    this.source = SAMPLES[kind];
+    this.runCheck();
+  }
+
+  resetSample() {
+    this.source = SAMPLES[this.sampleKind];
+    this.runCheck();
+  }
+
+  onSourceInput(e) {
+    const target = e && e.target;
+    this.source = target && typeof target.value === 'string' ? target.value : '';
+    this.runCheck();
+  }
+
+  runCheck() {
+    try {
+      const result = checkSource(this.source);
+      this.resultOk = !!result.ok;
+      if (result.ok) {
+        this.diagnostics = [];
+        return;
+      }
+      const items = Array.isArray(result.diagnostics) ? result.diagnostics : [];
+      this.diagnostics = items.map((item) => {
+        const line = item && item.line != null ? `L${item.line}` : 'L?';
+        const message = item && item.message ? item.message : String(item);
+        return `${line} — ${message}`;
+      });
+    } catch (err) {
+      this.resultOk = false;
+      this.diagnostics = [err && err.message ? err.message : String(err)];
+    }
+  }
+
+  async copySource() {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(this.source);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+</script>

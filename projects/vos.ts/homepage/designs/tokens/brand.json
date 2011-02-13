@@ -1,0 +1,49 @@
+{
+    "brand": {
+        "primary": "#FF8B4D",
+        "energy": "#59D9DD"
+    },
+    "scale": {
+        "50": "#FFF4ED",
+        "100": "#FFE4D4",
+        "200": "#FFC9A8",
+        "300": "#FFAB7A",
+        "400": "#FF8B4D",
+        "500": "#F07435",
+        "600": "#D45C22",
+        "700": "#A84618",
+        "800": "#7A3412",
+        "900": "#4F220C",
+        "950": "#2A1207"
+    },
+    "surface": {
+        "paper": "#171D26",
+        "mist": "#1D2530",
+        "page": "#10141B",
+        "ink": "#F2F4F7",
+        "graphite": "#2A3442"
+    },
+    "text": {
+        "ink": "#F2F4F7",
+        "steel": "#9AA5B4",
+        "on-brand": "#18120E",
+        "on-ink": "#F2F4F7"
+    },
+    "line": {
+        "default": "#2A3442",
+        "subtle": "#1D2530",
+        "strong": "#435164"
+    },
+    "status": {
+        "success": "#66D39A",
+        "warning": "#F0C36A",
+        "error": "#E5484D",
+        "analysis": "#9C8CFF",
+        "runtime": "#59D9DD"
+    },
+    "font": {
+        "sans": "Inter, \"PingFang SC\", \"Microsoft YaHei\", \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif",
+        "mono": "\"IBM Plex Mono\", \"Cascadia Mono\", Consolas, monospace",
+        "display": "Inter, \"PingFang SC\", \"Microsoft YaHei\", \"Noto Sans CJK SC\", \"Segoe UI\", sans-serif"
+    }
+}

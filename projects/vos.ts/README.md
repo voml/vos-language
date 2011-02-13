@@ -48,8 +48,10 @@ pnpm install
 pnpm --filter @game-gpt/vos-homepage dev
 ```
 
-The homepage uses the same TextMate grammar as the editor extension, so examples stay visually consistent in Shiki, VS
-Code, and Cursor.
+The homepage is a VMZ application (`@vmz/vmz`, `@vmz/ui`, `@vmz/ui-icons` at npm `0.1.9`) with file-based routes for
+`/`, `/model`, and `/playground`. Build outputs use **`dist/<target>`** — `dist/cdn` for static CDN upload,
+`dist/browser` for local SSR dev, `dist/wechat` for WeChat. From the repo root, `pnpm homepage` writes the static release
+to `projects/vos.ts/homepage/dist/cdn`.
 
 ## Work on highlighting
 

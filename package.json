@@ -8,8 +8,10 @@
         "fmt": "node scripts/format.mjs",
         "fmt:check": "node scripts/format.mjs --check",
         "dev": "pnpm --filter @game-gpt/vos-homepage dev",
+        "homepage": "pnpm --filter @game-gpt/vos-homepage build:static",
         "build": "pnpm -r --filter @game-gpt/vos --filter @game-gpt/vos-homepage run build",
-        "typecheck": "pnpm -r --filter @game-gpt/vos --filter @game-gpt/vos-homepage --filter @game-gpt/vos-skills run typecheck",
+        "typecheck": "pnpm -r --filter @game-gpt/vos --filter @game-gpt/vos-skills run typecheck",
+        "check:homepage": "pnpm --filter @game-gpt/vos-homepage check",
         "sync-grammar": "pnpm --filter @game-gpt/vos-textmate sync-vscode",
         "test:rs": "cargo test --manifest-path projects/vos.rs/Cargo.toml --workspace",
         "check:rs": "cargo check --manifest-path projects/vos.rs/Cargo.toml --workspace --all-targets"

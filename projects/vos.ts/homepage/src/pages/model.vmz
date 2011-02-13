@@ -1,0 +1,122 @@
+<template>
+  <div class="model-page">
+    <header class="page-head vos-rail">
+      <p class="vos-eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+      <p class="lede">{lede}</p>
+    </header>
+
+    <section class="overview vos-rail">
+      <RelationDiagram />
+      <SchemaPanel code={heroSample} caption={schemaCaption} copyLabel={copyLabel} />
+    </section>
+
+    <ModelSections />
+
+    <div class="footer-cta vos-rail vos-actions">
+      <a href="/playground">
+        <Button type="button" variant="primary">{openPlayground}</Button>
+      </a>
+      <a href="/">
+        <Button type="button" variant="ghost">{backHome}</Button>
+      </a>
+    </div>
+  </div>
+</template>
+
+<style>
+.model-page {
+  padding-bottom: 3rem;
+  background: var(--vos-page);
+}
+
+.page-head {
+  padding: 2.5rem 0 0.5rem;
+}
+
+.page-head h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--vos-ink);
+}
+
+.lede {
+  margin: 0;
+  max-width: 38rem;
+  color: var(--vos-muted);
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.75rem auto 0;
+}
+
+.footer-cta {
+  margin-top: 2.5rem;
+  padding-bottom: 2rem;
+}
+
+@media (max-width: 900px) {
+  .overview {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script client>
+import {
+  modelEyebrow,
+  modelTitle,
+  modelLede,
+  modelOpenPlayground,
+  modelBackHome,
+  homeSchemaCaption,
+  playgroundCopy,
+  titlesModel,
+} from '#locales/common';
+import { SAMPLE_HERO } from '../lib/samples.ts';
+import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
+
+export default class ModelPage {
+  eyebrow = '';
+  title = '';
+  lede = '';
+  openPlayground = '';
+  backHome = '';
+  schemaCaption = '';
+  copyLabel = 'Copy';
+  heroSample = SAMPLE_HERO;
+  _unwatchLocale = null;
+
+  onMount() {
+    this.applyLocaleCopy();
+    this._unwatchLocale = watchDocumentLocale((id) => this.applyLocaleCopy(id));
+  }
+
+  onDestroy() {
+    if (typeof this._unwatchLocale === 'function') this._unwatchLocale();
+    this._unwatchLocale = null;
+  }
+
+  refreshCopy() {
+    this.eyebrow = modelEyebrow();
+    this.title = modelTitle();
+    this.lede = modelLede();
+    this.openPlayground = modelOpenPlayground();
+    this.backHome = modelBackHome();
+    this.schemaCaption = homeSchemaCaption();
+    this.copyLabel = playgroundCopy();
+    if (typeof document !== 'undefined') {
+      document.title = titlesModel();
+    }
+  }
+
+  applyLocaleCopy(preferred) {
+    withLocaleHint(readLocaleId(preferred), () => this.refreshCopy());
+  }
+}
+</script>
