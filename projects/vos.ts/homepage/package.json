@@ -5,8 +5,11 @@
     "type": "module",
     "description": "VOS homepage — VMZ + @vmz/ui + @vmz/ui-icons dogfood",
     "scripts": {
+        "predev": "pnpm --filter @game-gpt/vos build",
         "dev": "vmz dev . --out-dir dist/browser --target browser",
+        "prebuild": "pnpm --filter @game-gpt/vos build",
         "build": "vmz build . --release --out-dir dist/browser --target browser",
+        "prebuild:static": "pnpm --filter @game-gpt/vos build",
         "build:static": "vmz check . && vmz build . --release --profile static --out-dir dist/cdn --target browser",
         "check": "vmz check .",
         "serve": "vmz serve . --out-dir dist/browser"

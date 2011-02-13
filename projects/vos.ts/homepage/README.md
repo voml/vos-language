@@ -29,6 +29,8 @@ Release static site (CDN — Cloudflare Pages, Netlify, etc.):
 pnpm homepage
 ```
 
+(`pnpm homepage` builds `@game-gpt/vos` to `dist/` first — required for static SSR on Node 22.)
+
 Outputs land under **`dist/cdn`** (`static` profile). Local dev/SSR uses **`dist/browser`**; WeChat uses **`dist/wechat`**.
 
 CDN host (repo root):
