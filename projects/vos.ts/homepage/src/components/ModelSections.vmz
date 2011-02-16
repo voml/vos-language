@@ -1,0 +1,351 @@
+<template>
+  <div class="model-sections">
+    <section class="section">
+      <header class="section-head">
+        <h2>{primitivesTitle}</h2>
+        <p>{primitivesLede}</p>
+      </header>
+      <div class="grid">
+        <article data-tone="navy">
+          <span class="mark">Ns</span>
+          <h3>{namespaceTitle}</h3>
+          <p>{namespaceBody}</p>
+        </article>
+        <article data-tone="indigo">
+          <span class="mark">Tb</span>
+          <h3>{tableTitle}</h3>
+          <p>{tableBody}</p>
+        </article>
+        <article data-tone="cyan">
+          <span class="mark">Rf</span>
+          <h3>{referenceTitle}</h3>
+          <p>{referenceBody}</p>
+        </article>
+        <article data-tone="amber">
+          <span class="mark">Sv</span>
+          <h3>{serviceTitle}</h3>
+          <p>{serviceBody}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="relations-layout">
+        <div>
+          <header class="section-head">
+            <h2>{relationsTitle}</h2>
+            <p>{relationsLede}</p>
+          </header>
+          <p class="note">{relationsNote}</p>
+        </div>
+        <div class="frame">
+          <RelationDiagram />
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <header class="section-head">
+        <h2>{lifecycleTitle}</h2>
+        <p>{lifecycleLede}</p>
+      </header>
+      <ol class="flow">
+        <li>
+          <span class="index">01</span>
+          <strong>{defineTitle}</strong>
+          <p>{defineBody}</p>
+        </li>
+        <li>
+          <span class="index">02</span>
+          <strong>{connectTitle}</strong>
+          <p>{connectBody}</p>
+        </li>
+        <li>
+          <span class="index">03</span>
+          <strong>{validateTitle}</strong>
+          <p>{validateBody}</p>
+        </li>
+        <li>
+          <span class="index">04</span>
+          <strong>{evolveTitle}</strong>
+          <p>{evolveBody}</p>
+        </li>
+      </ol>
+    </section>
+  </div>
+</template>
+
+<style>
+.model-sections .section {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 3.5rem 1.25rem 1rem;
+}
+
+.section-head h2 {
+  margin: 0;
+  color: var(--vos-ink);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.section-head p {
+  margin: 0.85rem 0 0;
+  color: var(--vos-muted);
+  max-width: 34rem;
+  line-height: 1.65;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--vos-border);
+}
+
+.grid article {
+  padding: 1.4rem 1.1rem 1.5rem 0;
+  border-bottom: 1px solid var(--vos-border);
+}
+
+.grid article + article {
+  padding-left: 1.15rem;
+  border-left: 1px solid var(--vos-border);
+}
+
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid var(--vos-border);
+  font-family: var(--vos-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--vos-ink);
+  background: var(--vos-surface);
+}
+
+.grid article[data-tone='navy'] .mark {
+  background: var(--vos-accent);
+  border-color: var(--vos-accent);
+  color: #18120e;
+}
+
+.grid article[data-tone='indigo'] .mark {
+  border-color: rgba(156, 140, 255, 0.45);
+  color: var(--vos-violet);
+}
+
+.grid article[data-tone='cyan'] .mark {
+  border-color: rgba(89, 217, 221, 0.45);
+  color: var(--vos-cyan);
+}
+
+.grid article[data-tone='amber'] .mark {
+  border-color: rgba(240, 195, 106, 0.45);
+  color: var(--vos-warn);
+}
+
+.grid h3 {
+  margin: 0 0 0.4rem;
+  color: var(--vos-ink);
+  font-size: 1.15rem;
+}
+
+.grid p,
+.note {
+  margin: 0;
+  color: var(--vos-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.relations-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  padding: 1.75rem 0;
+  border-top: 1px solid var(--vos-border);
+  border-bottom: 1px solid var(--vos-border);
+}
+
+.note {
+  margin-top: 1rem;
+  max-width: 28rem;
+}
+
+.frame {
+  border: 1px solid var(--vos-border);
+  background:
+    linear-gradient(180deg, rgba(89, 217, 221, 0.08), transparent 55%),
+    var(--vos-surface);
+}
+
+.flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--vos-border);
+}
+
+.flow li {
+  position: relative;
+  padding: 1.4rem 1.1rem 1.5rem 0;
+  border-bottom: 1px solid var(--vos-border);
+}
+
+.flow li + li {
+  padding-left: 1.2rem;
+  border-left: 1px solid var(--vos-border);
+}
+
+.index {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-family: var(--vos-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--vos-accent);
+}
+
+.flow strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--vos-ink);
+  font-size: 1.1rem;
+}
+
+.flow p {
+  margin: 0;
+  color: var(--vos-muted);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 960px) {
+  .grid,
+  .flow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .relations-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid,
+  .flow {
+    grid-template-columns: 1fr;
+  }
+
+  .grid article + article,
+  .flow li + li {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+</style>
+
+<script client>
+import {
+  homePrimitivesTitle,
+  homePrimitivesLede,
+  homePrimitiveNamespaceTitle,
+  homePrimitiveNamespaceBody,
+  homePrimitiveTableTitle,
+  homePrimitiveTableBody,
+  homePrimitiveReferenceTitle,
+  homePrimitiveReferenceBody,
+  homePrimitiveServiceTitle,
+  homePrimitiveServiceBody,
+  homeRelationsTitle,
+  homeRelationsLede,
+  homeRelationsNote,
+  homeLifecycleTitle,
+  homeLifecycleLede,
+  homeLifecycleDefineTitle,
+  homeLifecycleDefineBody,
+  homeLifecycleConnectTitle,
+  homeLifecycleConnectBody,
+  homeLifecycleValidateTitle,
+  homeLifecycleValidateBody,
+  homeLifecycleEvolveTitle,
+  homeLifecycleEvolveBody,
+} from '#locales/common';
+import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
+
+export default class ModelSections {
+  primitivesTitle = '';
+  primitivesLede = '';
+  namespaceTitle = '';
+  namespaceBody = '';
+  tableTitle = '';
+  tableBody = '';
+  referenceTitle = '';
+  referenceBody = '';
+  serviceTitle = '';
+  serviceBody = '';
+  relationsTitle = '';
+  relationsLede = '';
+  relationsNote = '';
+  lifecycleTitle = '';
+  lifecycleLede = '';
+  defineTitle = '';
+  defineBody = '';
+  connectTitle = '';
+  connectBody = '';
+  validateTitle = '';
+  validateBody = '';
+  evolveTitle = '';
+  evolveBody = '';
+  _unwatchLocale = null;
+
+  onMount() {
+    this.applyLocaleCopy();
+    this._unwatchLocale = watchDocumentLocale((id) => this.applyLocaleCopy(id));
+  }
+
+  onDestroy() {
+    if (typeof this._unwatchLocale === 'function') this._unwatchLocale();
+    this._unwatchLocale = null;
+  }
+
+  refreshCopy() {
+    this.primitivesTitle = homePrimitivesTitle();
+    this.primitivesLede = homePrimitivesLede();
+    this.namespaceTitle = homePrimitiveNamespaceTitle();
+    this.namespaceBody = homePrimitiveNamespaceBody();
+    this.tableTitle = homePrimitiveTableTitle();
+    this.tableBody = homePrimitiveTableBody();
+    this.referenceTitle = homePrimitiveReferenceTitle();
+    this.referenceBody = homePrimitiveReferenceBody();
+    this.serviceTitle = homePrimitiveServiceTitle();
+    this.serviceBody = homePrimitiveServiceBody();
+    this.relationsTitle = homeRelationsTitle();
+    this.relationsLede = homeRelationsLede();
+    this.relationsNote = homeRelationsNote();
+    this.lifecycleTitle = homeLifecycleTitle();
+    this.lifecycleLede = homeLifecycleLede();
+    this.defineTitle = homeLifecycleDefineTitle();
+    this.defineBody = homeLifecycleDefineBody();
+    this.connectTitle = homeLifecycleConnectTitle();
+    this.connectBody = homeLifecycleConnectBody();
+    this.validateTitle = homeLifecycleValidateTitle();
+    this.validateBody = homeLifecycleValidateBody();
+    this.evolveTitle = homeLifecycleEvolveTitle();
+    this.evolveBody = homeLifecycleEvolveBody();
+  }
+
+  applyLocaleCopy(preferred) {
+    withLocaleHint(readLocaleId(preferred), () => this.refreshCopy());
+  }
+}
+</script>

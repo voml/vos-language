@@ -1,0 +1,31 @@
+{
+    "name": "@game-gpt/vos",
+    "version": "0.1.0",
+    "description": "VOS (Virtual Object Schema) — public TypeScript API",
+    "type": "module",
+    "license": "MPL-2.0",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "default": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "src"
+    ],
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts --clean",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run"
+    },
+    "devDependencies": {
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
+    }
+}

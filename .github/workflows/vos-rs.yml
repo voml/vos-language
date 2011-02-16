@@ -1,0 +1,58 @@
+name: vos.rs
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, dev]
+    paths:
+      - "projects/vos.rs/**"
+      - "specifications/fixtures/**"
+      - ".github/workflows/vos-rs.yml"
+  pull_request:
+    branches: [master, dev]
+    paths:
+      - "projects/vos.rs/**"
+      - "specifications/fixtures/**"
+      - ".github/workflows/vos-rs.yml"
+
+# Path filters: pushes that only touch homepage/ do not run this
+# workflow. Use workflow_dispatch to force a run.
+
+defaults:
+  run:
+    working-directory: projects/vos.rs
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  check:
+    name: fmt · check · clippy · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: projects/vos.rs -> target
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Check
+        run: cargo check --workspace --all-targets
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace

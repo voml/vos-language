@@ -1,0 +1,12 @@
+[package]
+name = "vos-ast"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "Internal VOS AST — apps depend on the `vos` crate only"
+readme = "readme.md"
+
+[dependencies]
+serde = { workspace = true }

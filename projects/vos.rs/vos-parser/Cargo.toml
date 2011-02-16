@@ -1,0 +1,19 @@
+[package]
+name = "vos-parser"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "Internal VOS parser — apps depend on the `vos` crate only"
+readme = "readme.md"
+
+[dependencies]
+miette = { workspace = true }
+thiserror = { workspace = true }
+vos-ast = { workspace = true }
+
+[dev-dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+pretty_assertions = "1"

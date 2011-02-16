@@ -1,0 +1,38 @@
+<template>
+  <figure class="schema-panel">
+    <figcaption if={caption}>{caption}</figcaption>
+    <CodeBlock code={code} caption={caption} copyLabel={copyLabel} onCopy={() => this.copyCode()} />
+  </figure>
+</template>
+
+<style>
+.schema-panel {
+  margin: 0;
+}
+
+.schema-panel > figcaption {
+  margin-bottom: 0.75rem;
+  font-family: var(--vos-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vos-cyan);
+}
+</style>
+
+<script client>
+export default class SchemaPanel {
+  public code: string = '';
+  public caption: string = '';
+  public copyLabel: string = 'Copy';
+
+  async copyCode() {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(this.code);
+    } catch {
+      /* ignore clipboard failures in dogfood */
+    }
+  }
+}
+</script>

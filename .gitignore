@@ -1,0 +1,41 @@
+# OS
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+.settings/
+.classpath
+.project
+.factorypath
+.cursor/
+
+# Rust
+target/
+
+# Node
+node_modules/
+dist/
+
+# Java/Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Rust
+.cargo/config.toml
+Cargo.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.swp
+*.swo
+*.db
+*.db-wal
+*.db-shm
+*.log

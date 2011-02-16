@@ -1,0 +1,7 @@
+# Prefer `::` for static collection entry; `.` is accepted with the same IR.
+let users = User::filter(x => x.active)
+    .sort_by(x => x.user_name)
+    .take(20)
+    .collect()
+
+users

@@ -1,0 +1,7 @@
+namespace demo::identity
+
+table User {
+    @@user_id: uuid,
+    @user_name: utf8,
+    avatar: utf8? = null,
+}

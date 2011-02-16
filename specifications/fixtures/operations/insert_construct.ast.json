@@ -1,0 +1,328 @@
+{
+  "statements": [
+    {
+      "Let": {
+        "name": "draft",
+        "ty": null,
+        "value": {
+          "TypedObject": {
+            "ty": "User",
+            "fields": [
+              {
+                "name": "user_id",
+                "value": {
+                  "Call": {
+                    "callee": {
+                      "Name": {
+                        "name": "uuid",
+                        "span": {
+                          "start": 71,
+                          "end": 75
+                        }
+                      }
+                    },
+                    "args": [],
+                    "span": {
+                      "start": 71,
+                      "end": 77
+                    }
+                  }
+                },
+                "span": {
+                  "start": 62,
+                  "end": 77
+                }
+              },
+              {
+                "name": "user_name",
+                "value": {
+                  "Literal": {
+                    "String": "alice"
+                  }
+                },
+                "span": {
+                  "start": 83,
+                  "end": 101
+                }
+              },
+              {
+                "name": "avatar",
+                "value": {
+                  "Literal": "Null"
+                },
+                "span": {
+                  "start": 107,
+                  "end": 119
+                }
+              }
+            ],
+            "span": {
+              "start": 51,
+              "end": 122
+            }
+          }
+        },
+        "span": {
+          "start": 39,
+          "end": 201
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "stored",
+        "ty": {
+          "Named": "User"
+        },
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "TypedObject": {
+                    "ty": "User",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "value": {
+                          "Call": {
+                            "callee": {
+                              "Name": {
+                                "name": "uuid",
+                                "span": {
+                                  "start": 240,
+                                  "end": 244
+                                }
+                              }
+                            },
+                            "args": [],
+                            "span": {
+                              "start": 240,
+                              "end": 246
+                            }
+                          }
+                        },
+                        "span": {
+                          "start": 231,
+                          "end": 246
+                        }
+                      },
+                      {
+                        "name": "user_name",
+                        "value": {
+                          "Literal": {
+                            "String": "alice"
+                          }
+                        },
+                        "span": {
+                          "start": 252,
+                          "end": 270
+                        }
+                      },
+                      {
+                        "name": "avatar",
+                        "value": {
+                          "Literal": "Null"
+                        },
+                        "span": {
+                          "start": 276,
+                          "end": 288
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 220,
+                      "end": 291
+                    }
+                  }
+                },
+                "name": "insert",
+                "sep": "Dot",
+                "span": {
+                  "start": 292,
+                  "end": 298
+                }
+              }
+            },
+            "args": [],
+            "span": {
+              "start": 292,
+              "end": 300
+            }
+          }
+        },
+        "span": {
+          "start": 201,
+          "end": 336
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "users",
+        "ty": null,
+        "value": {
+          "List": {
+            "items": [
+              {
+                "TypedObject": {
+                  "ty": "User",
+                  "fields": [
+                    {
+                      "name": "user_id",
+                      "value": {
+                        "Call": {
+                          "callee": {
+                            "Name": {
+                              "name": "uuid",
+                              "span": {
+                                "start": 370,
+                                "end": 374
+                              }
+                            }
+                          },
+                          "args": [],
+                          "span": {
+                            "start": 370,
+                            "end": 376
+                          }
+                        }
+                      },
+                      "span": {
+                        "start": 361,
+                        "end": 376
+                      }
+                    },
+                    {
+                      "name": "user_name",
+                      "value": {
+                        "Literal": {
+                          "String": "alice"
+                        }
+                      },
+                      "span": {
+                        "start": 378,
+                        "end": 397
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 354,
+                    "end": 398
+                  }
+                }
+              },
+              {
+                "TypedObject": {
+                  "ty": "User",
+                  "fields": [
+                    {
+                      "name": "user_id",
+                      "value": {
+                        "Call": {
+                          "callee": {
+                            "Name": {
+                              "name": "uuid",
+                              "span": {
+                                "start": 420,
+                                "end": 424
+                              }
+                            }
+                          },
+                          "args": [],
+                          "span": {
+                            "start": 420,
+                            "end": 426
+                          }
+                        }
+                      },
+                      "span": {
+                        "start": 411,
+                        "end": 426
+                      }
+                    },
+                    {
+                      "name": "user_name",
+                      "value": {
+                        "Literal": {
+                          "String": "bob"
+                        }
+                      },
+                      "span": {
+                        "start": 428,
+                        "end": 445
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 404,
+                    "end": 446
+                  }
+                }
+              }
+            ],
+            "span": {
+              "start": 348,
+              "end": 449
+            }
+          }
+        },
+        "span": {
+          "start": 336,
+          "end": 450
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "inserted",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Name": {
+                    "name": "users",
+                    "span": {
+                      "start": 465,
+                      "end": 470
+                    }
+                  }
+                },
+                "name": "insert",
+                "sep": "Dot",
+                "span": {
+                  "start": 471,
+                  "end": 477
+                }
+              }
+            },
+            "args": [],
+            "span": {
+              "start": 471,
+              "end": 479
+            }
+          }
+        },
+        "span": {
+          "start": 450,
+          "end": 481
+        }
+      }
+    }
+  ],
+  "result": {
+    "Name": {
+      "name": "stored",
+      "span": {
+        "start": 481,
+        "end": 488
+      }
+    }
+  },
+  "span": {
+    "start": 0,
+    "end": 488
+  }
+}

@@ -1,0 +1,108 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap");
+
+/* App aliases on top of Style Theme --vmz-* tokens */
+:root {
+  --vos-page: var(--vmz-surface-page, #10141b);
+  --vos-surface: var(--vmz-surface-paper, #171d26);
+  --vos-surface-2: var(--vmz-surface-mist, #1d2530);
+  --vos-ink: var(--vmz-text-ink, #f2f4f7);
+  --vos-muted: var(--vmz-text-steel, #9aa5b4);
+  --vos-accent: var(--vmz-brand-primary, #ff8b4d);
+  --vos-cyan: var(--vmz-brand-energy, #59d9dd);
+  --vos-violet: var(--vmz-status-analysis, #9c8cff);
+  --vos-border: var(--vmz-line-default, #2a3442);
+  --vos-border-strong: var(--vmz-line-strong, #435164);
+  --vos-ok: var(--vmz-status-success, #66d39a);
+  --vos-warn: var(--vmz-status-warning, #f0c36a);
+  --vos-font-display: var(--vmz-font-display);
+  --vos-font-body: var(--vmz-font-sans);
+  --vos-font-mono: var(--vmz-font-mono);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--vos-font-body);
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--vos-ink);
+  background:
+    radial-gradient(circle at 78% 10%, rgba(89, 217, 221, 0.08), transparent 24rem),
+    linear-gradient(180deg, #111820 0%, var(--vos-page) 28rem);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--vos-cyan);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(89, 217, 221, 0.26);
+}
+
+.vos-main {
+  min-height: calc(100vh - 12rem);
+}
+
+.vos-rail {
+  width: min(1240px, calc(100% - 3rem));
+  margin-inline: auto;
+}
+
+.vos-eyebrow,
+.vos-kicker,
+.vos-mono-label {
+  margin: 0;
+  font-family: var(--vos-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.vos-eyebrow,
+.vos-kicker {
+  color: var(--vos-accent);
+}
+
+.vos-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.vos-actions a {
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .vos-rail {
+    width: min(100% - 2rem, 42rem);
+  }
+}

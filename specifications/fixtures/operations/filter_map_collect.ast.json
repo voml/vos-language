@@ -1,0 +1,323 @@
+{
+  "statements": [
+    {
+      "Let": {
+        "name": "active_users",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Call": {
+                    "callee": {
+                      "Member": {
+                        "object": {
+                          "Name": {
+                            "name": "User",
+                            "span": {
+                              "start": 19,
+                              "end": 28
+                            }
+                          }
+                        },
+                        "name": "filter",
+                        "sep": "Dot",
+                        "span": {
+                          "start": 29,
+                          "end": 35
+                        }
+                      }
+                    },
+                    "args": [
+                      {
+                        "Lambda": {
+                          "params": [
+                            "x"
+                          ],
+                          "body": {
+                            "Binary": {
+                              "op": "And",
+                              "left": {
+                                "Member": {
+                                  "object": {
+                                    "Name": {
+                                      "name": "x",
+                                      "span": {
+                                        "start": 49,
+                                        "end": 50
+                                      }
+                                    }
+                                  },
+                                  "name": "active",
+                                  "sep": "Dot",
+                                  "span": {
+                                    "start": 51,
+                                    "end": 57
+                                  }
+                                }
+                              },
+                              "right": {
+                                "Binary": {
+                                  "op": "Ne",
+                                  "left": {
+                                    "Member": {
+                                      "object": {
+                                        "Name": {
+                                          "name": "x",
+                                          "span": {
+                                            "start": 69,
+                                            "end": 70
+                                          }
+                                        }
+                                      },
+                                      "name": "user_name",
+                                      "sep": "Dot",
+                                      "span": {
+                                        "start": 71,
+                                        "end": 80
+                                      }
+                                    }
+                                  },
+                                  "right": {
+                                    "Literal": {
+                                      "String": ""
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 71,
+                                    "end": 91
+                                  }
+                                }
+                              },
+                              "span": {
+                                "start": 51,
+                                "end": 91
+                              }
+                            }
+                          },
+                          "span": {
+                            "start": 36,
+                            "end": 91
+                          }
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 29,
+                      "end": 92
+                    }
+                  }
+                },
+                "name": "sort_by",
+                "sep": "Dot",
+                "span": {
+                  "start": 98,
+                  "end": 105
+                }
+              }
+            },
+            "args": [
+              {
+                "Lambda": {
+                  "params": [
+                    "x"
+                  ],
+                  "body": {
+                    "Member": {
+                      "object": {
+                        "Name": {
+                          "name": "x",
+                          "span": {
+                            "start": 111,
+                            "end": 112
+                          }
+                        }
+                      },
+                      "name": "user_name",
+                      "sep": "Dot",
+                      "span": {
+                        "start": 113,
+                        "end": 122
+                      }
+                    }
+                  },
+                  "span": {
+                    "start": 106,
+                    "end": 122
+                  }
+                }
+              }
+            ],
+            "span": {
+              "start": 98,
+              "end": 123
+            }
+          }
+        },
+        "span": {
+          "start": 0,
+          "end": 125
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "public_users",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Name": {
+                    "name": "active_users",
+                    "span": {
+                      "start": 144,
+                      "end": 156
+                    }
+                  }
+                },
+                "name": "map",
+                "sep": "Dot",
+                "span": {
+                  "start": 157,
+                  "end": 160
+                }
+              }
+            },
+            "args": [
+              {
+                "Lambda": {
+                  "params": [
+                    "x"
+                  ],
+                  "body": {
+                    "StructProj": {
+                      "receiver": {
+                        "Name": {
+                          "name": "x",
+                          "span": {
+                            "start": 166,
+                            "end": 167
+                          }
+                        }
+                      },
+                      "items": [
+                        {
+                          "Field": {
+                            "name": "user_id",
+                            "value": null,
+                            "span": {
+                              "start": 174,
+                              "end": 181
+                            }
+                          }
+                        },
+                        {
+                          "Field": {
+                            "name": "name",
+                            "value": {
+                              "Name": {
+                                "name": "user_name",
+                                "span": {
+                                  "start": 193,
+                                  "end": 202
+                                }
+                              }
+                            },
+                            "span": {
+                              "start": 187,
+                              "end": 202
+                            }
+                          }
+                        },
+                        {
+                          "Field": {
+                            "name": "avatar",
+                            "value": null,
+                            "span": {
+                              "start": 208,
+                              "end": 214
+                            }
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 166,
+                        "end": 217
+                      }
+                    }
+                  },
+                  "span": {
+                    "start": 161,
+                    "end": 217
+                  }
+                }
+              }
+            ],
+            "span": {
+              "start": 157,
+              "end": 218
+            }
+          }
+        },
+        "span": {
+          "start": 125,
+          "end": 262
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "users",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Name": {
+                    "name": "public_users",
+                    "span": {
+                      "start": 274,
+                      "end": 286
+                    }
+                  }
+                },
+                "name": "collect",
+                "sep": "Dot",
+                "span": {
+                  "start": 287,
+                  "end": 294
+                }
+              }
+            },
+            "args": [],
+            "span": {
+              "start": 287,
+              "end": 296
+            }
+          }
+        },
+        "span": {
+          "start": 262,
+          "end": 298
+        }
+      }
+    }
+  ],
+  "result": {
+    "Name": {
+      "name": "users",
+      "span": {
+        "start": 298,
+        "end": 304
+      }
+    }
+  },
+  "span": {
+    "start": 0,
+    "end": 304
+  }
+}

@@ -1,0 +1,88 @@
+{
+    "entries": [
+        {
+            "key": { "path": ["density", "control", "padding-y"] },
+            "value": "0.55rem"
+        },
+        {
+            "key": { "path": ["density", "control", "padding-x"] },
+            "value": "0.95rem"
+        },
+        {
+            "key": { "path": ["density", "control", "gap"] },
+            "value": "0.75rem"
+        },
+        {
+            "key": { "path": ["density", "compact", "padding-y"] },
+            "value": "0.35rem"
+        },
+        {
+            "key": { "path": ["density", "compact", "padding-x"] },
+            "value": "0.65rem"
+        },
+        {
+            "key": { "path": ["density", "compact", "gap"] },
+            "value": "0.45rem"
+        },
+        {
+            "key": { "path": ["density", "dense", "padding-y"] },
+            "value": "0.2rem"
+        },
+        {
+            "key": { "path": ["density", "dense", "padding-x"] },
+            "value": "0.45rem"
+        },
+        {
+            "key": { "path": ["density", "dense", "gap"] },
+            "value": "0.3rem"
+        },
+        {
+            "key": { "path": ["control", "height"] },
+            "value": "2.25rem"
+        },
+        {
+            "key": { "path": ["control", "height", "sm"] },
+            "value": "1.75rem"
+        },
+        {
+            "key": { "path": ["control", "height", "lg"] },
+            "value": "2.75rem"
+        },
+        {
+            "key": { "path": ["radius", "sm"] },
+            "value": "2px"
+        },
+        {
+            "key": { "path": ["radius", "md"] },
+            "value": "6px"
+        },
+        {
+            "key": { "path": ["radius", "lg"] },
+            "value": "8px"
+        },
+        {
+            "key": { "path": ["shadow", "card"] },
+            "value": "none"
+        },
+        {
+            "key": { "path": ["shadow", "card", "hover"] },
+            "value": "0 1.5rem 4rem rgba(3, 7, 14, 0.22)"
+        },
+        {
+            "key": { "path": ["shadow", "popup"] },
+            "value": "0 1.2rem 3rem rgba(3, 7, 14, 0.16)"
+        },
+        {
+            "key": { "path": ["layout", "max", "width"] },
+            "value": "77.5rem"
+        },
+        {
+            "key": { "path": ["surface", "page"] },
+            "value": "#10141B"
+        },
+        {
+            "key": { "path": ["line", "subtle"] },
+            "value": "#1D2530"
+        }
+    ]
+}

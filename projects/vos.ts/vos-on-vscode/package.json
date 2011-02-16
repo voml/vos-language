@@ -1,0 +1,46 @@
+{
+    "name": "vscode-vos",
+    "displayName": "VOS",
+    "description": "Syntax highlighting for Virtual Object Schema (.vos)",
+    "version": "0.1.0",
+    "publisher": "game-gpt",
+    "license": "MPL-2.0",
+    "private": true,
+    "engines": {
+        "vscode": "^1.90.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "keywords": [
+        "vos",
+        "schema",
+        "yydb",
+        "textmate"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "vos",
+                "aliases": [
+                    "VOS",
+                    "vos"
+                ],
+                "extensions": [
+                    ".vos"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "vos",
+                "scopeName": "source.vos",
+                "path": "./syntaxes/vos.tmLanguage.json"
+            }
+        ]
+    },
+    "scripts": {
+        "sync-grammar": "node ../vos-textmate/scripts/sync-vscode.mjs"
+    }
+}

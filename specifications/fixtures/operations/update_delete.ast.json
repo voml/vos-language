@@ -1,0 +1,581 @@
+{
+  "statements": [
+    {
+      "Let": {
+        "name": "user",
+        "ty": null,
+        "value": {
+          "Try": {
+            "expr": {
+              "Call": {
+                "callee": {
+                  "Member": {
+                    "object": {
+                      "Name": {
+                        "name": "User",
+                        "span": {
+                          "start": 11,
+                          "end": 15
+                        }
+                      }
+                    },
+                    "name": "get",
+                    "sep": "Dot",
+                    "span": {
+                      "start": 16,
+                      "end": 19
+                    }
+                  }
+                },
+                "args": [
+                  {
+                    "Name": {
+                      "name": "user_id",
+                      "span": {
+                        "start": 20,
+                        "end": 27
+                      }
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 16,
+                  "end": 28
+                }
+              }
+            },
+            "span": {
+              "start": 16,
+              "end": 29
+            }
+          }
+        },
+        "span": {
+          "start": 0,
+          "end": 31
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "updated",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Name": {
+                    "name": "user",
+                    "span": {
+                      "start": 45,
+                      "end": 49
+                    }
+                  }
+                },
+                "name": "update",
+                "sep": "Dot",
+                "span": {
+                  "start": 50,
+                  "end": 56
+                }
+              }
+            },
+            "args": [
+              {
+                "AnonObject": {
+                  "fields": [
+                    {
+                      "name": "user_name",
+                      "value": {
+                        "Literal": {
+                          "String": "alice-renamed"
+                        }
+                      },
+                      "span": {
+                        "start": 63,
+                        "end": 89
+                      }
+                    },
+                    {
+                      "name": "avatar",
+                      "value": {
+                        "Name": {
+                          "name": "new_avatar",
+                          "span": {
+                            "start": 103,
+                            "end": 113
+                          }
+                        }
+                      },
+                      "span": {
+                        "start": 95,
+                        "end": 113
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 57,
+                    "end": 116
+                  }
+                }
+              }
+            ],
+            "span": {
+              "start": 50,
+              "end": 116
+            }
+          }
+        },
+        "span": {
+          "start": 31,
+          "end": 118
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "affected",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Call": {
+                    "callee": {
+                      "Member": {
+                        "object": {
+                          "Name": {
+                            "name": "User",
+                            "span": {
+                              "start": 133,
+                              "end": 142
+                            }
+                          }
+                        },
+                        "name": "filter",
+                        "sep": "Dot",
+                        "span": {
+                          "start": 143,
+                          "end": 149
+                        }
+                      }
+                    },
+                    "args": [
+                      {
+                        "Lambda": {
+                          "params": [
+                            "x"
+                          ],
+                          "body": {
+                            "Unary": {
+                              "op": "Not",
+                              "expr": {
+                                "Member": {
+                                  "object": {
+                                    "Name": {
+                                      "name": "x",
+                                      "span": {
+                                        "start": 156,
+                                        "end": 157
+                                      }
+                                    }
+                                  },
+                                  "name": "active",
+                                  "sep": "Dot",
+                                  "span": {
+                                    "start": 158,
+                                    "end": 164
+                                  }
+                                }
+                              },
+                              "span": {
+                                "start": 155,
+                                "end": 164
+                              }
+                            }
+                          },
+                          "span": {
+                            "start": 150,
+                            "end": 164
+                          }
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 143,
+                      "end": 165
+                    }
+                  }
+                },
+                "name": "update",
+                "sep": "Dot",
+                "span": {
+                  "start": 171,
+                  "end": 177
+                }
+              }
+            },
+            "args": [
+              {
+                "AnonObject": {
+                  "fields": [
+                    {
+                      "name": "disabled_at",
+                      "value": {
+                        "Call": {
+                          "callee": {
+                            "Name": {
+                              "name": "now",
+                              "span": {
+                                "start": 201,
+                                "end": 204
+                              }
+                            }
+                          },
+                          "args": [],
+                          "span": {
+                            "start": 201,
+                            "end": 206
+                          }
+                        }
+                      },
+                      "span": {
+                        "start": 188,
+                        "end": 206
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 178,
+                    "end": 213
+                  }
+                }
+              }
+            ],
+            "span": {
+              "start": 171,
+              "end": 214
+            }
+          }
+        },
+        "span": {
+          "start": 118,
+          "end": 216
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "bumped",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Call": {
+                    "callee": {
+                      "Member": {
+                        "object": {
+                          "Name": {
+                            "name": "User",
+                            "span": {
+                              "start": 229,
+                              "end": 238
+                            }
+                          }
+                        },
+                        "name": "filter",
+                        "sep": "Dot",
+                        "span": {
+                          "start": 239,
+                          "end": 245
+                        }
+                      }
+                    },
+                    "args": [
+                      {
+                        "Lambda": {
+                          "params": [
+                            "x"
+                          ],
+                          "body": {
+                            "Binary": {
+                              "op": "Gt",
+                              "left": {
+                                "Member": {
+                                  "object": {
+                                    "Name": {
+                                      "name": "x",
+                                      "span": {
+                                        "start": 251,
+                                        "end": 252
+                                      }
+                                    }
+                                  },
+                                  "name": "login_count",
+                                  "sep": "Dot",
+                                  "span": {
+                                    "start": 253,
+                                    "end": 264
+                                  }
+                                }
+                              },
+                              "right": {
+                                "Literal": {
+                                  "Int": "0"
+                                }
+                              },
+                              "span": {
+                                "start": 253,
+                                "end": 268
+                              }
+                            }
+                          },
+                          "span": {
+                            "start": 246,
+                            "end": 268
+                          }
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 239,
+                      "end": 269
+                    }
+                  }
+                },
+                "name": "update",
+                "sep": "Dot",
+                "span": {
+                  "start": 275,
+                  "end": 281
+                }
+              }
+            },
+            "args": [
+              {
+                "Lambda": {
+                  "params": [
+                    "x"
+                  ],
+                  "body": {
+                    "AnonObject": {
+                      "fields": [
+                        {
+                          "name": "login_count",
+                          "value": {
+                            "Binary": {
+                              "op": "Add",
+                              "left": {
+                                "Member": {
+                                  "object": {
+                                    "Name": {
+                                      "name": "x",
+                                      "span": {
+                                        "start": 310,
+                                        "end": 311
+                                      }
+                                    }
+                                  },
+                                  "name": "login_count",
+                                  "sep": "Dot",
+                                  "span": {
+                                    "start": 312,
+                                    "end": 323
+                                  }
+                                }
+                              },
+                              "right": {
+                                "Literal": {
+                                  "Int": "1"
+                                }
+                              },
+                              "span": {
+                                "start": 312,
+                                "end": 327
+                              }
+                            }
+                          },
+                          "span": {
+                            "start": 297,
+                            "end": 327
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 287,
+                        "end": 334
+                      }
+                    }
+                  },
+                  "span": {
+                    "start": 282,
+                    "end": 334
+                  }
+                }
+              }
+            ],
+            "span": {
+              "start": 275,
+              "end": 335
+            }
+          }
+        },
+        "span": {
+          "start": 216,
+          "end": 337
+        }
+      }
+    },
+    {
+      "Let": {
+        "name": "removed",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Call": {
+                    "callee": {
+                      "Member": {
+                        "object": {
+                          "Name": {
+                            "name": "Session",
+                            "span": {
+                              "start": 351,
+                              "end": 363
+                            }
+                          }
+                        },
+                        "name": "filter",
+                        "sep": "Dot",
+                        "span": {
+                          "start": 364,
+                          "end": 370
+                        }
+                      }
+                    },
+                    "args": [
+                      {
+                        "Lambda": {
+                          "params": [
+                            "x"
+                          ],
+                          "body": {
+                            "Binary": {
+                              "op": "Lt",
+                              "left": {
+                                "Member": {
+                                  "object": {
+                                    "Name": {
+                                      "name": "x",
+                                      "span": {
+                                        "start": 376,
+                                        "end": 377
+                                      }
+                                    }
+                                  },
+                                  "name": "expires_at",
+                                  "sep": "Dot",
+                                  "span": {
+                                    "start": 378,
+                                    "end": 388
+                                  }
+                                }
+                              },
+                              "right": {
+                                "Call": {
+                                  "callee": {
+                                    "Name": {
+                                      "name": "now",
+                                      "span": {
+                                        "start": 391,
+                                        "end": 394
+                                      }
+                                    }
+                                  },
+                                  "args": [],
+                                  "span": {
+                                    "start": 391,
+                                    "end": 396
+                                  }
+                                }
+                              },
+                              "span": {
+                                "start": 378,
+                                "end": 396
+                              }
+                            }
+                          },
+                          "span": {
+                            "start": 371,
+                            "end": 396
+                          }
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 364,
+                      "end": 397
+                    }
+                  }
+                },
+                "name": "delete",
+                "sep": "Dot",
+                "span": {
+                  "start": 403,
+                  "end": 409
+                }
+              }
+            },
+            "args": [],
+            "span": {
+              "start": 403,
+              "end": 411
+            }
+          }
+        },
+        "span": {
+          "start": 337,
+          "end": 413
+        }
+      }
+    }
+  ],
+  "result": {
+    "Call": {
+      "callee": {
+        "Member": {
+          "object": {
+            "Name": {
+              "name": "user",
+              "span": {
+                "start": 413,
+                "end": 417
+              }
+            }
+          },
+          "name": "delete",
+          "sep": "Dot",
+          "span": {
+            "start": 418,
+            "end": 424
+          }
+        }
+      },
+      "args": [],
+      "span": {
+        "start": 418,
+        "end": 426
+      }
+    }
+  },
+  "span": {
+    "start": 0,
+    "end": 427
+  }
+}

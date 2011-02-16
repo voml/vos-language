@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "code": null,
+      "message": "expected identifier",
+      "span": {
+        "start": 91,
+        "end": 91
+      },
+      "hint": null
+    }
+  ]
+}

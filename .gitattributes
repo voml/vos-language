@@ -1,0 +1,6 @@
+# Conformance goldens must stay LF so normalize_source matches on all hosts.
+specifications/fixtures/** text eol=lf
+
+# VOS sources and JSON goldens: UTF-8 + LF (avoid UTF-16 / CRLF drift on Windows).
+*.vos text eol=lf
+specifications/fixtures/**/*.json text eol=lf

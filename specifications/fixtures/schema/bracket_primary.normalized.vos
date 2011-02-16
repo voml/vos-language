@@ -1,0 +1,4 @@
+table Account {
+    [primary] id: utf8 = "",
+    name: utf8 = "anonymous",
+}

@@ -1,0 +1,40 @@
+{
+    "entries": [
+        {
+            "key": { "path": ["action", "primary", "background"] },
+            "value": "#FF8B4D"
+        },
+        {
+            "key": { "path": ["action", "primary", "foreground"] },
+            "value": "#18120E"
+        },
+        {
+            "key": { "path": ["action", "primary", "hover"] },
+            "value": "#FFA16E"
+        },
+        {
+            "key": { "path": ["action", "primary", "active"] },
+            "value": "#F07435"
+        },
+        {
+            "key": { "path": ["action", "secondary", "background"] },
+            "value": "#171D26"
+        },
+        {
+            "key": { "path": ["action", "secondary", "foreground"] },
+            "value": "#F2F4F7"
+        },
+        {
+            "key": { "path": ["action", "secondary", "border"] },
+            "value": "#435164"
+        },
+        {
+            "key": { "path": ["action", "secondary", "hover"] },
+            "value": "#1D2530"
+        },
+        {
+            "key": { "path": ["focus", "ring"] },
+            "value": "#59D9DD"
+        }
+    ]
+}

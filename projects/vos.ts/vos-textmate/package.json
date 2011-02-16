@@ -1,0 +1,23 @@
+{
+    "name": "@game-gpt/vos-textmate",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "Shared VOS TextMate grammar for VS Code and Shiki",
+    "main": "./index.ts",
+    "exports": {
+        ".": "./index.ts",
+        "./vos.tmLanguage.json": "./vos.tmLanguage.json"
+    },
+    "files": [
+        "vos.tmLanguage.json",
+        "index.ts",
+        "README.md"
+    ],
+    "scripts": {
+        "sync-vscode": "node ./scripts/sync-vscode.mjs"
+    },
+    "peerDependencies": {
+        "shiki": ">=3"
+    }
+}
