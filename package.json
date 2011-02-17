@@ -2,6 +2,7 @@
     "name": "@game-gpt/vos-workspace",
     "private": true,
     "description": "Virtual Object Schema (VOS) language workspace",
+    "homepage": "https://vos-language.pages.dev/",
     "packageManager": "pnpm@10.0.0",
     "type": "module",
     "scripts": {
@@ -14,7 +15,10 @@
         "check:homepage": "pnpm --filter @game-gpt/vos-homepage check",
         "sync-grammar": "pnpm --filter @game-gpt/vos-textmate sync-vscode",
         "test:rs": "cargo test --manifest-path projects/vos.rs/Cargo.toml --workspace",
-        "check:rs": "cargo check --manifest-path projects/vos.rs/Cargo.toml --workspace --all-targets"
+        "check:rs": "cargo check --manifest-path projects/vos.rs/Cargo.toml --workspace --all-targets",
+        "placeholder": "node scripts/ci/publish-placeholder.mjs",
+        "placeholder:publish": "node scripts/ci/publish-placeholder.mjs publish",
+        "placeholder:trust": "node scripts/ci/publish-placeholder.mjs trust"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.4.8"

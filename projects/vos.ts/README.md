@@ -41,6 +41,8 @@ Rust facade for the canonical typed AST, full semantic diagnostics, catalog IR, 
 
 ## Run the homepage
 
+**Published:** [vos-language.pages.dev](https://vos-language.pages.dev/) (Cloudflare Pages, `dev` branch → preview at [dev.vos-language.pages.dev](https://dev.vos-language.pages.dev/)).
+
 From the repository root:
 
 ```bash
@@ -48,7 +50,7 @@ pnpm install
 pnpm --filter @game-gpt/vos-homepage dev
 ```
 
-The homepage is a VMZ application (`@vmz/vmz`, `@vmz/ui`, `@vmz/ui-icons` at npm `0.1.9`) with file-based routes for
+The homepage is a VMZ application (`@vmz/vmz`, `@vmz/ui`, `@vmz/ui-icons` at npm `0.1.10`) with file-based routes for
 `/`, `/model`, and `/playground`. Build outputs use **`dist/<target>`** — `dist/cdn` for static CDN upload,
 `dist/browser` for local SSR dev, `dist/wechat` for WeChat. From the repo root, `pnpm homepage` writes the static release
 to `projects/vos.ts/homepage/dist/cdn`.

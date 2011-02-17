@@ -2,6 +2,12 @@
     "name": "@game-gpt/vos",
     "version": "0.1.0",
     "description": "VOS (Virtual Object Schema) — public TypeScript API",
+    "homepage": "https://vos-language.pages.dev/",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/voml/vos-language.git",
+        "directory": "projects/vos.ts/vos"
+    },
     "type": "module",
     "license": "MPL-2.0",
     "sideEffects": false,

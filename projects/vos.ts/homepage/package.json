@@ -4,6 +4,7 @@
     "version": "0.1.0",
     "type": "module",
     "description": "VOS homepage — VMZ + @vmz/ui + @vmz/ui-icons dogfood",
+    "homepage": "https://vos-language.pages.dev/",
     "scripts": {
         "predev": "pnpm --filter @game-gpt/vos build",
         "dev": "vmz dev . --out-dir dist/browser --target browser",
@@ -16,11 +17,11 @@
     },
     "dependencies": {
         "@game-gpt/vos": "workspace:*",
-        "@vmz/core": "0.1.9",
-        "@vmz/ui": "0.1.9",
-        "@vmz/ui-icons": "0.1.9"
+        "@vmz/core": "0.1.10",
+        "@vmz/ui": "0.1.10",
+        "@vmz/ui-icons": "0.1.10"
     },
     "devDependencies": {
-        "@vmz/vmz": "0.1.9"
+        "@vmz/vmz": "0.1.10"
     }
 }

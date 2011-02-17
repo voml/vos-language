@@ -32,5 +32,6 @@
         "type": "git",
         "url": "git+https://github.com/voml/vos-language.git",
         "directory": "projects/vos.ts/vos-skills"
-    }
+    },
+    "homepage": "https://vos-language.pages.dev/"
 }

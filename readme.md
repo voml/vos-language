@@ -2,6 +2,8 @@
 
 **One language for the shape, identity, and behavior of structured data.**
 
+**Homepage:** [vos-language.pages.dev](https://vos-language.pages.dev/) — language tour, model pages, and browser playground.
+
 VOS (Virtual Object Schema) is a strongly typed schema and operation language for systems that need more than
 disconnected model definitions. A `.vos` file can describe persistent tables, domain objects, references, enums, tagged
 unions, service contracts, and the operations that move data through an application.
@@ -97,6 +99,7 @@ change the language contract. The invariant is simple: **formal VOS, YYDB, and Y
 
 | You want to...                               | Start here                                               |
 |----------------------------------------------|----------------------------------------------------------|
+| Explore the language in a browser            | [vos-language.pages.dev](https://vos-language.pages.dev/) |
 | Parse VOS or integrate it into a Rust host   | [`projects/vos.rs`](./projects/vos.rs)                   |
 | Check VOS source from TypeScript             | [`@game-gpt/vos`](./projects/vos.ts/vos)                 |
 | Work on the TypeScript packages or homepage  | [`projects/vos.ts`](./projects/vos.ts)                   |

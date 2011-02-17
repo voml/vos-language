@@ -1,9 +1,11 @@
 # VOS Homepage and Playground
 
+**Live site:** [vos-language.pages.dev](https://vos-language.pages.dev/)
+
 The VOS homepage turns the language contract into an approachable product experience: a concise language tour, visual
 explanations of relationships and lifecycle, and an interactive playground with structural checks.
 
-This is a private workspace application built with **VMZ** (`@vmz/vmz@0.1.9`), **@vmz/ui**, and **@vmz/ui-icons**. It
+This is a private workspace application built with **VMZ** (`@vmz/vmz@0.1.10`), **@vmz/ui**, and **@vmz/ui-icons**. It
 consumes `@game-gpt/vos` for browser-side `checkSource` feedback.
 
 ## Run locally
@@ -39,7 +41,9 @@ CDN host (repo root):
 |-------|-------|
 | Build command | `pnpm homepage` |
 | Output directory | `projects/vos.ts/homepage/dist/cdn` |
-| Env (optional) | `VMZ_SITE_ORIGIN=https://your.domain` |
+| Env | `VMZ_SITE_ORIGIN=https://vos-language.pages.dev` |
+
+`VMZ_SITE_ORIGIN` is a **build-time** input for canonical / sitemap / `hreflang` (not a runtime CDN knob). Set it once on each host that runs `pnpm homepage` (Cloudflare Pages, Netlify, …) to the same public origin; do not bake `--origin` into the script unless you intentionally freeze a single deploy target. Preview aliases (e.g. `dev.vos-language.pages.dev`) may share that production origin.
 
 Do not enable SPA fallback. `pnpm homepage` runs the `static` profile release emit into `dist/cdn`.
 
