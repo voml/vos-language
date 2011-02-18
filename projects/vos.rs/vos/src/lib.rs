@@ -23,3 +23,6 @@ pub use vos_parser::normalize_source;
 pub use vos_parser::parse_program;
 /// Attach source provenance to AST diagnostics (miette).
 pub use vos_parser::{VosError, report_diagnostic, report_diagnostics};
+
+pub mod uuid;
+pub use uuid::{is_v7 as uuid_is_v7, uuid};

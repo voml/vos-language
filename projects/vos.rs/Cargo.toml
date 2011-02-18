@@ -15,6 +15,8 @@ once_cell = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dejavu = { git = "https://github.com/doki-land/dejavu-engine.git", branch = "dev" }
+uuid = { version = "1", features = ["v7", "rng-getrandom"] }
+getrandom = { version = "0.3", features = ["js"] }
 vos-ast = { path = "vos-ast" }
 vos-parser = { path = "vos-parser" }
 vos-generator = { path = "vos-generator" }
