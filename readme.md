@@ -4,6 +4,47 @@
 
 **Homepage:** [vos-language.pages.dev](https://vos-language.pages.dev/) — language tour, model pages, and browser playground.
 
+## Start with the VOS skill
+
+The fastest way into VOS is through your coding agent. Install the official project-local skill, describe the data or API
+you want to model, and let the agent bring the right VOS conventions, validation path, and ecosystem integration into
+the conversation.
+
+```bash
+npx skills add @game-gpt/vos-skills --skill vos-language -y
+```
+
+The installer requires Node.js 18+, but the skill does not depend on your application's language. It works with Agent
+Skills hosts such as Cursor, Claude Code, and VS Code Agent mode, whether the project itself uses Rust, TypeScript, Iris,
+YYDB, or another VOS consumer.
+
+Once installed, start with the outcome you need rather than assembling a toolchain by hand:
+
+```text
+Design a VOS model for customers, invoices, payments, and invoice line items.
+
+Review every .vos file in this project for invalid references, weak field modeling,
+and service contracts that expose persistence-only data.
+
+Add VOS validation to this Rust project and explain which checks belong in CI.
+
+Model this API in VOS, then show how its schema should flow into Iris ORM without
+duplicating query semantics in generated code.
+
+Explain whether this requirement belongs to VOS, Iris ORM, or Hermes RPC, and draft
+the smallest contract that keeps those boundaries intact.
+```
+
+Preview the skill before installing it, or install it globally when you intentionally want the same VOS guidance in
+every workspace:
+
+```bash
+npx skills add @game-gpt/vos-skills --list
+npx skills add @game-gpt/vos-skills --skill vos-language -y -g
+```
+
+See [`@game-gpt/vos-skills`](./projects/vos.ts/vos-skills) for the package contents and host-specific guidance.
+
 VOS (Virtual Object Schema) is a strongly typed schema and operation language for systems that need more than
 disconnected model definitions. A `.vos` file can describe persistent tables, domain objects, references, enums, tagged
 unions, service contracts, and the operations that move data through an application.
@@ -99,11 +140,12 @@ change the language contract. The invariant is simple: **formal VOS, YYDB, and Y
 
 | You want to...                               | Start here                                               |
 |----------------------------------------------|----------------------------------------------------------|
+| Let an agent design, review, or integrate VOS | [`@game-gpt/vos-skills`](./projects/vos.ts/vos-skills)  |
 | Explore the language in a browser            | [vos-language.pages.dev](https://vos-language.pages.dev/) |
 | Parse VOS or integrate it into a Rust host   | [`projects/vos.rs`](./projects/vos.rs)                   |
 | Check VOS source from TypeScript             | [`@game-gpt/vos`](./projects/vos.ts/vos)                 |
 | Work on the TypeScript packages or homepage  | [`projects/vos.ts`](./projects/vos.ts)                   |
-| Add `.vos` highlighting to VS Code or Cursor | [`vscode-vos`](./projects/vos.ts/vscode-vos)             |
+| Add `.vos` highlighting to VS Code or Cursor | [`vos-on-vscode`](./projects/vos.ts/vos-on-vscode)       |
 | Use the shared grammar with Shiki            | [`@game-gpt/vos-textmate`](projects/vos.ts/vos-textmate) |
 | Validate another implementation              | [`specifications/fixtures`](./specifications/fixtures)   |
 
