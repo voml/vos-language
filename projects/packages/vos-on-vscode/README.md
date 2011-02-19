@@ -22,7 +22,7 @@ Open this directory in VS Code or Cursor and launch an Extension Development Hos
 extension directory for local testing:
 
 ```bash
-code --install-extension ./projects/vos.ts/vos-on-vscode
+code --install-extension ./projects/packages/vos-on-vscode
 ```
 
 ## One grammar, multiple surfaces

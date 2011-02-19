@@ -7,11 +7,13 @@
     "main": "./index.ts",
     "exports": {
         ".": "./index.ts",
+        "./shiki": "./shiki.ts",
         "./vos.tmLanguage.json": "./vos.tmLanguage.json"
     },
     "files": [
         "vos.tmLanguage.json",
         "index.ts",
+        "shiki.ts",
         "README.md"
     ],
     "scripts": {

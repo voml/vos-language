@@ -10,7 +10,6 @@
       <nav class="nav" aria-label={navPrimaryLabel}>
         <a href="/">{navHomeLabel}</a>
         <a href="/model">{navModelLabel}</a>
-        <a href="/playground">{navPlaygroundLabel}</a>
       </nav>
 
       <div class="header-aside">
@@ -255,7 +254,6 @@ import {
   brandFull,
   navHome,
   navModel,
-  navPlayground,
   navTry,
   navPrimary,
   selectLanguage,
@@ -272,7 +270,6 @@ export default class SiteHeader {
   homeAriaLabel = '';
   navHomeLabel = '';
   navModelLabel = '';
-  navPlaygroundLabel = '';
   navTryLabel = '';
   navPrimaryLabel = '';
   selectLanguageLabel = '';
@@ -297,7 +294,6 @@ export default class SiteHeader {
     this.homeAriaLabel = `${brandShort()} home`;
     this.navHomeLabel = navHome();
     this.navModelLabel = navModel();
-    this.navPlaygroundLabel = navPlayground();
     this.navTryLabel = navTry();
     this.navPrimaryLabel = navPrimary();
     this.selectLanguageLabel = selectLanguage();

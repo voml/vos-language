@@ -9,8 +9,21 @@ homepage imports the grammar directly for Shiki. Centralizing the grammar preven
 ## Use with Shiki
 
 ```ts
-import {createHighlighter} from "shiki";
-import {vosLanguage} from "@game-gpt/vos-textmate";
+import { createVosHighlighter } from "@game-gpt/vos-textmate/shiki";
+
+const highlighter = await createVosHighlighter({ themes: ["vitesse-dark"] });
+
+const html = highlighter.codeToHtml("table User { @@id: uuid }", {
+    lang: "vos",
+    theme: "vitesse-dark",
+});
+```
+
+Lower-level registration (same grammar object):
+
+```ts
+import { createHighlighter } from "shiki";
+import { vosLanguage } from "@game-gpt/vos-textmate";
 
 const highlighter = await createHighlighter({
     langs: [vosLanguage],

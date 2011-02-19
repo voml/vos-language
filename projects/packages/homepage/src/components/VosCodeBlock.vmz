@@ -1,0 +1,39 @@
+<template>
+  <figure class="vmz-ui-code-block vos-code-block" data-vmz-ui="code-block">
+    <div class="vmz-ui-code-block__bar">
+      <figcaption if={caption} class="vmz-ui-code-block__caption">{caption}</figcaption>
+      <Button type="button" variant="ghost" onClick={() => this.handleCopy()}>{copyLabel}</Button>
+    </div>
+    <div class="vos-code-block__body">
+      <Code code={code} lang="vos" theme="vitesse-dark" />
+    </div>
+  </figure>
+</template>
+
+<style>
+  .vos-code-block__body .shiki-host,
+  .vos-code-block__body pre {
+    margin: 0;
+  }
+
+  .vos-code-block__body pre {
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    font-family: var(--vmz-font-mono);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+</style>
+
+<script client>
+export default class VosCodeBlock {
+  public code: string = '';
+  public caption: string = '';
+  public copyLabel: string = 'Copy';
+  public onCopy: ((e: Event) => void) | null = null;
+
+  handleCopy() {
+    if (typeof this.onCopy === 'function') this.onCopy(new Event('click'));
+  }
+}
+</script>
