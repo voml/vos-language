@@ -38,6 +38,8 @@ let program = vos::parse_program(
 
 Convenience exports include `normalize_source`, `parse_program`, `catalog_from_document`, and miette-compatible
 diagnostic reporters.
+- `vos::uuid()` generates **UUID v7 only** (VOS builtin `uuid()`). Do not use v4 for PK columns — see
+  [`specifications/uuid-v7.md`](../../../specifications/uuid-v7.md) (page-split rationale).
 
 ## Integration rule
 
