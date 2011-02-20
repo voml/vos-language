@@ -43,7 +43,7 @@ npx skills add @game-gpt/vos-skills --list
 npx skills add @game-gpt/vos-skills --skill vos-language -y -g
 ```
 
-See [`@game-gpt/vos-skills`](./projects/vos.ts/vos-skills) for the package contents and host-specific guidance.
+See [`@game-gpt/vos-skills`](./projects/packages/vos-skills) for the package contents and host-specific guidance.
 
 VOS (Virtual Object Schema) is a strongly typed schema and operation language for systems that need more than
 disconnected model definitions. A `.vos` file can describe persistent tables, domain objects, references, enums, tagged
@@ -140,13 +140,13 @@ change the language contract. The invariant is simple: **formal VOS, YYDB, and Y
 
 | You want to...                               | Start here                                               |
 |----------------------------------------------|----------------------------------------------------------|
-| Let an agent design, review, or integrate VOS | [`@game-gpt/vos-skills`](./projects/vos.ts/vos-skills)  |
+| Let an agent design, review, or integrate VOS | [`@game-gpt/vos-skills`](./projects/packages/vos-skills)  |
 | Explore the language in a browser            | [vos-language.pages.dev](https://vos-language.pages.dev/) |
-| Parse VOS or integrate it into a Rust host   | [`projects/vos.rs`](./projects/vos.rs)                   |
-| Check VOS source from TypeScript             | [`@game-gpt/vos`](./projects/vos.ts/vos)                 |
-| Work on the TypeScript packages or homepage  | [`projects/vos.ts`](./projects/vos.ts)                   |
-| Add `.vos` highlighting to VS Code or Cursor | [`vos-on-vscode`](./projects/vos.ts/vos-on-vscode)       |
-| Use the shared grammar with Shiki            | [`@game-gpt/vos-textmate`](projects/vos.ts/vos-textmate) |
+| Parse VOS or integrate it into a Rust host   | [`projects/crates`](./projects/crates)                   |
+| Check VOS source from TypeScript             | [`@game-gpt/vos`](./projects/packages/vos)                 |
+| Work on the TypeScript packages or homepage  | [`projects/packages`](./projects/packages)                   |
+| Add `.vos` highlighting to VS Code or Cursor | [`vos-on-vscode`](./projects/packages/vos-on-vscode)       |
+| Use the shared grammar with Shiki            | [`@game-gpt/vos-textmate`](projects/packages/vos-textmate) |
 | Validate another implementation              | [`specifications/fixtures`](./specifications/fixtures)   |
 
 The Rust facade is the most complete parser and language implementation today. The TypeScript package currently provides
@@ -157,12 +157,12 @@ a lightweight source check and is intentionally narrower; its README states the 
 ```text
 vos-language/
 ├── projects/
-│   ├── vos.rs/          Rust facade, parser, AST, inspect, and generation
-│   └── vos.ts/          TypeScript API, grammar, extension, and site
+│   ├── crates/          Rust facade, parser, AST, inspect, and generation
+│   └── packages/        TypeScript API, grammar, extension, and site
 ├── specifications/
 │   └── fixtures/        Shared source, AST, catalog, and diagnostic goldens
 ├── scripts/             Repository automation
-└── projects/vos.ts/vos-skills/   Agent Skills npm package (`@game-gpt/vos-skills`)
+└── projects/packages/vos-skills/   Agent Skills npm package (`@game-gpt/vos-skills`)
 ```
 
 Public applications should depend on the facade for their host: `vos` in Rust or `@game-gpt/vos` in TypeScript. Internal
@@ -175,7 +175,7 @@ source, serialized AST, diagnostics, and catalog identity. This makes parser beh
 a concrete compatibility target.
 
 ```bash
-cd projects/vos.rs
+cd projects/crates
 cargo test -p vos-parser --test conformance
 ```
 
@@ -188,7 +188,7 @@ behind the host facade, preserve stable diagnostic behavior, and avoid introduci
 generator or adapter.
 
 ```bash
-cd projects/vos.rs
+cd projects/crates
 cargo fmt --all -- --check
 cargo check --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings

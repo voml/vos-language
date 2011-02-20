@@ -12,26 +12,35 @@ importers:
         specifier: ^2.4.8
         version: 2.5.7
 
-  projects/vos.ts/homepage:
+  projects/packages/homepage:
     dependencies:
       '@game-gpt/vos':
         specifier: workspace:*
         version: link:../vos
+      '@game-gpt/vos-textmate':
+        specifier: workspace:*
+        version: link:../vos-textmate
       '@vmz/core':
-        specifier: 0.1.10
-        version: 0.1.10
+        specifier: 0.1.12
+        version: 0.1.12
+      '@vmz/plugin-shiki':
+        specifier: 0.1.12
+        version: 0.1.12(shiki@3.23.0)
       '@vmz/ui':
-        specifier: 0.1.10
-        version: 0.1.10
+        specifier: 0.1.12
+        version: 0.1.12
       '@vmz/ui-icons':
-        specifier: 0.1.10
-        version: 0.1.10(@vmz/ui@0.1.10)
+        specifier: 0.1.12
+        version: 0.1.12(@vmz/ui@0.1.12)
+      shiki:
+        specifier: ^3.12.2
+        version: 3.23.0
     devDependencies:
       '@vmz/vmz':
-        specifier: 0.1.10
-        version: 0.1.10(typescript@5.9.3)
+        specifier: 0.1.12
+        version: 0.1.12(typescript@5.9.3)
 
-  projects/vos.ts/vos:
+  projects/packages/vos:
     devDependencies:
       tsup:
         specifier: ^8.5.0
@@ -43,15 +52,15 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(jiti@2.7.0)
 
-  projects/vos.ts/vos-on-vscode: {}
+  projects/packages/vos-on-vscode: {}
 
-  projects/vos.ts/vos-skills:
+  projects/packages/vos-skills:
     devDependencies:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
 
-  projects/vos.ts/vos-textmate:
+  projects/packages/vos-textmate:
     dependencies:
       shiki:
         specifier: '>=3'
@@ -639,45 +648,54 @@ packages:
   '@vitest/utils@3.2.7':
     resolution: {integrity: sha512-x6BDOd7dyo3PFLY3I9/HJ25X/6OurhGXk2/B9gOZNPF7XDVjeBK4k01lQE5uvDpbuheErh91qYuE1E2OEjK3Rw==}
 
-  '@vmz/core@0.1.10':
-    resolution: {integrity: sha512-YzSzv1yh3i/VYyA0JgqxY3DpzMyMAHMEI3CBz2Mt2NcIiUTcTvOwogzQvAMEwmA1NmIVvcbb5vwgj6L9TSuIrQ==}
+  '@vmz/core@0.1.12':
+    resolution: {integrity: sha512-xbGPkZIXQPpPeypMyaX0ebqeVn9/X6vAG3wikBKD/WLpsKFbz17ub90RfPM+xDmoRHJPHuQPHQcp59slXlyC9g==}
 
-  '@vmz/plugin@0.1.10':
-    resolution: {integrity: sha512-SUHBLDta9gLjQBANtdZSYfCEhZwvR95MAe5+uxz5gLwm4+pBP8xIXtTPYCjDCw+IaMLE0ZgPhO777vTTaVJCrw==}
+  '@vmz/plugin-shiki@0.1.12':
+    resolution: {integrity: sha512-qqPfFOOv6R0pozetiqVaGQLclduWYIMMMCOE67AdplPG6tgjZrSPUhPfpo/Ytk/ZupmK2rAM/gaLGrA92ycNSQ==}
+    peerDependencies:
+      shiki: '>=3'
+      vmz-textmate: 0.1.12
+    peerDependenciesMeta:
+      vmz-textmate:
+        optional: true
 
-  '@vmz/protocol@0.1.10':
-    resolution: {integrity: sha512-CHsmlKg7ndFpj+i5tZXTKJ9w8qqVDKvlPJAjlJWsw04haUTFlT+C5Sgzrj7T7+CUHWx1zZhgW5bKiFEP/bGOLQ==}
+  '@vmz/plugin@0.1.12':
+    resolution: {integrity: sha512-o4Zv0zTVW4hJePfcIUTI4DQ8kpPHMnoBbgIOa3eqVQQVlVcTOukVAEGZZVvd320LpA92arxdXq/Lh6EL6md3LA==}
+
+  '@vmz/protocol@0.1.12':
+    resolution: {integrity: sha512-tnTFzBo56oY3rmRXo+Ce8KUNQw7hnsgQH36LP450XEP0NLdPef9nsqWwLISQYBLb8pklBWMEwFEgcDB6GDs69Q==}
     engines: {node: '>=20'}
 
-  '@vmz/ui-icons@0.1.10':
-    resolution: {integrity: sha512-zRe3QDwrRjie4vGun/9UkErhqKfTiIr92VmjPp911XE510b4RCXQoO/bz3qiHUbBYDeH+tubPJkJPwbCiS6diA==}
+  '@vmz/ui-icons@0.1.12':
+    resolution: {integrity: sha512-r2yEm7mghiPWmgqmSEoSBc3qPSDMEmsHUtjtOO1i5imhEH0uIKE4zclH28KD/8J75eICBkgMKbNSC7sX8IWMdQ==}
     peerDependencies:
-      '@vmz/ui': 0.1.10
+      '@vmz/ui': 0.1.12
 
-  '@vmz/ui@0.1.10':
-    resolution: {integrity: sha512-CprGGvq29NbBy7biV4d7+78GqNox2WlxAZp/s85ALAlUCvbHgghRb4qxG+1JVWLXnh7v6CRGpbVAfVNrQqTHyw==}
+  '@vmz/ui@0.1.12':
+    resolution: {integrity: sha512-9JvUjEiW/0ZKJ5hb8ofpxckkw9yc7eGhHH+Zwv6QsvZKBt9dYULbHm0BeQFqocwQYlPLvVuK8BIIEzMf4JPsLA==}
 
-  '@vmz/vmz-darwin-arm64@0.1.10':
-    resolution: {integrity: sha512-qndF7Iq0ykr/jrPn1lyoV0etXlwJh0+as3j3LpbEY6hMqUKWFdehq98aGmjkRwX1tjqnjfAVuk7zQFeIKT2dxA==}
+  '@vmz/vmz-darwin-arm64@0.1.12':
+    resolution: {integrity: sha512-tYdKUJHKK5PRuIynBoWaK2/WnsA/I3zDC/gnwXrMfssNB+DuPWrukF8X58djl9BACZZZeovhmjd7ZxGYxUfn5g==}
     cpu: [arm64]
     os: [darwin]
 
-  '@vmz/vmz-linux-x64@0.1.10':
-    resolution: {integrity: sha512-VKNZDHu+pmOfAe6QBxRl5RjqTlKX4gDO25k6l2thAP57xX038Vpeh8/akYeM9dG6NHkNa7rXmQ1UkjhVutPFjA==}
+  '@vmz/vmz-linux-x64@0.1.12':
+    resolution: {integrity: sha512-nEvJA6zujZdLafIatEDL+VdSUwPs10QoDSTAfJncbjvjgxuPWlknIHAWbSkQqwRAIVh1JryZudgPY4PmuetzXQ==}
     cpu: [x64]
     os: [linux]
 
-  '@vmz/vmz-win32-x64@0.1.10':
-    resolution: {integrity: sha512-sXgutFZUvVULxRIhooSBIATZHmcyt3IxHIx2SjYo3YjRuWyEjtIXlA989eC/ta8qkJhDn9xSEUXEIpWG5glgXw==}
+  '@vmz/vmz-win32-x64@0.1.12':
+    resolution: {integrity: sha512-iNabpWfhRzFo9W3CIeQMVBNmnBYBSJLh6TfPE35y3Q9g1n38uJy/z58h93gn/5OBkcPzTMZvW3mNyRXS9eDGlA==}
     cpu: [x64]
     os: [win32]
 
-  '@vmz/vmz@0.1.10':
-    resolution: {integrity: sha512-AyCHfI1eqSAUX6ojjHYNMm4GPt018Ykqwtip9cDhdVQp9UB7sY/FrpsP8ZtYtGQP5Qjoa8Ez/zA0TlHVpvFD6A==}
+  '@vmz/vmz@0.1.12':
+    resolution: {integrity: sha512-ZjNambPim+F5+yDNCzlJe7nFMnLsbnwO88OXZKNDaw4ThS7rfK7WKCbnnvBMxyOqzEtOAb4JP/k4eNK7yd2MfQ==}
     hasBin: true
     peerDependencies:
-      '@vmz/plugin-markdown-it': 0.1.10
-      '@vmz/test': 0.1.10
+      '@vmz/plugin-markdown-it': 0.1.12
+      '@vmz/test': 0.1.12
       typescript: ^5.8.3
     peerDependenciesMeta:
       '@vmz/plugin-markdown-it':
@@ -1614,44 +1632,49 @@ snapshots:
       loupe: 3.2.1
       tinyrainbow: 2.0.0
 
-  '@vmz/core@0.1.10':
+  '@vmz/core@0.1.12':
     dependencies:
       linkedom: 0.18.13
     transitivePeerDependencies:
       - canvas
 
-  '@vmz/plugin@0.1.10':
+  '@vmz/plugin-shiki@0.1.12(shiki@3.23.0)':
     dependencies:
-      '@vmz/protocol': 0.1.10
+      '@vmz/plugin': 0.1.12
+      shiki: 3.23.0
 
-  '@vmz/protocol@0.1.10': {}
-
-  '@vmz/ui-icons@0.1.10(@vmz/ui@0.1.10)':
+  '@vmz/plugin@0.1.12':
     dependencies:
-      '@vmz/ui': 0.1.10
+      '@vmz/protocol': 0.1.12
 
-  '@vmz/ui@0.1.10': {}
+  '@vmz/protocol@0.1.12': {}
 
-  '@vmz/vmz-darwin-arm64@0.1.10':
+  '@vmz/ui-icons@0.1.12(@vmz/ui@0.1.12)':
+    dependencies:
+      '@vmz/ui': 0.1.12
+
+  '@vmz/ui@0.1.12': {}
+
+  '@vmz/vmz-darwin-arm64@0.1.12':
     optional: true
 
-  '@vmz/vmz-linux-x64@0.1.10':
+  '@vmz/vmz-linux-x64@0.1.12':
     optional: true
 
-  '@vmz/vmz-win32-x64@0.1.10':
+  '@vmz/vmz-win32-x64@0.1.12':
     optional: true
 
-  '@vmz/vmz@0.1.10(typescript@5.9.3)':
+  '@vmz/vmz@0.1.12(typescript@5.9.3)':
     dependencies:
-      '@vmz/core': 0.1.10
-      '@vmz/plugin': 0.1.10
-      '@vmz/protocol': 0.1.10
+      '@vmz/core': 0.1.12
+      '@vmz/plugin': 0.1.12
+      '@vmz/protocol': 0.1.12
       jiti: 2.7.0
       json5: 2.2.3
     optionalDependencies:
-      '@vmz/vmz-darwin-arm64': 0.1.10
-      '@vmz/vmz-linux-x64': 0.1.10
-      '@vmz/vmz-win32-x64': 0.1.10
+      '@vmz/vmz-darwin-arm64': 0.1.12
+      '@vmz/vmz-linux-x64': 0.1.12
+      '@vmz/vmz-win32-x64': 0.1.12
       typescript: 5.9.3
     transitivePeerDependencies:
       - canvas
