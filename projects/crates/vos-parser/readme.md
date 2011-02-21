@@ -1,6 +1,8 @@
 # `vos-parser`
 
-The internal reference parser and baseline checker for VOS.
+The internal VOS semantic lowering and baseline checker. Oak owns the source
+syntax frontend and this crate lowers its accepted VOS surface into the
+reference VOS AST before semantic checking.
 
 It turns normalized `.vos` source into the typed structures from `vos-ast`, emits stable diagnostics with byte spans,
 and adapts those diagnostics to source-aware miette reports for terminals and host applications.
