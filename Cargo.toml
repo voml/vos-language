@@ -21,4 +21,4 @@ vos-ast = { path = "projects/crates/vos-ast" }
 vos-parser = { path = "projects/crates/vos-parser" }
 vos-generator = { path = "projects/crates/vos-generator" }
 vos-inspect = { path = "projects/crates/vos-inspect" }
-oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "61a651ce2fbbd6669991bbd787336b915f10fa92", package = "oak-vos" }
+oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "23cc01e8c0f9d0e263da4ce7551ee99f84f4a8b1", package = "oak-vos" }
