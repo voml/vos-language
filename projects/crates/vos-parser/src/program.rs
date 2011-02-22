@@ -12,6 +12,7 @@ use vos_ast::{BuiltinType, Diagnostic, Diagnostics, Literal, Span, TypeExpr};
 /// Parse a VOS expression program (`let` + optional trailing expression).
 pub fn parse_program(source: &str) -> Result<Program, Diagnostics> {
     let source = normalize_source(source);
+    crate::validate_oak(&source)?;
     let mut parser = ProgramParser::new(&source);
     match parser.parse_program() {
         Ok(program) => Ok(program),
