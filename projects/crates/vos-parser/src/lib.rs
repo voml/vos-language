@@ -19,6 +19,7 @@ mod program;
 pub use error::{RelatedDiagnostic, VosError, report_diagnostic, report_diagnostics};
 pub use program::parse_program;
 
+use oak_vos::{VosDeclarationKind, VosRoot};
 use vos_ast::{
     BuiltinType, Class, Diagnostic, Diagnostics, Document, EnumVariant, Enums, Field,
     FieldAttribute, Flags, Item, Literal, NamespacePath, Obsolete, Span, Table, TypeExpr,
@@ -32,34 +33,81 @@ pub fn normalize_source(source: &str) -> String {
     source.replace("\r\n", "\n").replace('\r', "\n")
 }
 
-pub(crate) fn validate_oak(source: &str) -> Result<(), Diagnostics> {
-    if let Err(message) = oak_vos::parse(source) {
-        return Err(Diagnostics {
+pub(crate) fn validate_oak(source: &str) -> Result<VosRoot, Diagnostics> {
+    match oak_vos::parse(source) {
+        Ok(root) => Ok(root),
+        Err(message) => Err(Diagnostics {
             errors: vec![Diagnostic::new(
                 format!("Oak VOS frontend rejected the source: {message}"),
                 Span::empty(0),
                 Some("repair the VOS syntax before semantic lowering"),
             )],
-        });
+        }),
     }
-    Ok(())
 }
-
 /// Parse VOS source into a [`Document`] without semantic validation.
 pub fn parse(source: &str) -> Result<Document, Diagnostics> {
     let source = normalize_source(source);
-    validate_oak(&source)?;
+    let oak_root = validate_oak(&source)?;
     let mut parser = Parser::new(&source);
     match parser.parse_document() {
-        Ok(items_ns) => Ok(Document {
-            namespace: items_ns.0,
-            items: items_ns.1,
-            source,
-        }),
+        Ok(items_ns) => {
+            let document = Document {
+                namespace: items_ns.0,
+                items: items_ns.1,
+                source,
+            };
+            align_oak_declarations(&oak_root, &document)?;
+            Ok(document)
+        }
         Err(diag) => Err(Diagnostics { errors: vec![diag] }),
     }
 }
 
+fn align_oak_declarations(root: &VosRoot, document: &Document) -> Result<(), Diagnostics> {
+    eprintln!("OAK={root:?} VOS={:?}", document.items);
+    let oak_types: Vec<_> = root
+        .declarations
+        .iter()
+        .filter(|declaration| {
+            matches!(
+                declaration.kind,
+                VosDeclarationKind::Table
+                    | VosDeclarationKind::Class
+                    | VosDeclarationKind::Enums
+                    | VosDeclarationKind::Flags
+            )
+        })
+        .collect();
+    let vos_types: Vec<_> = document
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            Item::Table(table) => Some((VosDeclarationKind::Table, table.name.as_str())),
+            Item::Class(class) => Some((VosDeclarationKind::Class, class.name.as_str())),
+            Item::Enums(enums) => Some((VosDeclarationKind::Enums, enums.name.as_str())),
+            Item::Flags(flags) => Some((VosDeclarationKind::Flags, flags.name.as_str())),
+            Item::Obsolete(_) | Item::Macro(_) => None,
+            _ => None,
+        })
+        .collect();
+
+    if vos_types.iter().any(|vos| {
+        !oak_types
+            .iter()
+            .any(|oak| oak.kind == vos.0 && oak.name.as_deref() == Some(vos.1))
+    })
+    {
+        return Err(Diagnostics {
+            errors: vec![Diagnostic::new(
+                "Oak VOS declarations do not align with semantic VOS declarations",
+                Span::empty(0),
+                Some("keep the Oak Builder declaration surface and VOS lowering in sync"),
+            )],
+        });
+    }
+    Ok(())
+}
 /// Semantic checks on a parsed document (keys, duplicates, references).
 pub fn check(document: &Document) -> Result<(), Diagnostics> {
     let mut diags = Diagnostics::default();
