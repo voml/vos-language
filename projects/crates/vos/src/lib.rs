@@ -15,8 +15,8 @@ pub use vos_generator as generator;
 pub use vos_inspect as inspect;
 pub use vos_parser as parser;
 
-/// Initial field-identity catalog IR from a parsed document.
-pub use vos_ast::catalog_from_document;
+/// Field-identity catalog APIs from a parsed document.
+pub use vos_ast::{catalog_from_document, evolve_catalog};
 /// Normalize source bytes before parse / conformance (`*.normalized.vos`).
 pub use vos_parser::normalize_source;
 /// Parse a VOS expression / operation program (see `docs/operations.md`).
