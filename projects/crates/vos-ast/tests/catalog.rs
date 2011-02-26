@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use vos_ast::catalog::{
     FieldId, FieldPath, RenameMap, TypeId, catalog_from_document, evolve_catalog,
 };
-use vos_ast::{BuiltinType, Document, Field, FieldAttribute, Item, Span, Table, TypeExpr};
+use vos_ast::{schema_fingerprint, schema_fingerprint_from_document, BuiltinType, Document, Field, FieldAttribute, Item, Span, Table, TypeExpr};
 
 fn sample_doc() -> Document {
     Document {
@@ -247,4 +247,74 @@ fn exhausted_identity_slot_and_revision_counters_are_rejected() {
     exhausted = previous;
     exhausted.revisions.ddl = u64::MAX;
     assert!(evolve_catalog(&exhausted, &current, &RenameMap::default()).is_err());
+}
+
+#[test]
+fn schema_fingerprint_is_stable_for_identical_document() {
+    let first = schema_fingerprint_from_document(&sample_doc()).unwrap();
+    let second = schema_fingerprint_from_document(&sample_doc()).unwrap();
+    assert_eq!(first, second);
+    assert_eq!(first.len(), 64);
+}
+
+#[test]
+fn schema_fingerprint_is_unchanged_by_field_reorder() {
+    let previous = catalog_from_document(&document(&[
+        ("first", TypeExpr::Builtin(BuiltinType::I64)),
+        ("second", TypeExpr::Builtin(BuiltinType::Bool)),
+    ]))
+    .unwrap();
+    let next = evolve_catalog(
+        &previous,
+        &document(&[
+            ("second", TypeExpr::Builtin(BuiltinType::Bool)),
+            ("first", TypeExpr::Builtin(BuiltinType::I64)),
+        ]),
+        &RenameMap::default(),
+    )
+    .unwrap();
+    assert_eq!(schema_fingerprint(&previous), schema_fingerprint(&next));
+}
+
+#[test]
+fn schema_fingerprint_changes_when_field_is_renamed() {
+    let previous = catalog_from_document(&document(&[(
+        "old_name",
+        TypeExpr::Builtin(BuiltinType::Utf8),
+    )]))
+    .unwrap();
+    let mut fields = BTreeMap::new();
+    fields.insert(
+        FieldPath {
+            type_name: "User".into(),
+            field_name: "old_name".into(),
+        },
+        "new_name".into(),
+    );
+    let next = evolve_catalog(
+        &previous,
+        &document(&[("new_name", TypeExpr::Builtin(BuiltinType::Utf8))]),
+        &RenameMap {
+            types: BTreeMap::new(),
+            fields,
+        },
+    )
+    .unwrap();
+    assert_ne!(schema_fingerprint(&previous), schema_fingerprint(&next));
+}
+
+#[test]
+fn schema_fingerprint_changes_when_field_type_changes() {
+    let previous = catalog_from_document(&document(&[(
+        "value",
+        TypeExpr::Builtin(BuiltinType::I64),
+    )]))
+    .unwrap();
+    let next = evolve_catalog(
+        &previous,
+        &document(&[("value", TypeExpr::Builtin(BuiltinType::Utf8))]),
+        &RenameMap::default(),
+    )
+    .unwrap();
+    assert_ne!(schema_fingerprint(&previous), schema_fingerprint(&next));
 }

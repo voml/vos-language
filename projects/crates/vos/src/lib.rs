@@ -16,7 +16,7 @@ pub use vos_inspect as inspect;
 pub use vos_parser as parser;
 
 /// Field-identity catalog APIs from a parsed document.
-pub use vos_ast::{catalog_from_document, evolve_catalog};
+pub use vos_ast::{catalog_from_document, evolve_catalog, schema_fingerprint, schema_fingerprint_from_document};
 /// Normalize source bytes before parse / conformance (`*.normalized.vos`).
 pub use vos_parser::normalize_source;
 /// Parse a VOS expression / operation program (see `docs/operations.md`).
