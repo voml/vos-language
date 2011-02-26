@@ -102,10 +102,10 @@ pub struct CatalogSnapshot {
     /// Types in document order.
     pub types: Vec<TypeEntry>,
     /// Removed type identities retained so their IDs are never reused.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retired_types: Vec<RetiredType>,
     /// Removed field identities retained so their IDs and slots are never reused.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retired_fields: Vec<RetiredField>,
 }
 
@@ -206,8 +206,8 @@ pub fn evolve_catalog(
     let current = catalog_declarations(document)?;
     validate_rename_targets(previous, &current, renames)?;
 
-    let mut next_type_id = next_type_id(previous);
-    let mut next_field_id = next_field_id(previous);
+    let mut next_type_id = next_type_id(previous)?;
+    let mut next_field_id = next_field_id(previous)?;
     let mut matched_type_ids = BTreeMap::<TypeId, ()>::new();
     let mut matched_field_ids = BTreeMap::<FieldId, ()>::new();
     let mut types = Vec::with_capacity(current.len());
@@ -223,17 +223,19 @@ pub fn evolve_catalog(
                     entry.kind, kind
                 ));
             }
-            matched_type_ids.insert(entry.type_id, ());
+            if matched_type_ids.insert(entry.type_id, ()).is_some() {
+                return Err(format!("type identity {} matched more than once", entry.type_id.0));
+            }
             (entry.type_id, entry.name.clone(), entry.fields.clone())
         } else {
             let id = TypeId(next_type_id);
-            next_type_id = next_type_id.saturating_add(1);
+            next_type_id = next_type_id.checked_add(1).ok_or("type identity exhausted")?;
             (id, current_name.clone(), Vec::new())
         };
 
         let mut live_fields = Vec::with_capacity(fields.len());
         let mut matched_old_fields = BTreeMap::<FieldId, ()>::new();
-        let mut next_slot = next_virtual_slot(previous, type_id, &old_fields);
+        let mut next_slot = next_virtual_slot(previous, type_id, &old_fields)?;
         for (source_order, field) in fields.iter().enumerate() {
             let previous_field = find_previous_field(
                 &old_name,
@@ -242,7 +244,9 @@ pub fn evolve_catalog(
                 renames,
             )?;
             let slot = if let Some(old_field) = previous_field {
-                matched_field_ids.insert(old_field.field_id, ());
+                if matched_field_ids.insert(old_field.field_id, ()).is_some() {
+                    return Err(format!("field identity {} matched more than once", old_field.field_id.0));
+                }
                 matched_old_fields.insert(old_field.field_id, ());
                 FieldSlot {
                     field_id: old_field.field_id,
@@ -261,8 +265,8 @@ pub fn evolve_catalog(
                     ty: field.ty.clone(),
                     attrs: field.attrs.clone(),
                 };
-                next_field_id = next_field_id.saturating_add(1);
-                next_slot = next_slot.saturating_add(1);
+                next_field_id = next_field_id.checked_add(1).ok_or("field identity exhausted")?;
+                next_slot = next_slot.checked_add(1).ok_or("virtual slot exhausted")?;
                 slot
             };
             live_fields.push(slot);
@@ -312,10 +316,10 @@ pub fn evolve_catalog(
     let changed_layout = layout_changed(previous, &types, &retired_fields);
     Ok(CatalogSnapshot {
         revisions: Revisions {
-            ddl: previous.revisions.ddl.saturating_add(1),
-            semantic: previous.revisions.semantic.saturating_add(1),
+            ddl: previous.revisions.ddl.checked_add(1).ok_or("DDL revision exhausted")?,
+            semantic: previous.revisions.semantic.checked_add(1).ok_or("semantic revision exhausted")?,
             layout_epoch: if changed_layout {
-                previous.revisions.layout_epoch.saturating_add(1)
+                previous.revisions.layout_epoch.checked_add(1).ok_or("layout epoch exhausted")?
             } else {
                 previous.revisions.layout_epoch
             },
@@ -454,7 +458,7 @@ fn find_previous_field<'a>(
     Ok(direct.or_else(|| renamed.first().and_then(|name| old_fields.iter().find(|field| field.current_name == *name))))
 }
 
-fn next_type_id(snapshot: &CatalogSnapshot) -> u64 {
+fn next_type_id(snapshot: &CatalogSnapshot) -> Result<u64, String> {
     snapshot
         .types
         .iter()
@@ -462,10 +466,11 @@ fn next_type_id(snapshot: &CatalogSnapshot) -> u64 {
         .chain(snapshot.retired_types.iter().map(|entry| entry.type_id.0))
         .max()
         .unwrap_or(0)
-        .saturating_add(1)
+        .checked_add(1)
+        .ok_or_else(|| "type identity exhausted".into())
 }
 
-fn next_field_id(snapshot: &CatalogSnapshot) -> u64 {
+fn next_field_id(snapshot: &CatalogSnapshot) -> Result<u64, String> {
     snapshot
         .types
         .iter()
@@ -473,14 +478,15 @@ fn next_field_id(snapshot: &CatalogSnapshot) -> u64 {
         .chain(snapshot.retired_fields.iter().map(|field| field.field_id.0))
         .max()
         .unwrap_or(0)
-        .saturating_add(1)
+        .checked_add(1)
+        .ok_or_else(|| "field identity exhausted".into())
 }
 
 fn next_virtual_slot(
     snapshot: &CatalogSnapshot,
     type_id: TypeId,
     live_fields: &[FieldSlot],
-) -> VirtualFieldIndex {
+) -> Result<VirtualFieldIndex, String> {
     live_fields
         .iter()
         .map(|field| field.virtual_field)
@@ -492,7 +498,7 @@ fn next_virtual_slot(
                 .map(|field| field.virtual_field),
         )
         .max()
-        .map_or(0, |slot| slot.saturating_add(1))
+        .map_or(Ok(0), |slot| slot.checked_add(1).ok_or_else(|| "virtual slot exhausted".into()))
 }
 
 fn deduplicate_tombstones(types: &mut Vec<RetiredType>, fields: &mut Vec<RetiredField>) {
@@ -507,7 +513,7 @@ fn layout_changed(
     current: &[TypeEntry],
     retired_fields: &[RetiredField],
 ) -> bool {
-    if !retired_fields.is_empty() {
+    if retired_fields != previous.retired_fields || current.len() != previous.types.len() {
         return true;
     }
     previous.types.iter().any(|old| {
