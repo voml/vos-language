@@ -5,6 +5,7 @@
 //! algorithm** for a fresh document (type/field ids, virtual slots, revisions)
 //! must match this module so conformance goldens stay host-independent.
 
+use crate::expr::{FnDecl, FnKind};
 use crate::{Document, Field, FieldAttribute, Item, TypeExpr};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -16,6 +17,10 @@ pub struct TypeId(pub u64);
 /// Stable field identity across rename / reorder.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct FieldId(pub u64);
+
+/// Stable macro identity across rename / reorder.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct MacroId(pub u64);
 
 /// A field name in a previous catalog snapshot.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -38,6 +43,9 @@ pub struct RenameMap {
     /// Previous field path to current field name.
     #[serde(default)]
     pub fields: BTreeMap<FieldPath, String>,
+    /// Previous macro name to current macro name.
+    #[serde(default)]
+    pub macros: BTreeMap<String, String>,
 }
 
 /// Virtual field slot — assigned once, never reused.
@@ -94,6 +102,32 @@ pub struct TypeEntry {
     pub fields: Vec<FieldSlot>,
 }
 
+/// One parameter slot in a durable macro signature.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MacroParamSlot {
+    /// Parameter name.
+    pub name: String,
+    /// Parameter type.
+    pub ty: TypeExpr,
+    /// Source declaration order.
+    pub source_order: u32,
+}
+
+/// One durable `macro` entry in the catalog.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MacroEntry {
+    /// Durable macro identity.
+    pub macro_id: MacroId,
+    /// Current macro name.
+    pub name: String,
+    /// Parameters in source order.
+    pub params: Vec<MacroParamSlot>,
+    /// Optional return type.
+    pub return_ty: Option<TypeExpr>,
+    /// Source declaration order among macros.
+    pub source_order: u32,
+}
+
 /// Deterministic catalog snapshot for conformance (`*.catalog.json`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatalogSnapshot {
@@ -107,6 +141,12 @@ pub struct CatalogSnapshot {
     /// Removed field identities retained so their IDs and slots are never reused.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retired_fields: Vec<RetiredField>,
+    /// Live durable macros in document order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub macros: Vec<MacroEntry>,
+    /// Removed macro identities retained so their IDs are never reused.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub retired_macros: Vec<RetiredMacro>,
 }
 
 /// A type identity that is no longer live.
@@ -133,24 +173,66 @@ pub struct RetiredField {
     pub last_name: String,
 }
 
+/// A macro identity that is no longer live.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RetiredMacro {
+    /// Durable macro identity.
+    pub macro_id: MacroId,
+    /// Last published name.
+    pub last_name: String,
+}
+
 /// Build the initial catalog from a parsed document.
 ///
 /// Allocation rules (locked for goldens):
 /// - `TypeId` / `FieldId` counters start at `1` and increase in document order.
-/// - Tables and classes are catalogued; enums / flags / obsolete are skipped.
+/// - Tables, classes, and durable `macro` items are catalogued; enums / flags /
+///   obsolete are skipped.
+/// - `MacroId` counters start at `1` and increase in document order among macros.
 /// - Each field’s first `VirtualFieldIndex` equals its source order.
 /// - Initial publish sets `ddl = 1`, `semantic = 1`, `layout_epoch = 0`.
 pub fn catalog_from_document(document: &Document) -> Result<CatalogSnapshot, String> {
     let mut next_type_id = 1u64;
     let mut next_field_id = 1u64;
+    let mut next_macro_id = 1u64;
     let mut types = Vec::new();
+    let mut macros = Vec::new();
     let mut seen_names = BTreeMap::<String, ()>::new();
+    let mut seen_macro_names = BTreeMap::<String, ()>::new();
+    let mut macro_order = 0u32;
 
     for item in &document.items {
         match item {
+            Item::Macro(macro_def) => {
+                if macro_def.kind != FnKind::Macro {
+                    return Err(format!(
+                        "document item `{}` must be a durable macro",
+                        macro_def.name
+                    ));
+                }
+                if seen_macro_names.insert(macro_def.name.clone(), ()).is_some() {
+                    return Err(format!("duplicate macro `{}`", macro_def.name));
+                }
+                if seen_names.contains_key(&macro_def.name) {
+                    return Err(format!(
+                        "macro `{}` collides with an existing type name",
+                        macro_def.name
+                    ));
+                }
+                let macro_id = MacroId(next_macro_id);
+                next_macro_id += 1;
+                macros.push(macro_entry_from_decl(macro_def, macro_id, macro_order));
+                macro_order += 1;
+            }
             Item::Table(table) => {
                 if seen_names.insert(table.name.clone(), ()).is_some() {
                     return Err(format!("duplicate type `{}`", table.name));
+                }
+                if seen_macro_names.contains_key(&table.name) {
+                    return Err(format!(
+                        "table `{}` collides with an existing macro name",
+                        table.name
+                    ));
                 }
                 let type_id = TypeId(next_type_id);
                 next_type_id += 1;
@@ -165,6 +247,12 @@ pub fn catalog_from_document(document: &Document) -> Result<CatalogSnapshot, Str
             Item::Class(class) => {
                 if seen_names.insert(class.name.clone(), ()).is_some() {
                     return Err(format!("duplicate type `{}`", class.name));
+                }
+                if seen_macro_names.contains_key(&class.name) {
+                    return Err(format!(
+                        "class `{}` collides with an existing macro name",
+                        class.name
+                    ));
                 }
                 let type_id = TypeId(next_type_id);
                 next_type_id += 1;
@@ -189,6 +277,8 @@ pub fn catalog_from_document(document: &Document) -> Result<CatalogSnapshot, Str
         types,
         retired_types: Vec::new(),
         retired_fields: Vec::new(),
+        macros,
+        retired_macros: Vec::new(),
     })
 }
 
@@ -204,7 +294,9 @@ pub fn evolve_catalog(
     renames: &RenameMap,
 ) -> Result<CatalogSnapshot, String> {
     let current = catalog_declarations(document)?;
-    validate_rename_targets(previous, &current, renames)?;
+    let current_macros = catalog_macro_declarations(document)?;
+    validate_name_collisions(&current, &current_macros)?;
+    validate_rename_targets(previous, &current, &current_macros, renames)?;
 
     let mut next_type_id = next_type_id(previous)?;
     let mut next_field_id = next_field_id(previous)?;
@@ -313,6 +405,42 @@ pub fn evolve_catalog(
     }
 
     deduplicate_tombstones(&mut retired_types, &mut retired_fields);
+
+    let mut next_macro_id = next_macro_id(previous)?;
+    let mut matched_macro_ids = BTreeMap::<MacroId, ()>::new();
+    let mut macros = Vec::with_capacity(current_macros.len());
+    let mut retired_macros = previous.retired_macros.clone();
+    let mut macro_order = 0u32;
+
+    for macro_def in current_macros {
+        let previous_macro = find_previous_macro(previous, &macro_def.name, renames)?;
+        let macro_id = if let Some(entry) = previous_macro {
+            if matched_macro_ids.insert(entry.macro_id, ()).is_some() {
+                return Err(format!(
+                    "macro identity {} matched more than once",
+                    entry.macro_id.0
+                ));
+            }
+            entry.macro_id
+        } else {
+            let id = MacroId(next_macro_id);
+            next_macro_id = next_macro_id.checked_add(1).ok_or("macro identity exhausted")?;
+            id
+        };
+        macros.push(macro_entry_from_decl(&macro_def, macro_id, macro_order));
+        macro_order += 1;
+    }
+
+    for old_macro in &previous.macros {
+        if !matched_macro_ids.contains_key(&old_macro.macro_id) {
+            retired_macros.push(RetiredMacro {
+                macro_id: old_macro.macro_id,
+                last_name: old_macro.name.clone(),
+            });
+        }
+    }
+
+    deduplicate_macro_tombstones(&mut retired_macros);
     let changed_layout = layout_changed(previous, &types, &retired_fields);
     Ok(CatalogSnapshot {
         revisions: Revisions {
@@ -327,6 +455,8 @@ pub fn evolve_catalog(
         types,
         retired_types,
         retired_fields,
+        macros,
+        retired_macros,
     })
 }
 
@@ -355,9 +485,52 @@ fn catalog_declarations(
     Ok(declarations)
 }
 
+fn catalog_macro_declarations(document: &Document) -> Result<Vec<FnDecl>, String> {
+    let mut names = BTreeMap::<String, ()>::new();
+    let mut declarations = Vec::new();
+    for item in &document.items {
+        if let Item::Macro(macro_def) = item {
+            if macro_def.kind != FnKind::Macro {
+                return Err(format!(
+                    "document item `{}` must be a durable macro",
+                    macro_def.name
+                ));
+            }
+            if names.insert(macro_def.name.clone(), ()).is_some() {
+                return Err(format!("duplicate macro `{}`", macro_def.name));
+            }
+            let mut param_names = BTreeMap::<String, ()>::new();
+            for param in &macro_def.params {
+                if param_names.insert(param.name.clone(), ()).is_some() {
+                    return Err(format!(
+                        "duplicate parameter `{}` on macro `{}`",
+                        param.name,
+                        macro_def.name
+                    ));
+                }
+            }
+            declarations.push(macro_def.clone());
+        }
+    }
+    Ok(declarations)
+}
+
+fn validate_name_collisions(
+    current: &[(String, TypeKind, Vec<Field>)],
+    current_macros: &[FnDecl],
+) -> Result<(), String> {
+    for (name, _, _) in current {
+        if current_macros.iter().any(|macro_def| macro_def.name == *name) {
+            return Err(format!("type `{name}` collides with macro `{name}`"));
+        }
+    }
+    Ok(())
+}
+
 fn validate_rename_targets(
     previous: &CatalogSnapshot,
     current: &[(String, TypeKind, Vec<Field>)],
+    current_macros: &[FnDecl],
     renames: &RenameMap,
 ) -> Result<(), String> {
     let current_types = current
@@ -404,7 +577,44 @@ fn validate_rename_targets(
             return Err(format!("field rename target `{new_name}` does not exist"));
         }
     }
+    let current_macro_names = current_macros
+        .iter()
+        .map(|macro_def| (macro_def.name.as_str(), ()))
+        .collect::<BTreeMap<_, _>>();
+    for (old_name, new_name) in &renames.macros {
+        if previous.macros.iter().all(|entry| entry.name != *old_name) {
+            return Err(format!("macro rename source `{old_name}` does not exist"));
+        }
+        if !current_macro_names.contains_key(new_name.as_str()) {
+            return Err(format!("macro rename target `{new_name}` does not exist"));
+        }
+    }
     Ok(())
+}
+
+fn find_previous_macro<'a>(
+    previous: &'a CatalogSnapshot,
+    current_name: &str,
+    renames: &RenameMap,
+) -> Result<Option<&'a MacroEntry>, String> {
+    let direct = previous.macros.iter().find(|entry| entry.name == current_name);
+    let renamed = renames
+        .macros
+        .iter()
+        .filter(|(_, target)| target.as_str() == current_name)
+        .map(|(source, _)| source.as_str())
+        .collect::<Vec<_>>();
+    if renamed.len() > 1 {
+        return Err(format!("multiple macro identities target `{current_name}`"));
+    }
+    if direct.is_some() && !renamed.is_empty() {
+        return Err(format!("macro `{current_name}` has direct and renamed identities"));
+    }
+    Ok(direct.or_else(|| {
+        renamed
+            .first()
+            .and_then(|name| previous.macros.iter().find(|entry| entry.name == *name))
+    }))
 }
 
 fn find_previous_type<'a>(
@@ -470,6 +680,18 @@ fn next_type_id(snapshot: &CatalogSnapshot) -> Result<u64, String> {
         .ok_or_else(|| "type identity exhausted".into())
 }
 
+fn next_macro_id(snapshot: &CatalogSnapshot) -> Result<u64, String> {
+    snapshot
+        .macros
+        .iter()
+        .map(|entry| entry.macro_id.0)
+        .chain(snapshot.retired_macros.iter().map(|entry| entry.macro_id.0))
+        .max()
+        .unwrap_or(0)
+        .checked_add(1)
+        .ok_or_else(|| "macro identity exhausted".into())
+}
+
 fn next_field_id(snapshot: &CatalogSnapshot) -> Result<u64, String> {
     snapshot
         .types
@@ -506,6 +728,30 @@ fn deduplicate_tombstones(types: &mut Vec<RetiredType>, fields: &mut Vec<Retired
     types.dedup_by_key(|entry| entry.type_id);
     fields.sort_by_key(|entry| entry.field_id);
     fields.dedup_by_key(|entry| entry.field_id);
+}
+
+fn deduplicate_macro_tombstones(macros: &mut Vec<RetiredMacro>) {
+    macros.sort_by_key(|entry| entry.macro_id);
+    macros.dedup_by_key(|entry| entry.macro_id);
+}
+
+fn macro_entry_from_decl(macro_def: &FnDecl, macro_id: MacroId, source_order: u32) -> MacroEntry {
+    MacroEntry {
+        macro_id,
+        name: macro_def.name.clone(),
+        params: macro_def
+            .params
+            .iter()
+            .enumerate()
+            .map(|(order, param)| MacroParamSlot {
+                name: param.name.clone(),
+                ty: param.ty.clone(),
+                source_order: order as u32,
+            })
+            .collect(),
+        return_ty: macro_def.return_ty.clone(),
+        source_order,
+    }
 }
 
 fn layout_changed(

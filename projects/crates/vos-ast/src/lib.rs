@@ -23,9 +23,9 @@ pub mod fingerprint;
 pub mod op;
 
 pub use catalog::{
-    CatalogSnapshot, FieldId, FieldPath, FieldSlot, RenameMap, RetiredField, RetiredType,
-    Revisions, TypeEntry, TypeId, TypeKind, VirtualFieldIndex, catalog_from_document,
-    evolve_catalog,
+    CatalogSnapshot, FieldId, FieldPath, FieldSlot, MacroEntry, MacroId, MacroParamSlot,
+    RenameMap, RetiredField, RetiredMacro, RetiredType, Revisions, TypeEntry, TypeId, TypeKind,
+    VirtualFieldIndex, catalog_from_document, evolve_catalog,
 };
 pub use fingerprint::{schema_fingerprint, schema_fingerprint_from_document};
 pub use expr::{
