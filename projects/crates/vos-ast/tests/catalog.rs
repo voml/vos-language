@@ -1,9 +1,12 @@
 use std::collections::BTreeMap;
 
 use vos_ast::catalog::{
-    FieldId, FieldPath, RenameMap, TypeId, catalog_from_document, evolve_catalog,
+    FieldId, FieldPath, MacroId, RenameMap, TypeId, catalog_from_document, evolve_catalog,
 };
-use vos_ast::{schema_fingerprint, schema_fingerprint_from_document, BuiltinType, Document, Field, FieldAttribute, Item, Span, Table, TypeExpr};
+use vos_ast::{
+    schema_fingerprint, schema_fingerprint_from_document, BuiltinType, Document, Field,
+    FieldAttribute, FnDecl, FnKind, FnParam, Item, Program, Span, Table, TypeExpr,
+};
 
 fn sample_doc() -> Document {
     Document {
@@ -143,6 +146,7 @@ fn explicit_field_rename_preserves_identity() {
         &RenameMap {
             types: BTreeMap::new(),
             fields,
+            ..RenameMap::default()
         },
     )
     .unwrap();
@@ -297,6 +301,7 @@ fn schema_fingerprint_changes_when_field_is_renamed() {
         &RenameMap {
             types: BTreeMap::new(),
             fields,
+            ..RenameMap::default()
         },
     )
     .unwrap();
@@ -317,4 +322,84 @@ fn schema_fingerprint_changes_when_field_type_changes() {
     )
     .unwrap();
     assert_ne!(schema_fingerprint(&previous), schema_fingerprint(&next));
+}
+
+fn sample_macro(name: &str) -> FnDecl {
+    FnDecl {
+        kind: FnKind::Macro,
+        name: name.into(),
+        params: vec![FnParam {
+            name: "count".into(),
+            ty: TypeExpr::Builtin(BuiltinType::I32),
+            span: Span::new(0, 1),
+        }],
+        return_ty: Some(TypeExpr::Builtin(BuiltinType::Bool)),
+        body: Program {
+            micros: Vec::new(),
+            statements: Vec::new(),
+            result: None,
+            span: Span::new(0, 1),
+        },
+        span: Span::new(0, 2),
+    }
+}
+
+fn macro_doc(name: &str) -> Document {
+    Document {
+        namespace: None,
+        items: vec![Item::Macro(sample_macro(name))],
+        source: String::new(),
+    }
+}
+
+#[test]
+fn assigns_stable_macro_ids() {
+    let snap = catalog_from_document(&macro_doc("seed_blog")).unwrap();
+    assert_eq!(snap.macros.len(), 1);
+    assert_eq!(snap.macros[0].macro_id, MacroId(1));
+    assert_eq!(snap.macros[0].name, "seed_blog");
+    assert_eq!(snap.macros[0].params[0].name, "count");
+}
+
+#[test]
+fn macro_rename_preserves_identity() {
+    let previous = catalog_from_document(&macro_doc("seed_blog")).unwrap();
+    let next = evolve_catalog(
+        &previous,
+        &macro_doc("seed_posts"),
+        &RenameMap {
+            macros: BTreeMap::from([("seed_blog".into(), "seed_posts".into())]),
+            ..RenameMap::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(next.macros[0].macro_id, MacroId(1));
+    assert_eq!(next.macros[0].name, "seed_posts");
+    assert_ne!(schema_fingerprint(&previous), schema_fingerprint(&next));
+}
+
+#[test]
+fn removed_macro_is_tombstoned_and_not_reused() {
+    let previous = catalog_from_document(&macro_doc("seed_blog")).unwrap();
+    let removed = evolve_catalog(
+        &previous,
+        &Document {
+            namespace: None,
+            items: Vec::new(),
+            source: String::new(),
+        },
+        &RenameMap::default(),
+    )
+    .unwrap();
+    assert_eq!(removed.retired_macros.len(), 1);
+    assert_eq!(removed.retired_macros[0].macro_id, MacroId(1));
+    let added = evolve_catalog(&removed, &macro_doc("seed_posts"), &RenameMap::default()).unwrap();
+    assert_eq!(added.macros[0].macro_id, MacroId(2));
+}
+
+#[test]
+fn rejects_type_and_macro_name_collision() {
+    let mut doc = sample_doc();
+    doc.items.push(Item::Macro(sample_macro("User")));
+    assert!(catalog_from_document(&doc).is_err());
 }
