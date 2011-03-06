@@ -3,8 +3,14 @@
 The stable Rust facade for Virtual Object Schema.
 
 Use this crate when building a database host, compiler, generator, CLI, or developer tool that needs to understand
-`.vos` source. It presents the parser, AST, inspection engine, generator, diagnostics, and catalog helpers through one
-dependency boundary.
+`.vos` source. Oak owns lexing and parsing. This facade exposes Oak-backed contract input together with the legacy
+compatibility surface while downstream semantic migration is in progress.
+
+## Oak-backed contract input
+
+New integrations should begin with `vos::parse_oak`, which invokes Oak and returns
+`vos::contract::ContractInput`. VOS semantic consumers must operate on that Oak output and must not add another
+parser or reparse the source.
 
 ## Parse a schema
 
@@ -31,7 +37,8 @@ let program = vos::parse_program(
 
 ## Public modules
 
-- `vos::parser` parses documents and programs and produces source-aware errors.
+- `vos::parse_oak` is the new Oak-owned parser entry for contract consumers.
+- `vos::parser` is a legacy compatibility surface and must not gain new syntax features.
 - `vos::ast` contains typed schema, expression, operation, catalog, span, and diagnostic structures.
 - `vos::inspect` runs optional policy checks after baseline parsing succeeds.
 - `vos::generator` renders artifacts through Dejavu templates.

@@ -4,6 +4,11 @@
 
 use oak_vos::{VosDeclaration, VosRoot, VosSyntaxNode};
 
+/// Parses VOS source through Oak and wraps the resulting root for semantic use.
+pub fn parse_oak(source: &str) -> Result<ContractInput, String> {
+    oak_vos::parse(source).map(ContractInput::from_oak)
+}
+
 /// Oak output accepted by the VOS semantic pipeline.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContractInput {
@@ -39,13 +44,12 @@ impl ContractInput {
 
 #[cfg(test)]
 mod tests {
-    use super::ContractInput;
-    use oak_vos::{VosDeclarationKind, parse};
+    use super::parse_oak;
+    use oak_vos::VosDeclarationKind;
 
     #[test]
     fn consumes_oak_root_without_reparsing() {
-        let root = parse("table User { @@id: uuid, }").expect("Oak parses VOS");
-        let input = ContractInput::from_oak(root);
+        let input = parse_oak("table User { @@id: uuid, }").expect("Oak parses VOS");
 
         assert_eq!(input.declarations().len(), 1);
         assert_eq!(input.declarations()[0].kind, VosDeclarationKind::Table);
