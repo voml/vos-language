@@ -1,0 +1,12 @@
+[package]
+name = "vos-contract"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "VOS semantic consumer boundary for Oak-owned syntax trees"
+readme = "readme.md"
+
+[dependencies]
+oak-vos = { workspace = true }

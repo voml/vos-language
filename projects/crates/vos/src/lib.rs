@@ -11,6 +11,7 @@
 #![warn(missing_docs)]
 
 pub use vos_ast as ast;
+pub use vos_contract as contract;
 pub use vos_generator as generator;
 pub use vos_inspect as inspect;
 pub use vos_parser as parser;
