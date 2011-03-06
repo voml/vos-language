@@ -169,22 +169,6 @@ impl NamespacePath {
     }
 }
 
-/// A preserved `using a::b::Type;` source item.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Using {
-    /// Imported path segments in source order.
-    pub segments: Vec<String>,
-    /// Source span of the import.
-    pub span: Span,
-}
-
-impl Using {
-    /// Join imported segments with `::`.
-    pub fn display(&self) -> String {
-        self.segments.join("::")
-    }
-}
-
 /// Field-level attribute preserved for providers and tooling.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -448,8 +432,6 @@ pub enum Obsolete {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Item {
-    /// `using a::b::Type;`.
-    Using(Using),
     /// `table Name { … }`.
     Table(Table),
     /// `class Name { … }`.
@@ -478,14 +460,6 @@ pub struct Document {
 }
 
 impl Document {
-    /// Iterate preserved source imports.
-    pub fn usings(&self) -> impl Iterator<Item = &Using> {
-        self.items.iter().filter_map(|item| match item {
-            Item::Using(using) => Some(using),
-            _ => None,
-        })
-    }
-
     /// Iterate tables in the document.
     pub fn tables(&self) -> impl Iterator<Item = &Table> {
         self.items.iter().filter_map(|item| match item {
