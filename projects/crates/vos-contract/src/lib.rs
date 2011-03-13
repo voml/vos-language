@@ -4,6 +4,10 @@
 
 use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 
+mod resolve;
+
+pub use resolve::{AttributeContract, CANONICALIZATION_VERSION, CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, CONTRACT_FORMAT_VERSION, FieldContract, LANGUAGE_VERSION, ResolvedContract, SourceUnit, TypeContract, TypeContractKind};
+
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
 pub fn parse_oak(source: &str) -> Result<ContractInput, String> {
     oak_vos::parse(source).map(ContractInput::from_oak)
@@ -45,11 +49,17 @@ impl ContractInput {
     pub fn into_oak(self) -> VosRoot {
         self.root
     }
+
+    /// Resolves the Oak root into the first VOS contract projection.
+    pub fn resolve(&self) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
+        resolve::resolve(&self.root)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::parse_oak;
+    use super::{CANONICALIZATION_VERSION, CanonicalType, CONTRACT_FORMAT_VERSION, LANGUAGE_VERSION};
     use oak_vos::VosDeclarationKind;
 
     #[test]
@@ -76,6 +86,33 @@ mod tests {
         assert_eq!(&source[fields[0].type_syntax.span.clone()], "uuid");
         assert_eq!(&source[fields[1].type_syntax.span.clone()], "&User?");
         assert_eq!(&source[fields[0].attributes[0].span.clone()], "[primary]");
+    }
+
+    #[test]
+    fn resolves_oak_output_into_versioned_contract_without_reparsing() {
+        let input = parse_oak("namespace demo::identity\ntable User { @@id: uuid, manager: &User?, tags: [utf8]? = null, }").expect("Oak parses VOS");
+        let contract = input.resolve().expect("VOS resolves Oak output");
+
+        assert_eq!(contract.envelope.contract_format_version, CONTRACT_FORMAT_VERSION);
+        assert_eq!(contract.envelope.language_version, LANGUAGE_VERSION);
+        assert_eq!(contract.envelope.canonicalization_version, CANONICALIZATION_VERSION);
+        assert_eq!(contract.envelope.schema_fingerprint, None);
+        assert_eq!(contract.envelope.source_units.len(), 1);
+        assert_eq!(contract.types[0].canonical_path, ["demo", "identity", "User"]);
+        assert_eq!(contract.types[0].fields[0].attributes[0].name, "primary");
+        assert!(matches!(&contract.types[0].fields[1].canonical_type, CanonicalType::Optional(inner) if matches!(inner.as_ref(), CanonicalType::Reference(_))));
+        assert!(matches!(&contract.types[0].fields[2].canonical_type, CanonicalType::Optional(inner) if matches!(inner.as_ref(), CanonicalType::List(_))));
+        assert_eq!(contract.types[0].fields[2].default_value.as_deref(), Some("null"));
+    }
+
+    #[test]
+    fn resolver_reports_duplicate_canonical_types() {
+        let source = "namespace demo\ntable User { id: uuid, }\ntable User { id: uuid, }";
+        let input = parse_oak(source).expect("Oak parses duplicate declarations");
+        let diagnostics = input.resolve().expect_err("duplicate type must be diagnosed");
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].code, "VOS002");
+        assert_eq!(diagnostics[0].span.as_ref().unwrap().start, source.rfind("table User").unwrap());
     }
 }
 
