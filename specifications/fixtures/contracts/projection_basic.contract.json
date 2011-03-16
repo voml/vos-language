@@ -1,0 +1,30 @@
+{
+  "envelope": {
+    "contractFormatVersion": "vos-contract-v0",
+    "languageVersion": "vos-language-v0",
+    "canonicalizationVersion": "vos-canonical-v0",
+    "schemaFingerprint": null,
+    "sourceUnits": [
+      {
+        "sourceUnitId": 0,
+        "source": "class T { id: uuid }\n"
+      }
+    ]
+  },
+  "types": [
+    {
+      "canonicalPath": ["T"],
+      "kind": "class",
+      "fields": [
+        {
+          "canonicalName": "id",
+          "canonicalType": {"named": ["uuid"]},
+          "attributes": [],
+          "defaultValue": null,
+          "span": {"start": 10, "end": 19}
+        }
+      ],
+      "span": {"start": 0, "end": 21}
+    }
+  ]
+}
