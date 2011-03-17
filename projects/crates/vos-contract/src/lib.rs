@@ -4,9 +4,9 @@
 
 use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 
-mod resolve;
+mod projection;
 
-pub use resolve::{AttributeContract, CANONICALIZATION_VERSION, CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, CONTRACT_FORMAT_VERSION, FieldContract, LANGUAGE_VERSION, ResolvedContract, SourceUnit, TypeContract, TypeContractKind};
+pub use projection::{AttributeContract, CANONICALIZATION_VERSION, CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, CONTRACT_FORMAT_VERSION, FieldContract, LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract, TypeContractKind};
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
 pub fn parse_oak(source: &str) -> Result<ContractInput, String> {
@@ -50,16 +50,16 @@ impl ContractInput {
         self.root
     }
 
-    /// Resolves the Oak root into the first VOS contract projection.
-    pub fn resolve(&self) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
-        resolve::resolve(&self.root)
+    /// Projects the Oak root into the first VOS schema artifact.
+    pub fn project_schema(&self) -> Result<SchemaProjection, Vec<ContractDiagnostic>> {
+        projection::project_schema(&self.root)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::parse_oak;
-    use super::{CANONICALIZATION_VERSION, CanonicalType, CONTRACT_FORMAT_VERSION, LANGUAGE_VERSION};
+    use super::{CANONICALIZATION_VERSION, CanonicalType, CONTRACT_FORMAT_VERSION, LANGUAGE_VERSION, PROJECTION_STAGE};
     use oak_vos::VosDeclarationKind;
 
     #[test]
@@ -89,11 +89,12 @@ mod tests {
     }
 
     #[test]
-    fn resolves_oak_output_into_versioned_contract_without_reparsing() {
+    fn projects_oak_output_into_versioned_artifact_without_reparsing() {
         let input = parse_oak("namespace demo::identity\ntable User { @@id: uuid, manager: &User?, tags: [utf8]? = null, }").expect("Oak parses VOS");
-        let contract = input.resolve().expect("VOS resolves Oak output");
+        let contract = input.project_schema().expect("VOS projects Oak output");
 
         assert_eq!(contract.envelope.contract_format_version, CONTRACT_FORMAT_VERSION);
+        assert_eq!(contract.envelope.stage, PROJECTION_STAGE);
         assert_eq!(contract.envelope.language_version, LANGUAGE_VERSION);
         assert_eq!(contract.envelope.canonicalization_version, CANONICALIZATION_VERSION);
         assert_eq!(contract.envelope.schema_fingerprint, None);
@@ -106,10 +107,10 @@ mod tests {
     }
 
     #[test]
-    fn resolver_reports_duplicate_canonical_types() {
+    fn projection_reports_duplicate_canonical_types() {
         let source = "namespace demo\ntable User { id: uuid, }\ntable User { id: uuid, }";
         let input = parse_oak(source).expect("Oak parses duplicate declarations");
-        let diagnostics = input.resolve().expect_err("duplicate type must be diagnosed");
+        let diagnostics = input.project_schema().expect_err("duplicate type must be diagnosed");
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].code, "VOS002");
         assert_eq!(diagnostics[0].span.as_ref().unwrap().start, source.rfind("table User").unwrap());

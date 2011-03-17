@@ -1,5 +1,6 @@
 {
   "envelope": {
+    "stage": "syntax-projection",
     "contractFormatVersion": "vos-contract-v0",
     "languageVersion": "vos-language-v0",
     "canonicalizationVersion": "vos-canonical-v0",
