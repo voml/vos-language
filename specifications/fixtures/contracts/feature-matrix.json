@@ -1,0 +1,103 @@
+{
+  "formatVersion": "vos-feature-matrix-v0",
+  "stages": [
+    "documented",
+    "parsed",
+    "projected",
+    "resolved",
+    "conformance",
+    "downstream-consumed"
+  ],
+  "features": [
+    {
+      "id": "namespace.single-unit",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Oak path is retained and VOS qualifies table/class paths within one source unit"
+    },
+    {
+      "id": "table-class.fields",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Names, spans, attributes, type wrappers and default syntax are available without durable identity"
+    },
+    {
+      "id": "field.type-wrappers",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Reference, optional, list and generic syntax are canonicalized without symbol resolution"
+    },
+    {
+      "id": "field.attributes.simple",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Primary and unique shorthand plus simple bracket attributes are preserved"
+    },
+    {
+      "id": "field.attributes.grouped",
+      "documented": true,
+      "parsed": true,
+      "projected": false,
+      "resolved": false,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Explicit diagnostic until Oak exposes structured attribute groups and arguments"
+    },
+    {
+      "id": "source-unit.artifact",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": false,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Strict syntax-projection envelope only"
+    },
+    {
+      "id": "using.multi-file-resolution",
+      "documented": true,
+      "parsed": true,
+      "projected": false,
+      "resolved": false,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "No multi-file symbol table or import resolution"
+    },
+    {
+      "id": "durable-identity.fingerprint",
+      "documented": true,
+      "parsed": false,
+      "projected": false,
+      "resolved": false,
+      "conformance": false,
+      "downstream-consumed": false,
+      "note": "Must not be inferred from source order or the draft artifact"
+    },
+    {
+      "id": "operation-service.contract",
+      "documented": true,
+      "parsed": false,
+      "projected": false,
+      "resolved": false,
+      "conformance": false,
+      "downstream-consumed": false,
+      "note": "No YYDB, YYDS, Iris or Hermes consumer may interpret parser-private structures"
+    }
+  ]
+}
