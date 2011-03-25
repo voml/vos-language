@@ -2,6 +2,7 @@ use serde_json::{Value, json};
 use vos_contract::{
     ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityManifest,
     SchemaProjection, TypeContractKind, TypeIdentity, bind_identity, parse_oak,
+    schema_fingerprint,
 };
 
 #[test]
@@ -252,4 +253,112 @@ fn identity_manifest_rejects_rename_without_explicit_evolution_map() {
             .iter()
             .any(|diagnostic| diagnostic.code == "ID007")
     );
+}
+
+#[test]
+fn identity_fingerprint_ignores_source_manifest_and_slot_order() {
+    let first_projection = parse_oak("class B { b: utf8, a: uuid }\nclass A { id: uuid }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let second_projection = parse_oak("class A { id: uuid }\nclass B { a: uuid, b: utf8 }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let first_manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![
+            TypeIdentity {
+                canonical_path: vec!["B".to_owned()],
+                type_id: 3,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity {
+                        canonical_name: "b".to_owned(),
+                        field_id: 11,
+                        virtual_field_index: 0,
+                    },
+                    FieldIdentity {
+                        canonical_name: "a".to_owned(),
+                        field_id: 12,
+                        virtual_field_index: 1,
+                    },
+                ],
+            },
+            TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 7,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 10,
+                    virtual_field_index: 0,
+                }],
+            },
+        ],
+    };
+    let second_manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![
+            TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 7,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 10,
+                    virtual_field_index: 0,
+                }],
+            },
+            TypeIdentity {
+                canonical_path: vec!["B".to_owned()],
+                type_id: 3,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity {
+                        canonical_name: "a".to_owned(),
+                        field_id: 12,
+                        virtual_field_index: 9,
+                    },
+                    FieldIdentity {
+                        canonical_name: "b".to_owned(),
+                        field_id: 11,
+                        virtual_field_index: 8,
+                    },
+                ],
+            },
+        ],
+    };
+    let first = schema_fingerprint(&bind_identity(&first_projection, &first_manifest).unwrap());
+    let second = schema_fingerprint(&bind_identity(&second_projection, &second_manifest).unwrap());
+    assert_eq!(first, second);
+    assert_eq!(first.len(), 64);
+}
+
+#[test]
+fn identity_fingerprint_changes_for_semantic_changes() {
+    let projection = parse_oak("class A { id: uuid }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["A".to_owned()],
+            type_id: 1,
+            kind: TypeContractKind::Class,
+            fields: vec![FieldIdentity {
+                canonical_name: "id".to_owned(),
+                field_id: 2,
+                virtual_field_index: 0,
+            }],
+        }],
+    };
+    let baseline = schema_fingerprint(&bind_identity(&projection, &manifest).unwrap());
+    let changed_projection = parse_oak("class A { id: utf8 }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let changed = schema_fingerprint(&bind_identity(&changed_projection, &manifest).unwrap());
+    assert_ne!(baseline, changed);
 }
