@@ -362,3 +362,19 @@ fn identity_fingerprint_changes_for_semantic_changes() {
     let changed = schema_fingerprint(&bind_identity(&changed_projection, &manifest).unwrap());
     assert_ne!(baseline, changed);
 }
+
+#[test]
+fn identity_manifest_fixture_binds_and_produces_fingerprint() {
+    let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
+    let manifest_json = include_str!(
+        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
+    );
+    let projection = parse_oak(source).unwrap().project_schema().unwrap();
+    let manifest = IdentityManifest::from_json(manifest_json).unwrap();
+    let bound = bind_identity(&projection, &manifest).unwrap();
+    let fingerprint = schema_fingerprint(&bound);
+    assert_eq!(
+        fingerprint,
+        "14492965ddbf52183c30f003be100bab77160559be8d47cbef55b76e08a19b5f"
+    );
+}
