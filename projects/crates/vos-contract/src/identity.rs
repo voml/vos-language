@@ -103,6 +103,47 @@ pub struct BoundFieldContract {
     pub default_value: Option<String>,
 }
 
+/// A deterministic identity evolution event between two bound snapshots.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase", tag = "kind")]
+#[allow(missing_docs)]
+pub enum IdentityChange {
+    /// A type was added with a new durable identity.
+    TypeAdded { type_id: u64, canonical_path: Vec<String> },
+    /// A type disappeared and must remain a tombstone in durable history.
+    TypeRemoved { type_id: u64, canonical_path: Vec<String> },
+    /// A type kept its identity while its canonical path changed.
+    TypeRenamed { type_id: u64, from: Vec<String>, to: Vec<String> },
+    /// A type kept its identity while its declaration kind changed.
+    TypeKindChanged { type_id: u64, from: TypeContractKind, to: TypeContractKind },
+    /// A field was added with a new durable identity.
+    FieldAdded { type_id: u64, field_id: u64, canonical_name: String, virtual_field_index: u32 },
+    /// A field disappeared and must remain a tombstone in durable history.
+    FieldRemoved { type_id: u64, field_id: u64, canonical_name: String, virtual_field_index: u32 },
+    /// A field kept its identity while its canonical name changed.
+    FieldRenamed { type_id: u64, field_id: u64, from: String, to: String },
+    /// A field kept its identity while its virtual slot changed.
+    FieldReordered { type_id: u64, field_id: u64, from: u32, to: u32 },
+    /// A field identity kept its name but changed semantic content.
+    FieldChanged { type_id: u64, field_id: u64 },
+}
+
+/// The explicit, non-allocating evolution result for two identity snapshots.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IdentityEvolution {
+    /// Identity manifest version of the previous snapshot.
+    pub from_manifest_version: String,
+    /// Identity manifest version of the current snapshot.
+    pub to_manifest_version: String,
+    /// Fingerprint of the previous snapshot.
+    pub from_fingerprint: String,
+    /// Fingerprint of the current snapshot.
+    pub to_fingerprint: String,
+    /// Deterministically ordered changes.
+    pub changes: Vec<IdentityChange>,
+}
+
 /// Binds a reviewable identity manifest to a schema projection.
 pub fn bind_identity(
     projection: &SchemaProjection,
@@ -246,6 +287,137 @@ pub fn schema_fingerprint(bound: &IdentityBoundProjection) -> String {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect()
+}
+
+/// Compares two explicitly bound snapshots without assigning or reusing IDs.
+pub fn compare_identity(
+    previous: &IdentityBoundProjection,
+    current: &IdentityBoundProjection,
+) -> Result<IdentityEvolution, Vec<ContractDiagnostic>> {
+    let mut diagnostics = Vec::new();
+    let previous_types = previous.types.iter().map(|item| (item.type_id, item)).collect::<BTreeMap<_, _>>();
+    let current_types = current.types.iter().map(|item| (item.type_id, item)).collect::<BTreeMap<_, _>>();
+
+    for previous_type in &previous.types {
+        if let Some(current_type) = current.types.iter().find(|item| item.canonical_path == previous_type.canonical_path) {
+            if current_type.type_id != previous_type.type_id {
+                diagnostics.push(diagnostic("ID012", "type path changed durable ID"));
+            }
+        }
+        for previous_field in &previous_type.fields {
+            if let Some(current_type) = current.types.iter().find(|item| item.type_id == previous_type.type_id) {
+                if let Some(current_field) = current_type.fields.iter().find(|item| item.canonical_name == previous_field.canonical_name) {
+                    if current_field.field_id != previous_field.field_id {
+                        diagnostics.push(diagnostic("ID013", "field name changed durable ID"));
+                    }
+                }
+            }
+        }
+    }
+    for current_type in &current.types {
+        for current_field in &current_type.fields {
+            if let Some(previous_type) = previous.types.iter().find(|item| item.fields.iter().any(|field| field.field_id == current_field.field_id)) {
+                if previous_type.type_id != current_type.type_id {
+                    diagnostics.push(diagnostic("ID014", "field identity moved between types"));
+                }
+            }
+        }
+    }
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+
+    let mut changes = Vec::new();
+    let type_ids = previous_types.keys().chain(current_types.keys()).copied().collect::<BTreeSet<_>>();
+    for type_id in type_ids {
+        match (previous_types.get(&type_id), current_types.get(&type_id)) {
+            (None, Some(current_type)) => changes.push(IdentityChange::TypeAdded {
+                type_id,
+                canonical_path: current_type.canonical_path.clone(),
+            }),
+            (Some(previous_type), None) => changes.push(IdentityChange::TypeRemoved {
+                type_id,
+                canonical_path: previous_type.canonical_path.clone(),
+            }),
+            (Some(previous_type), Some(current_type)) => {
+                if previous_type.canonical_path != current_type.canonical_path {
+                    changes.push(IdentityChange::TypeRenamed {
+                        type_id,
+                        from: previous_type.canonical_path.clone(),
+                        to: current_type.canonical_path.clone(),
+                    });
+                }
+                if previous_type.kind != current_type.kind {
+                    changes.push(IdentityChange::TypeKindChanged {
+                        type_id,
+                        from: previous_type.kind,
+                        to: current_type.kind,
+                    });
+                }
+                compare_fields(type_id, &previous_type.fields, &current_type.fields, &mut changes);
+            }
+            (None, None) => unreachable!(),
+        }
+    }
+    Ok(IdentityEvolution {
+        from_manifest_version: previous.manifest_version.clone(),
+        to_manifest_version: current.manifest_version.clone(),
+        from_fingerprint: schema_fingerprint(previous),
+        to_fingerprint: schema_fingerprint(current),
+        changes,
+    })
+}
+
+fn compare_fields(
+    type_id: u64,
+    previous: &[BoundFieldContract],
+    current: &[BoundFieldContract],
+    changes: &mut Vec<IdentityChange>,
+) {
+    let previous_fields = previous.iter().map(|item| (item.field_id, item)).collect::<BTreeMap<_, _>>();
+    let current_fields = current.iter().map(|item| (item.field_id, item)).collect::<BTreeMap<_, _>>();
+    let field_ids = previous_fields.keys().chain(current_fields.keys()).copied().collect::<BTreeSet<_>>();
+    for field_id in field_ids {
+        match (previous_fields.get(&field_id), current_fields.get(&field_id)) {
+            (None, Some(field)) => changes.push(IdentityChange::FieldAdded {
+                type_id,
+                field_id,
+                canonical_name: field.canonical_name.clone(),
+                virtual_field_index: field.virtual_field_index,
+            }),
+            (Some(field), None) => changes.push(IdentityChange::FieldRemoved {
+                type_id,
+                field_id,
+                canonical_name: field.canonical_name.clone(),
+                virtual_field_index: field.virtual_field_index,
+            }),
+            (Some(previous), Some(current)) => {
+                if previous.canonical_name != current.canonical_name {
+                    changes.push(IdentityChange::FieldRenamed {
+                        type_id,
+                        field_id,
+                        from: previous.canonical_name.clone(),
+                        to: current.canonical_name.clone(),
+                    });
+                }
+                if previous.virtual_field_index != current.virtual_field_index {
+                    changes.push(IdentityChange::FieldReordered {
+                        type_id,
+                        field_id,
+                        from: previous.virtual_field_index,
+                        to: current.virtual_field_index,
+                    });
+                }
+                if previous.canonical_type != current.canonical_type
+                    || previous.attributes != current.attributes
+                    || previous.default_value != current.default_value
+                {
+                    changes.push(IdentityChange::FieldChanged { type_id, field_id });
+                }
+            }
+            (None, None) => unreachable!(),
+        }
+    }
 }
 
 #[derive(Serialize)]
