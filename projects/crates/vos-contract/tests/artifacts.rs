@@ -365,6 +365,34 @@ fn identity_fingerprint_changes_for_semantic_changes() {
 }
 
 #[test]
+fn identity_fingerprint_ignores_provenance_spans_and_attribute_syntax_spacing() {
+    let first_projection = parse_oak("class A { [primary] id: uuid }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let second_projection = parse_oak("class A {\n  [primary]\n  id: uuid\n}")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["A".to_owned()],
+            type_id: 1,
+            kind: TypeContractKind::Class,
+            fields: vec![FieldIdentity {
+                canonical_name: "id".to_owned(),
+                field_id: 2,
+                virtual_field_index: 0,
+            }],
+        }],
+    };
+    let first = schema_fingerprint(&bind_identity(&first_projection, &manifest).unwrap());
+    let second = schema_fingerprint(&bind_identity(&second_projection, &manifest).unwrap());
+    assert_eq!(first, second);
+}
+
+#[test]
 fn identity_manifest_fixture_binds_and_produces_fingerprint() {
     let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
     let manifest_json = include_str!(

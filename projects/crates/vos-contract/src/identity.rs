@@ -738,10 +738,7 @@ fn compare_fields(
                         to: current.virtual_field_index,
                     });
                 }
-                if previous.canonical_type != current.canonical_type
-                    || previous.attributes != current.attributes
-                    || previous.default_value != current.default_value
-                {
+                if CanonicalFieldContract::from(*previous) != CanonicalFieldContract::from(*current) {
                     changes.push(IdentityChange::FieldChanged { type_id, field_id });
                 }
             }
@@ -781,23 +778,19 @@ impl From<&BoundTypeContract> for CanonicalTypeContract {
     }
 }
 
-#[derive(Serialize)]
+#[derive(PartialEq, Eq, Serialize)]
 struct CanonicalFieldContract {
     field_id: u64,
     canonical_name: String,
     canonical_type: CanonicalType,
-    attributes: Vec<AttributeContract>,
+    attributes: Vec<String>,
     default_value: Option<String>,
 }
 
 impl From<&BoundFieldContract> for CanonicalFieldContract {
     fn from(field: &BoundFieldContract) -> Self {
-        let mut attributes = field.attributes.clone();
-        attributes.sort_by(|left, right| {
-            left.name
-                .cmp(&right.name)
-                .then_with(|| left.syntax.cmp(&right.syntax))
-        });
+        let mut attributes = field.attributes.iter().map(|attribute| attribute.name.clone()).collect::<Vec<_>>();
+        attributes.sort();
         Self {
             field_id: field.field_id,
             canonical_name: field.canonical_name.clone(),
