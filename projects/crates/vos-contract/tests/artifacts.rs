@@ -2,7 +2,8 @@ use serde_json::{Value, json};
 use vos_contract::{
     compare_identity, evolve_identity, bind_identity, schema_fingerprint, ContractDiagnostic,
     FieldIdentity, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
-    TypeContractKind, TypeIdentity, IDENTITY_MANIFEST_VERSION, parse_oak,
+    ResolvedCanonicalType, TypeContractKind, TypeIdentity, resolve_identity_types,
+    IDENTITY_MANIFEST_VERSION, parse_oak,
 };
 
 #[test]
@@ -626,4 +627,79 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     .unwrap();
     let diagnostics = evolve_identity(&evolved, reused).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "ID016"));
+}
+
+#[test]
+fn identity_type_resolution_binds_user_types_and_keeps_builtins() {
+    let projection = parse_oak("class Address { city: utf8 }\nclass User { address: Address?, id: uuid }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![
+            TypeIdentity {
+                canonical_path: vec!["Address".to_owned()],
+                type_id: 7,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "city".to_owned(),
+                    field_id: 8,
+                    virtual_field_index: 0,
+                }],
+            },
+            TypeIdentity {
+                canonical_path: vec!["User".to_owned()],
+                type_id: 9,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity {
+                        canonical_name: "address".to_owned(),
+                        field_id: 10,
+                        virtual_field_index: 0,
+                    },
+                    FieldIdentity {
+                        canonical_name: "id".to_owned(),
+                        field_id: 11,
+                        virtual_field_index: 1,
+                    },
+                ],
+            },
+        ],
+    };
+    let bound = bind_identity(&projection, &manifest).unwrap();
+    let resolved = resolve_identity_types(&bound).unwrap();
+    assert!(matches!(
+        &resolved.types[1].fields[0].canonical_type,
+        ResolvedCanonicalType::Optional(inner)
+            if matches!(inner.as_ref(), ResolvedCanonicalType::User { type_id: 7, .. })
+    ));
+    assert_eq!(
+        resolved.types[1].fields[1].canonical_type,
+        ResolvedCanonicalType::Builtin(vec!["uuid".to_owned()])
+    );
+}
+
+#[test]
+fn identity_type_resolution_rejects_unknown_user_types() {
+    let projection = parse_oak("class User { address: Missing }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["User".to_owned()],
+            type_id: 1,
+            kind: TypeContractKind::Class,
+            fields: vec![FieldIdentity {
+                canonical_name: "address".to_owned(),
+                field_id: 2,
+                virtual_field_index: 0,
+            }],
+        }],
+    };
+    let bound = bind_identity(&projection, &manifest).unwrap();
+    let diagnostics = resolve_identity_types(&bound).unwrap_err();
+    assert!(diagnostics.iter().any(|item| item.code == "RES001"));
 }
