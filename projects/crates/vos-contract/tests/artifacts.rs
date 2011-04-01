@@ -593,6 +593,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     )
     .unwrap();
     let initial = IdentityHistory {
+        format_version: vos_contract::IDENTITY_HISTORY_FORMAT_VERSION.to_owned(),
         manifest_version: IDENTITY_MANIFEST_VERSION.to_owned(),
         revision: 0,
         layout_epoch: 0,
@@ -625,6 +626,14 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     assert_eq!(evolved.layout_epoch, 1);
     assert_eq!(evolved.retired_fields.len(), 1);
     assert_eq!(evolved.retired_fields[0].field_id, 3);
+    let serialized = evolved.to_json().unwrap();
+    assert_eq!(IdentityHistory::from_json(&serialized).unwrap(), evolved);
+    let mut corrupted: Value = serde_json::from_str(&serialized).unwrap();
+    corrupted["retiredFields"][0]["fieldId"] = json!(2);
+    assert_eq!(IdentityHistory::from_json(&corrupted.to_string()).unwrap_err().code, "ID023");
+    let mut unknown: Value = serde_json::from_str(&serialized).unwrap();
+    unknown["unexpected"] = json!(true);
+    assert_eq!(IdentityHistory::from_json(&unknown.to_string()).unwrap_err().code, "ID020");
 
     let reused = bind_identity(
         &parse_oak("class A { id: uuid, replacement: bool }")

@@ -12,6 +12,8 @@ use crate::{
 pub const IDENTITY_MANIFEST_VERSION: &str = "vos-identity-manifest-v0";
 /// Version of the canonical semantic identity fingerprint.
 pub const IDENTITY_FINGERPRINT_VERSION: &str = "vos-identity-fingerprint-v0";
+/// Version of the durable identity history artifact.
+pub const IDENTITY_HISTORY_FORMAT_VERSION: &str = "vos-identity-history-v0";
 
 /// A reviewable identity assignment for one schema projection.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,8 +67,8 @@ pub struct FieldIdentity {
 }
 
 /// A projection with externally assigned durable identities.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct IdentityBoundProjection {
     /// Identity manifest version.
     pub manifest_version: String,
@@ -75,8 +77,8 @@ pub struct IdentityBoundProjection {
 }
 
 /// A projected type with a durable type ID.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct BoundTypeContract {
     /// Durable type identity.
     pub type_id: u64,
@@ -89,8 +91,8 @@ pub struct BoundTypeContract {
 }
 
 /// A projected field with durable field and virtual-slot identities.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct BoundFieldContract {
     /// Durable field identity.
     pub field_id: u64,
@@ -228,9 +230,11 @@ pub struct IdentityEvolution {
 }
 
 /// Durable history for one identity-bound schema catalog.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct IdentityHistory {
+    /// Durable history artifact format version.
+    pub format_version: String,
     /// Identity manifest version used by the active snapshot.
     pub manifest_version: String,
     /// Monotonic catalog revision.
@@ -246,8 +250,8 @@ pub struct IdentityHistory {
 }
 
 /// A durable tombstone for a removed type identity.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RetiredTypeIdentity {
     /// Retired durable type ID.
     pub type_id: u64,
@@ -258,8 +262,8 @@ pub struct RetiredTypeIdentity {
 }
 
 /// A durable tombstone for a removed field identity.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RetiredFieldIdentity {
     /// Retired durable field ID.
     pub field_id: u64,
@@ -271,6 +275,72 @@ pub struct RetiredFieldIdentity {
     pub virtual_field_index: u32,
     /// Revision at which the identity was retired.
     pub retired_at_revision: u64,
+}
+
+impl IdentityHistory {
+    /// Serializes durable identity history using stable field names.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    /// Reads and validates a strict durable identity history artifact.
+    pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
+        let history: Self = serde_json::from_str(input).map_err(|error| ArtifactError {
+            code: "ID020".to_owned(),
+            message: error.to_string(),
+        })?;
+        history.validate()?;
+        Ok(history)
+    }
+
+    fn validate(&self) -> Result<(), ArtifactError> {
+        if self.format_version != IDENTITY_HISTORY_FORMAT_VERSION
+            || self.manifest_version != IDENTITY_MANIFEST_VERSION
+        {
+            return Err(ArtifactError {
+                code: "ID021".to_owned(),
+                message: "unsupported identity history version".to_owned(),
+            });
+        }
+        let active_type_ids = self
+            .snapshot
+            .types
+            .iter()
+            .map(|item| item.type_id)
+            .collect::<BTreeSet<_>>();
+        let active_field_ids = self
+            .snapshot
+            .types
+            .iter()
+            .flat_map(|item| item.fields.iter().map(|field| field.field_id))
+            .collect::<BTreeSet<_>>();
+        let mut retired_type_ids = BTreeSet::new();
+        for item in &self.retired_types {
+            if item.type_id == 0
+                || !retired_type_ids.insert(item.type_id)
+                || active_type_ids.contains(&item.type_id)
+            {
+                return Err(ArtifactError {
+                    code: "ID022".to_owned(),
+                    message: "invalid or reused retired type identity".to_owned(),
+                });
+            }
+        }
+        let mut retired_field_ids = BTreeSet::new();
+        for item in &self.retired_fields {
+            if item.field_id == 0
+                || item.type_id == 0
+                || !retired_field_ids.insert(item.field_id)
+                || active_field_ids.contains(&item.field_id)
+            {
+                return Err(ArtifactError {
+                    code: "ID023".to_owned(),
+                    message: "invalid or reused retired field identity".to_owned(),
+                });
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Binds a reviewable identity manifest to a schema projection.
@@ -689,6 +759,7 @@ pub fn evolve_identity(
     retired_types.sort_by_key(|item| item.type_id);
     retired_fields.sort_by_key(|item| item.field_id);
     Ok(IdentityHistory {
+        format_version: IDENTITY_HISTORY_FORMAT_VERSION.to_owned(),
         manifest_version: current.manifest_version.clone(),
         revision,
         layout_epoch,
