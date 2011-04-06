@@ -587,6 +587,7 @@ pub fn resolve_identity_types(
                 .map(|field| {
                     let canonical_type = resolve_type(
                         &field.canonical_type,
+                        &item.canonical_path[..item.canonical_path.len().saturating_sub(1)],
                         &type_ids,
                         &mut diagnostics,
                     );
@@ -620,14 +621,32 @@ pub fn resolve_identity_types(
 
 fn resolve_type(
     ty: &CanonicalType,
+    namespace: &[String],
     type_ids: &BTreeMap<Vec<String>, u64>,
     diagnostics: &mut Vec<ContractDiagnostic>,
 ) -> ResolvedCanonicalType {
     match ty {
         CanonicalType::Named(path) => {
+            let mut candidates = Vec::new();
             if let Some(type_id) = type_ids.get(path) {
+                candidates.push((path.clone(), *type_id));
+            }
+            if !path.is_empty() {
+                let mut relative = namespace.to_vec();
+                relative.extend(path.iter().cloned());
+                if let Some(type_id) = type_ids.get(&relative) {
+                    if !candidates.iter().any(|(_, candidate_id)| candidate_id == type_id) {
+                        candidates.push((relative, *type_id));
+                    }
+                }
+            }
+            if candidates.len() > 1 {
+                diagnostics.push(diagnostic("RES002", &format!("ambiguous type {}", path.join("::"))));
+                return ResolvedCanonicalType::Builtin(path.clone());
+            }
+            if let Some((canonical_path, type_id)) = candidates.first() {
                 ResolvedCanonicalType::User {
-                    path: path.clone(),
+                    path: canonical_path.clone(),
                     type_id: *type_id,
                 }
             } else if path.len() == 1 && is_builtin(path[0].as_str()) {
@@ -637,15 +656,15 @@ fn resolve_type(
                 ResolvedCanonicalType::Builtin(path.clone())
             }
         }
-        CanonicalType::Reference(inner) => ResolvedCanonicalType::Reference(Box::new(resolve_type(inner, type_ids, diagnostics))),
-        CanonicalType::Optional(inner) => ResolvedCanonicalType::Optional(Box::new(resolve_type(inner, type_ids, diagnostics))),
-        CanonicalType::List(inner) => ResolvedCanonicalType::List(Box::new(resolve_type(inner, type_ids, diagnostics))),
+        CanonicalType::Reference(inner) => ResolvedCanonicalType::Reference(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
+        CanonicalType::Optional(inner) => ResolvedCanonicalType::Optional(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
+        CanonicalType::List(inner) => ResolvedCanonicalType::List(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
         CanonicalType::Generic { path, arguments } => ResolvedCanonicalType::Generic {
             path: path.clone(),
             arguments: arguments
                 .iter()
                 .map(|argument| match argument {
-                    CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(resolve_type(ty, type_ids, diagnostics)),
+                    CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(resolve_type(ty, namespace, type_ids, diagnostics)),
                     CanonicalTypeArgument::Literal(value) => ResolvedCanonicalTypeArgument::Literal(value.clone()),
                 })
                 .collect(),
