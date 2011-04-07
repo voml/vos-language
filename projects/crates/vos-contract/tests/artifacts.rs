@@ -1,8 +1,9 @@
 use serde_json::{Value, json};
 use vos_contract::{
-    compare_identity, evolve_identity, bind_identity, schema_fingerprint, ContractDiagnostic,
+    compare_identity, evolve_identity, bind_identity, resolve_contract, schema_fingerprint,
+    ContractDiagnostic,
     FieldIdentity, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
-    ResolvedCanonicalType, TypeContractKind, TypeIdentity, resolve_identity_types,
+    ResolvedCanonicalType, ResolvedContract, TypeContractKind, TypeIdentity, resolve_identity_types,
     resolve_identity_units,
     IDENTITY_MANIFEST_VERSION, parse_oak,
 };
@@ -893,4 +894,25 @@ fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
     let diagnostics = resolve_identity_units(&[&first, &duplicate_ids]).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "RES007"));
     assert!(diagnostics.iter().any(|item| item.code == "RES006"));
+}
+
+#[test]
+fn resolved_contract_is_a_strict_versioned_artifact() {
+    let projection = parse_oak("class T { id: uuid }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let manifest = IdentityManifest::from_json(include_str!(
+        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
+    ))
+    .unwrap();
+    let contract = resolve_contract(&projection, &manifest).unwrap();
+    let json = contract.to_json().unwrap();
+    assert_eq!(ResolvedContract::from_json(&json).unwrap(), contract);
+    let mut invalid: Value = serde_json::from_str(&json).unwrap();
+    invalid["schemaFingerprint"] = json!("not-a-fingerprint");
+    assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES011");
+    let mut unknown: Value = serde_json::from_str(&json).unwrap();
+    unknown["unexpected"] = json!(true);
+    assert_eq!(ResolvedContract::from_json(&unknown.to_string()).unwrap_err().code, "RES010");
 }
