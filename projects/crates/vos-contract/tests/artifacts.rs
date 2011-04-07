@@ -3,6 +3,7 @@ use vos_contract::{
     compare_identity, evolve_identity, bind_identity, schema_fingerprint, ContractDiagnostic,
     FieldIdentity, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
     ResolvedCanonicalType, TypeContractKind, TypeIdentity, resolve_identity_types,
+    resolve_identity_units,
     IDENTITY_MANIFEST_VERSION, parse_oak,
 };
 
@@ -789,4 +790,107 @@ fn relative_and_qualified_types_resolve_to_the_same_namespace_identity() {
     let expected = ResolvedCanonicalType::User { path: vec!["demo".to_owned(), "Address".to_owned()], type_id: 1 };
     assert_eq!(resolved.types[1].fields[0].canonical_type, ResolvedCanonicalType::Optional(Box::new(expected.clone())));
     assert_eq!(resolved.types[1].fields[1].canonical_type, expected);
+}
+
+#[test]
+fn multi_unit_resolution_joins_global_symbol_table_without_reparsing() {
+    let users = parse_oak("namespace demo\nclass User { address: Address }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let addresses = parse_oak("namespace demo\nclass Address { city: utf8 }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let user_manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["demo".to_owned(), "User".to_owned()],
+            type_id: 10,
+            kind: TypeContractKind::Class,
+            fields: vec![FieldIdentity {
+                canonical_name: "address".to_owned(),
+                field_id: 11,
+                virtual_field_index: 0,
+            }],
+        }],
+    };
+    let address_manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["demo".to_owned(), "Address".to_owned()],
+            type_id: 20,
+            kind: TypeContractKind::Class,
+            fields: vec![FieldIdentity {
+                canonical_name: "city".to_owned(),
+                field_id: 21,
+                virtual_field_index: 0,
+            }],
+        }],
+    };
+    let users = bind_identity(&users, &user_manifest).unwrap();
+    let addresses = bind_identity(&addresses, &address_manifest).unwrap();
+    let resolved = resolve_identity_units(&[&users, &addresses]).unwrap();
+    assert_eq!(resolved.types.len(), 2);
+    assert_eq!(resolved.types[0].canonical_path, ["demo", "User"]);
+    assert_eq!(
+        resolved.types[0].fields[0].canonical_type,
+        ResolvedCanonicalType::User {
+            path: vec!["demo".to_owned(), "Address".to_owned()],
+            type_id: 20,
+        }
+    );
+}
+
+#[test]
+fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
+    let projection = parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap();
+    let first = bind_identity(
+        &projection,
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 0,
+                }],
+            }],
+        },
+    )
+    .unwrap();
+    let duplicate_path = first.clone();
+    let mut different_version = first.clone();
+    different_version.manifest_version = "other-manifest".to_owned();
+    let duplicate_ids = bind_identity(
+        &parse_oak("class B { id: uuid }").unwrap().project_schema().unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["B".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 0,
+                }],
+            }],
+        },
+    )
+    .unwrap();
+    assert!(resolve_identity_units(&[&first, &duplicate_path])
+        .unwrap_err()
+        .iter()
+        .any(|item| item.code == "RES004"));
+    assert!(resolve_identity_units(&[&first, &different_version])
+        .unwrap_err()
+        .iter()
+        .any(|item| item.code == "RES003"));
+    let diagnostics = resolve_identity_units(&[&first, &duplicate_ids]).unwrap_err();
+    assert!(diagnostics.iter().any(|item| item.code == "RES007"));
+    assert!(diagnostics.iter().any(|item| item.code == "RES006"));
 }

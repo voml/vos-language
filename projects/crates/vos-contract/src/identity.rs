@@ -594,15 +594,49 @@ pub fn compare_identity(
 pub fn resolve_identity_types(
     bound: &IdentityBoundProjection,
 ) -> Result<ResolvedIdentityProjection, Vec<ContractDiagnostic>> {
-    let type_ids = bound
-        .types
-        .iter()
-        .map(|item| (item.canonical_path.clone(), item.type_id))
-        .collect::<BTreeMap<_, _>>();
+    resolve_identity_units(&[bound])
+}
+
+/// Resolves a deterministic collection of already-bound source units together.
+pub fn resolve_identity_units(
+    units: &[&IdentityBoundProjection],
+) -> Result<ResolvedIdentityProjection, Vec<ContractDiagnostic>> {
     let mut diagnostics = Vec::new();
-    let types = bound
-        .types
+    let manifest_version = units.first().map(|unit| unit.manifest_version.clone()).unwrap_or_else(|| IDENTITY_MANIFEST_VERSION.to_owned());
+    let mut types = Vec::new();
+    let mut type_paths = BTreeMap::new();
+    let mut seen_type_ids = BTreeMap::new();
+    let mut field_ids = BTreeSet::new();
+    for unit in units {
+        if unit.manifest_version != manifest_version {
+            diagnostics.push(diagnostic("RES003", "identity manifest version differs across source units"));
+        }
+        for item in &unit.types {
+            if type_paths.insert(item.canonical_path.clone(), item).is_some() {
+                diagnostics.push(diagnostic("RES004", "duplicate type path across source units"));
+            }
+            if item.type_id == 0 {
+                diagnostics.push(diagnostic("RES005", "zero type ID in source unit"));
+            } else if seen_type_ids.insert(item.type_id, item.canonical_path.clone()).is_some() {
+                diagnostics.push(diagnostic("RES007", "duplicate type ID across source units"));
+            }
+            for field in &item.fields {
+                if !field_ids.insert(field.field_id) {
+                    diagnostics.push(diagnostic("RES006", "duplicate field ID across source units"));
+                }
+            }
+            types.push(item);
+        }
+    }
+    let type_ids = type_paths
         .iter()
+        .map(|(path, item)| (path.clone(), item.type_id))
+        .collect::<BTreeMap<_, _>>();
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+    let types = types
+        .into_iter()
         .map(|item| {
             let fields = item
                 .fields
@@ -634,7 +668,7 @@ pub fn resolve_identity_types(
         .collect();
     if diagnostics.is_empty() {
         Ok(ResolvedIdentityProjection {
-            manifest_version: bound.manifest_version.clone(),
+            manifest_version,
             types,
         })
     } else {
