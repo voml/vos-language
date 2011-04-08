@@ -587,6 +587,25 @@ pub fn schema_fingerprint(bound: &IdentityBoundProjection) -> String {
         .collect()
 }
 
+/// Computes a stable fingerprint from the fully resolved canonical model.
+pub fn resolved_schema_fingerprint(resolved: &ResolvedIdentityProjection) -> String {
+    let mut types = resolved
+        .types
+        .iter()
+        .map(CanonicalResolvedTypeContract::from)
+        .collect::<Vec<_>>();
+    types.sort_by_key(|item| item.type_id);
+    let wire = serde_json::to_vec(&CanonicalResolvedIdentityModel {
+        fingerprint_version: IDENTITY_FINGERPRINT_VERSION,
+        types,
+    })
+    .expect("canonical resolved identity model serializes");
+    Sha256::digest(wire)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
 /// Compares two explicitly bound snapshots without assigning or reusing IDs.
 pub fn compare_identity(
     previous: &IdentityBoundProjection,
@@ -759,10 +778,11 @@ pub fn resolve_contract(
 ) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
     let bound = bind_identity(projection, manifest)?;
     let resolved = resolve_identity_types(&bound)?;
+    let schema_fingerprint = resolved_schema_fingerprint(&resolved);
     Ok(ResolvedContract {
         format_version: RESOLVED_CONTRACT_FORMAT_VERSION.to_owned(),
         identity_manifest_version: resolved.manifest_version,
-        schema_fingerprint: schema_fingerprint(&bound),
+        schema_fingerprint,
         types: resolved.types,
     })
 }
@@ -1009,6 +1029,64 @@ fn compare_fields(
 struct CanonicalIdentityModel<'a> {
     fingerprint_version: &'a str,
     types: Vec<CanonicalTypeContract>,
+}
+
+#[derive(Serialize)]
+struct CanonicalResolvedIdentityModel<'a> {
+    fingerprint_version: &'a str,
+    types: Vec<CanonicalResolvedTypeContract>,
+}
+
+#[derive(Serialize)]
+struct CanonicalResolvedTypeContract {
+    type_id: u64,
+    canonical_path: Vec<String>,
+    kind: TypeContractKind,
+    fields: Vec<CanonicalResolvedFieldContract>,
+}
+
+impl From<&ResolvedTypeContract> for CanonicalResolvedTypeContract {
+    fn from(contract: &ResolvedTypeContract) -> Self {
+        let mut fields = contract
+            .fields
+            .iter()
+            .map(CanonicalResolvedFieldContract::from)
+            .collect::<Vec<_>>();
+        fields.sort_by_key(|item| item.field_id);
+        Self {
+            type_id: contract.type_id,
+            canonical_path: contract.canonical_path.clone(),
+            kind: contract.kind,
+            fields,
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct CanonicalResolvedFieldContract {
+    field_id: u64,
+    canonical_name: String,
+    canonical_type: ResolvedCanonicalType,
+    attributes: Vec<String>,
+    default_value: Option<String>,
+}
+
+impl From<&ResolvedFieldContract> for CanonicalResolvedFieldContract {
+    fn from(field: &ResolvedFieldContract) -> Self {
+        let mut attributes = field
+            .attributes
+            .iter()
+            .map(|attribute| attribute.name.clone())
+            .collect::<Vec<_>>();
+        attributes.sort();
+        Self {
+            field_id: field.field_id,
+            canonical_name: field.canonical_name.clone(),
+            canonical_type: field.canonical_type.clone(),
+            attributes,
+            default_value: field.default_value.clone(),
+        }
+    }
 }
 
 #[derive(Serialize)]
