@@ -798,7 +798,7 @@ fn resolve_type(
                     type_id: *type_id,
                 }
             } else if path.len() == 1 && is_builtin(path[0].as_str()) {
-                ResolvedCanonicalType::Builtin(path.clone())
+                ResolvedCanonicalType::Builtin(canonical_builtin_path(path))
             } else {
                 diagnostics.push(diagnostic("RES001", &format!("unknown type {}", path.join("::"))));
                 ResolvedCanonicalType::Builtin(path.clone())
@@ -807,16 +807,25 @@ fn resolve_type(
         CanonicalType::Reference(inner) => ResolvedCanonicalType::Reference(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
         CanonicalType::Optional(inner) => ResolvedCanonicalType::Optional(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
         CanonicalType::List(inner) => ResolvedCanonicalType::List(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
-        CanonicalType::Generic { path, arguments } => ResolvedCanonicalType::Generic {
-            path: path.clone(),
-            arguments: arguments
-                .iter()
-                .map(|argument| match argument {
-                    CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(resolve_type(ty, namespace, type_ids, diagnostics)),
-                    CanonicalTypeArgument::Literal(value) => ResolvedCanonicalTypeArgument::Literal(value.clone()),
-                })
-                .collect(),
-        },
+        CanonicalType::Generic { path, arguments } => {
+            if path == &["DateTime".to_owned()]
+                && arguments.len() == 1
+                && matches!(&arguments[0], CanonicalTypeArgument::Type(CanonicalType::Named(inner)) if inner == &["UTC".to_owned()])
+            {
+                ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()])
+            } else {
+                ResolvedCanonicalType::Generic {
+                    path: path.clone(),
+                    arguments: arguments
+                        .iter()
+                        .map(|argument| match argument {
+                            CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(resolve_type(ty, namespace, type_ids, diagnostics)),
+                            CanonicalTypeArgument::Literal(value) => ResolvedCanonicalTypeArgument::Literal(value.clone()),
+                        })
+                        .collect(),
+                }
+            }
+        }
     }
 }
 
@@ -827,6 +836,17 @@ fn is_builtin(name: &str) -> bool {
             | "f32" | "f64" | "bool" | "utf8" | "utf16" | "uuid" | "decimal"
             | "d128" | "date" | "time" | "datetime" | "bytes"
     )
+}
+
+fn canonical_builtin_path(path: &[String]) -> Vec<String> {
+    if path.len() == 1 {
+        let name = match path[0].as_str() {
+            "d128" => "decimal",
+            other => other,
+        };
+        return vec![name.to_owned()];
+    }
+    path.to_vec()
 }
 
 /// Applies an explicitly bound snapshot to durable identity history.
