@@ -232,6 +232,8 @@ impl ResolvedContract {
             });
         }
         let mut type_ids = BTreeSet::new();
+        let mut type_by_path = BTreeMap::new();
+        let mut path_by_type = BTreeMap::new();
         let mut paths = BTreeSet::new();
         let mut field_ids = BTreeSet::new();
         for item in &self.types {
@@ -245,6 +247,8 @@ impl ResolvedContract {
                     message: "invalid resolved type identity".to_owned(),
                 });
             }
+            type_by_path.insert(item.canonical_path.clone(), item.type_id);
+            path_by_type.insert(item.type_id, item.canonical_path.clone());
             let mut names = BTreeSet::new();
             let mut slots = BTreeSet::new();
             for field in &item.fields {
@@ -260,8 +264,60 @@ impl ResolvedContract {
                 }
             }
         }
+        for item in &self.types {
+            for field in &item.fields {
+                validate_resolved_type(
+                    &field.canonical_type,
+                    &type_by_path,
+                    &path_by_type,
+                )?;
+            }
+        }
+        let expected = resolved_schema_fingerprint(&ResolvedIdentityProjection {
+            manifest_version: self.identity_manifest_version.clone(),
+            types: self.types.clone(),
+        });
+        if expected != self.schema_fingerprint {
+            return Err(ArtifactError {
+                code: "RES014".to_owned(),
+                message: "resolved contract fingerprint does not match content".to_owned(),
+            });
+        }
         Ok(())
     }
+}
+
+fn validate_resolved_type(
+    ty: &ResolvedCanonicalType,
+    type_by_path: &BTreeMap<Vec<String>, u64>,
+    path_by_type: &BTreeMap<u64, Vec<String>>,
+) -> Result<(), ArtifactError> {
+    match ty {
+        ResolvedCanonicalType::User { path, type_id } => {
+            if type_by_path.get(path) != Some(type_id)
+                || path_by_type.get(type_id) != Some(path)
+            {
+                return Err(ArtifactError {
+                    code: "RES015".to_owned(),
+                    message: "resolved user type reference is not present in the contract".to_owned(),
+                });
+            }
+        }
+        ResolvedCanonicalType::Reference(inner)
+        | ResolvedCanonicalType::Optional(inner)
+        | ResolvedCanonicalType::List(inner) => {
+            validate_resolved_type(inner, type_by_path, path_by_type)?;
+        }
+        ResolvedCanonicalType::Generic { arguments, .. } => {
+            for argument in arguments {
+                if let ResolvedCanonicalTypeArgument::Type(inner) = argument {
+                    validate_resolved_type(inner, type_by_path, path_by_type)?;
+                }
+            }
+        }
+        ResolvedCanonicalType::Builtin(_) => {}
+    }
+    Ok(())
 }
 
 /// A deterministic identity evolution event between two bound snapshots.
