@@ -721,10 +721,20 @@ pub fn compare_identity(
                 type_id,
                 canonical_path: current_type.canonical_path.clone(),
             }),
-            (Some(previous_type), None) => changes.push(IdentityChange::TypeRemoved {
-                type_id,
-                canonical_path: previous_type.canonical_path.clone(),
-            }),
+            (Some(previous_type), None) => {
+                changes.push(IdentityChange::TypeRemoved {
+                    type_id,
+                    canonical_path: previous_type.canonical_path.clone(),
+                });
+                for field in &previous_type.fields {
+                    changes.push(IdentityChange::FieldRemoved {
+                        type_id,
+                        field_id: field.field_id,
+                        canonical_name: field.canonical_name.clone(),
+                        virtual_field_index: field.virtual_field_index,
+                    });
+                }
+            }
             (Some(previous_type), Some(current_type)) => {
                 if previous_type.canonical_path != current_type.canonical_path {
                     changes.push(IdentityChange::TypeRenamed {
