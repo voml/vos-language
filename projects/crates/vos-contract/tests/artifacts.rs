@@ -645,6 +645,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
         ("/snapshot/types/0/fields/0/canonicalName", json!(""), "ID025"),
         ("/retiredFields/0/retiredAtRevision", json!(2), "ID023"),
         ("/retiredFields/0/typeId", json!(99), "ID023"),
+        ("/retiredFields/0/virtualFieldIndex", json!(0), "ID023"),
     ] {
         let mut invalid: Value = serde_json::from_str(&serialized).unwrap();
         *invalid.pointer_mut(pointer).unwrap() = value;
@@ -686,6 +687,25 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     .unwrap();
     let diagnostics = evolve_identity(&evolved, reused).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "ID016"));
+
+    let reused_slot = bind_identity(
+        &parse_oak("class A { id: uuid, replacement: bool }").unwrap().project_schema().unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity { canonical_name: "id".to_owned(), field_id: 2, virtual_field_index: 0 },
+                    FieldIdentity { canonical_name: "replacement".to_owned(), field_id: 4, virtual_field_index: 1 },
+                ],
+            }],
+        },
+    )
+    .unwrap();
+    let diagnostics = evolve_identity(&evolved, reused_slot).unwrap_err();
+    assert!(diagnostics.iter().any(|item| item.code == "ID026"));
 }
 
 #[test]
