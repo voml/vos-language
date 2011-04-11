@@ -112,7 +112,7 @@ pub struct BoundFieldContract {
 
 /// A canonical type after user-defined names are bound to durable identities.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(rename_all = "kebab-case", rename_all_fields = "camelCase", deny_unknown_fields)]
 pub enum ResolvedCanonicalType {
     /// Builtin scalar or standard VOS type name.
     Builtin(Vec<String>),
@@ -150,7 +150,7 @@ pub enum ResolvedCanonicalTypeArgument {
 
 /// A resolved field with a durable field identity.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ResolvedFieldContract {
     /// Durable field identity.
     pub field_id: u64,
@@ -168,7 +168,7 @@ pub struct ResolvedFieldContract {
 
 /// A resolved type with durable type and field identities.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ResolvedTypeContract {
     /// Durable type identity.
     pub type_id: u64,
@@ -182,7 +182,7 @@ pub struct ResolvedTypeContract {
 
 /// An identity-bound projection with all user-defined field types resolved.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ResolvedIdentityProjection {
     /// Identity manifest version.
     pub manifest_version: String,

@@ -952,6 +952,13 @@ fn resolved_contract_rejects_dangling_user_type_references() {
         ],
     };
     let contract = resolve_contract(&projection, &manifest).unwrap();
+    let valid: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
+    for pointer in ["/types/0", "/types/0/fields/0", "/types/0/fields/0/canonicalType/user"] {
+        let mut unknown = valid.clone();
+        unknown.pointer_mut(pointer).unwrap().as_object_mut().unwrap()
+            .insert("unexpected".to_owned(), json!(true));
+        assert_eq!(ResolvedContract::from_json(&unknown.to_string()).unwrap_err().code, "RES010");
+    }
     let mut invalid: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
     invalid["types"][0]["fields"][0]["canonicalType"] = json!({
         "user": { "path": ["Missing"], "typeId": 99 }
