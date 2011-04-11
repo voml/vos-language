@@ -308,14 +308,27 @@ fn validate_resolved_type(
         | ResolvedCanonicalType::List(inner) => {
             validate_resolved_type(inner, type_by_path, path_by_type)?;
         }
-        ResolvedCanonicalType::Generic { arguments, .. } => {
+        ResolvedCanonicalType::Generic { path, arguments } => {
+            if path.is_empty() || arguments.is_empty() {
+                return Err(ArtifactError {
+                    code: "RES016".to_owned(),
+                    message: "resolved generic type must have a path and arguments".to_owned(),
+                });
+            }
             for argument in arguments {
                 if let ResolvedCanonicalTypeArgument::Type(inner) = argument {
                     validate_resolved_type(inner, type_by_path, path_by_type)?;
                 }
             }
         }
-        ResolvedCanonicalType::Builtin(_) => {}
+        ResolvedCanonicalType::Builtin(path) => {
+            if path.is_empty() {
+                return Err(ArtifactError {
+                    code: "RES016".to_owned(),
+                    message: "resolved builtin type path must not be empty".to_owned(),
+                });
+            }
+        }
     }
     Ok(())
 }
