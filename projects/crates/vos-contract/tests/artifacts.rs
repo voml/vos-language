@@ -462,7 +462,7 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
                 FieldIdentity {
                     canonical_name: "new_id".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 1,
+                    virtual_field_index: 0,
                 },
                 FieldIdentity {
                     canonical_name: "extra".to_owned(),
@@ -486,12 +486,9 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
         from: "id".to_owned(),
         to: "new_id".to_owned(),
     }));
-    assert!(evolution.changes.contains(&IdentityChange::FieldReordered {
-        type_id: 1,
-        field_id: 2,
-        from: 0,
-        to: 1,
-    }));
+    let mut moved = current.clone();
+    moved.types[0].fields[0].virtual_field_index = 3;
+    assert!(compare_identity(&previous, &moved).unwrap_err().iter().any(|item| item.code == "ID027"));
     assert!(evolution.changes.contains(&IdentityChange::FieldRemoved {
         type_id: 1,
         field_id: 3,
