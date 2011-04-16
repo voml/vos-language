@@ -2,9 +2,9 @@
 
 Executable examples of what VOS source means.
 
-The fixture suite is the compatibility bridge between the language, the Rust reference implementation, and future hosts.
-Instead of asking another parser to reproduce behavior from prose alone, it provides source files and exact expected
-outputs for normalization, AST structure, diagnostics, and catalog identity.
+The fixture suite is the conformance bridge between Oak, the VOS semantic consumer, and future hosts. It provides
+source files and exact expected outputs for normalization, Oak structure, diagnostics, resolved contracts, and catalog
+identity.
 
 ## How a case is assembled
 
@@ -13,8 +13,8 @@ Each case starts with a stem and may have several companions:
 ```text
 stem.vos                 source under test
 stem.normalized.vos      canonical UTF-8, LF-only source without a BOM
-stem.ast.json            serialized AST for a successful parse
-stem.diagnostics.json    ordered parser diagnostics
+stem.ast.json            serialized Oak Builder output for a successful parse
+stem.diagnostics.json    ordered Oak/VOS diagnostics
 stem.catalog.json        stable field/catalog identity when applicable
 stem.kind.json           explicit parser selection in mixed directories
 ```
@@ -24,13 +24,14 @@ empty `errors` array for successful cases.
 
 ## Fixture families
 
-| Directory                      | Focus                                    | Parser entry                         |
+| Directory                      | Focus                                    | Oak/VOS entry                       |
 |--------------------------------|------------------------------------------|--------------------------------------|
-| [`schema`](./schema)           | Schema and DDL documents                 | `parse_document`                     |
-| [`operations`](./operations)   | Expressions and object/method operations | `parse_program`                      |
-| [`diagnostics`](./diagnostics) | Invalid or warning-bearing source        | Selected by location or `.kind.json` |
+| [`schema`](./schema)           | Schema and DDL documents                 | Oak VOS frontend                    |
+| [`operations`](./operations)   | Expressions and object/method operations | Oak VOS frontend                    |
+| [`diagnostics`](./diagnostics) | Invalid or warning-bearing source        | Oak diagnostics                     |
 
-Under `operations/`, the default parser is `program`; elsewhere it is `document`. A `stem.kind.json` sidecar can make
+Under `operations/`, the Oak VOS operation surface is expected; elsewhere the Oak VOS schema surface is expected. A
+`stem.kind.json` sidecar can make
 the choice explicit:
 
 ```json
@@ -48,13 +49,12 @@ normalized source, not the platform-specific input bytes.
 
 ### AST JSON
 
-Rust `vos-ast` serde output is the current golden representation. `Document.source` is intentionally omitted because
-`*.normalized.vos` already records the source. Enums use the representation emitted by serde, and changes are reviewed
-as language-contract changes rather than formatting noise.
+Oak Builder output and VOS resolved artifacts are the golden representations. Source text and spans remain owned by Oak.
+Changes are reviewed as language-contract changes rather than formatting noise.
 
 ### Diagnostics
 
-Diagnostics match `vos_ast::Diagnostics`:
+Diagnostics use the Oak/VOS structured diagnostic contract:
 
 ```json
 {
