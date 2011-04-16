@@ -28,7 +28,7 @@ fixtures must not turn it into a universal validity requirement.
 Run the dedicated contract with:
 
 ```bash
-cargo test -p vos-parser --test conformance
+cargo test -p vos-contract --offline
 ```
 
 See the parent [conformance guide](../README.md) for companion files and intentional update instructions.

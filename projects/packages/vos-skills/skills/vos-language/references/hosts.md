@@ -101,13 +101,12 @@ vos = "0.1"
 ```
 
 ```rust
-let document = vos::parser::parse_document(source) ?;
-// operation programs:
-let program = vos::parse_program(source) ?;
+let input = vos::parse_oak(source) ?;
+let projection = input.project_schema() ?;
 ```
 
-Use this when you embed VOS in a Rust service, CLI, or custom toolchain. If you use **Iris** or **YYDB**, prefer their
-facade commands instead of wiring `vos` directly unless you are building a host.
+Oak remains the only parser and syntax owner. Use this facade when embedding VOS semantics in a Rust service, CLI, or
+custom toolchain. If you use **Iris** or **YYDB**, prefer their facade commands instead of traversing syntax internals.
 
 ---
 

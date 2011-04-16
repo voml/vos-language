@@ -176,7 +176,7 @@ a concrete compatibility target.
 
 ```bash
 cd projects/crates
-cargo test -p vos-parser --test conformance
+cargo test -p vos-contract --offline
 ```
 
 See the [fixture guide](./specifications/fixtures/README.md) before adding or updating goldens.
