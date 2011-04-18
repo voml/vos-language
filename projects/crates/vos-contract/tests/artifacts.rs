@@ -988,6 +988,22 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
 }
 
 #[test]
+fn resolved_contract_fixture_matches_reviewed_golden() {
+    let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
+    let manifest = IdentityManifest::from_json(include_str!(
+        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
+    )).unwrap();
+    let projection = parse_oak(source).unwrap().project_schema().unwrap();
+    let contract = resolve_contract(&projection, &manifest).unwrap();
+    let actual: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
+    let expected: Value = serde_json::from_str(include_str!(
+        "../../../../specifications/fixtures/contracts/identity_basic.resolved.json"
+    )).unwrap();
+    assert_eq!(actual, expected);
+    assert_eq!(ResolvedContract::from_json(&expected.to_string()).unwrap(), contract);
+}
+
+#[test]
 fn resolved_contract_rejects_dangling_user_type_references() {
     let projection = parse_oak("class A { target: B }\nclass B { id: uuid }")
         .unwrap()
