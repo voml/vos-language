@@ -220,7 +220,9 @@ impl ResolvedContract {
         Ok(contract)
     }
 
-    fn validate(&self) -> Result<(), ArtifactError> {
+    /// Validates versions, identities, references, canonical types, and the
+    /// content fingerprint of this resolved contract.
+    pub fn validate(&self) -> Result<(), ArtifactError> {
         if self.format_version != RESOLVED_CONTRACT_FORMAT_VERSION
             || self.identity_manifest_version != IDENTITY_MANIFEST_VERSION
             || self.schema_fingerprint.len() != 64

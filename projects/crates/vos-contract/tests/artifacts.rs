@@ -964,6 +964,7 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
     ))
     .unwrap();
     let contract = resolve_contract(&projection, &manifest).unwrap();
+    contract.validate().unwrap();
     let json = contract.to_json().unwrap();
     assert_eq!(ResolvedContract::from_json(&json).unwrap(), contract);
     let mut invalid: Value = serde_json::from_str(&json).unwrap();
