@@ -23,7 +23,8 @@ pub use projection::{
     ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
     CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, FieldContract,
     LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract,
-    TypeContractKind,
+    TypeContractKind, OperationKind, OperationParameter, OperationProjection, SyntaxSliceContract,
+    project_operations,
 };
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
@@ -72,6 +73,11 @@ impl ContractInput {
     pub fn project_schema(&self) -> Result<SchemaProjection, Vec<ContractDiagnostic>> {
         projection::project_schema(&self.root)
     }
+
+    /// Projects Oak operation declarations without reparsing their bodies.
+    pub fn project_operations(&self) -> Result<Vec<OperationProjection>, Vec<ContractDiagnostic>> {
+        projection::project_operations(&self.root)
+    }
 }
 
 #[cfg(test)]
@@ -108,6 +114,19 @@ mod tests {
         assert_eq!(&source[fields[0].type_syntax.span.clone()], "uuid");
         assert_eq!(&source[fields[1].type_syntax.span.clone()], "&User?");
         assert_eq!(&source[fields[0].attributes[0].span.clone()], "[primary]");
+    }
+
+    #[test]
+    fn projects_operation_parameters_and_return_type_without_reparsing() {
+        let source = "query active(status: utf8, limit: i64) -> [User] { User.filter(x => x.active) }";
+        let operations = parse_oak(source).unwrap().project_operations().unwrap();
+        assert_eq!(operations.len(), 1);
+        assert_eq!(operations[0].name, "active");
+        assert_eq!(operations[0].parameters[0].name, "status");
+        assert_eq!(operations[0].parameters[1].name, "limit");
+        assert!(matches!(operations[0].return_type, Some(CanonicalType::List(_))));
+        assert_eq!(operations[0].body.as_ref().unwrap().text, "{ User.filter(x => x.active) }");
+        assert_eq!(&source[operations[0].span.clone()], source);
     }
 
     #[test]
