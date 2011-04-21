@@ -22,9 +22,10 @@ pub use identity::{
 pub use projection::{
     ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
     CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, FieldContract,
-    LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract,
-    TypeContractKind, OperationKind, OperationParameter, OperationProjection, SyntaxSliceContract,
-    project_operations,
+    LANGUAGE_VERSION, OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE,
+    PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract, TypeContractKind,
+    OperationKind, OperationParameter, OperationProjection, OperationProjectionArtifact,
+    SyntaxSliceContract, project_operations, project_operations_artifact,
 };
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
@@ -78,6 +79,11 @@ impl ContractInput {
     pub fn project_operations(&self) -> Result<Vec<OperationProjection>, Vec<ContractDiagnostic>> {
         projection::project_operations(&self.root)
     }
+
+    /// Projects Oak operation declarations into a versioned syntax artifact.
+    pub fn project_operations_artifact(&self) -> Result<OperationProjectionArtifact, Vec<ContractDiagnostic>> {
+        projection::project_operations_artifact(&self.root)
+    }
 }
 
 #[cfg(test)]
@@ -85,6 +91,7 @@ mod tests {
     use super::parse_oak;
     use super::{
         CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION, CanonicalType, LANGUAGE_VERSION,
+        OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE, OperationProjectionArtifact,
         PROJECTION_STAGE,
     };
     use oak_vos::VosDeclarationKind;
@@ -127,6 +134,20 @@ mod tests {
         assert!(matches!(operations[0].return_type, Some(CanonicalType::List(_))));
         assert_eq!(operations[0].body.as_ref().unwrap().text, "{ User.filter(x => x.active) }");
         assert_eq!(&source[operations[0].span.clone()], source);
+    }
+
+    #[test]
+    fn operation_artifact_is_strict_and_source_backed() {
+        let input = parse_oak("query active(status: utf8) -> [User] { User.filter(x => x.active) }").unwrap();
+        let artifact = input.project_operations_artifact().unwrap();
+        assert_eq!(artifact.envelope.stage, OPERATION_PROJECTION_STAGE);
+        assert_eq!(artifact.envelope.contract_format_version, OPERATION_CONTRACT_FORMAT_VERSION);
+        let json = artifact.to_json().unwrap();
+        assert_eq!(OperationProjectionArtifact::from_json(&json).unwrap(), artifact);
+
+        let mut invalid = serde_json::from_str::<serde_json::Value>(&json).unwrap();
+        invalid["operations"][0]["body"]["text"] = serde_json::Value::String("{ altered }".to_owned());
+        assert_eq!(OperationProjectionArtifact::from_json(&invalid.to_string()).unwrap_err().code, "OPR014");
     }
 
     #[test]
