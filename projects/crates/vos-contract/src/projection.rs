@@ -203,6 +203,8 @@ pub enum OperationKind {
     Udf,
     /// Session-local micro declaration.
     Micro,
+    /// Durable macro declaration.
+    Macro,
 }
 
 /// One operation parameter projected from Oak.
@@ -240,6 +242,7 @@ pub fn project_operations(root: &VosRoot) -> Result<Vec<OperationProjection>, Ve
             VosDeclarationKind::Query => OperationKind::Query,
             VosDeclarationKind::Udf => OperationKind::Udf,
             VosDeclarationKind::Micro => OperationKind::Micro,
+            VosDeclarationKind::Macro => OperationKind::Macro,
             _ => continue,
         };
         let Some(name) = declaration.name.clone() else {
