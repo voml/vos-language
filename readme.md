@@ -31,7 +31,7 @@ Add VOS validation to this Rust project and explain which checks belong in CI.
 Model this API in VOS, then show how its schema should flow into Iris ORM without
 duplicating query semantics in generated code.
 
-Explain whether this requirement belongs to VOS, Iris ORM, or Hermes RPC, and draft
+Explain whether this requirement belongs to VOS, Iris ORM, or VOS RPC, and draft
 the smallest contract that keeps those boundaries intact.
 ```
 
