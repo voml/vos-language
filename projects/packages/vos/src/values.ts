@@ -17,3 +17,12 @@ export interface VosFileRef {
     /** Total byte length of the file. */
     readonly length: bigint;
 }
+
+/**
+ * Stored value of a `&T` reference: the target's primary key.
+ *
+ * VOS reference values never embed the target record. Narrowing this to the
+ * exact key type of a concrete target is a later refinement; the author side
+ * currently sees the union that covers every VOS primary-key type.
+ */
+export type ReferenceKey = string | number | bigint;

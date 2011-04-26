@@ -10,15 +10,30 @@
  * package never parses VOS source itself.
  */
 
-export { v, type VBuiltinName } from "./builtins.js";
+export { v, type VBuiltinName, type VItemName, type VWrapperName } from "./builtins.js";
 export {
     type AnyTypeDescriptor,
     type Attribute,
     type BuiltinKind,
+    type FieldDescriptor,
     type Infer,
+    type RefDescriptor,
+    type ReferenceTarget,
     type ScalarKind,
     type TypeDescriptor,
     type WrapperKind,
 } from "./descriptor.js";
-export type { VosFileRef } from "./values.js";
+export {
+    type ClassDescriptor,
+    type FieldMap,
+    type ItemKind,
+    type NamedFieldMap,
+    type NamedItemDescriptor,
+    type NamedItemKind,
+    type ObjectDescriptor,
+    type RowOf,
+    type StructuralDescriptor,
+    type TableDescriptor,
+} from "./items.js";
+export type { ReferenceKey, VosFileRef } from "./values.js";
 export { checkSource, type VosCheckResult, type VosDiagnostic } from "./legacy-check.js";

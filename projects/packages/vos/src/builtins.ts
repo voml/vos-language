@@ -7,7 +7,25 @@
  * layout and validation semantics.
  */
 
-import { type AnyTypeDescriptor, type Infer, makeDescriptor, type TypeDescriptor } from "./descriptor.js";
+import {
+    type AnyTypeDescriptor,
+    type BuiltinKind,
+    type Infer,
+    makeDescriptor,
+    type ReferenceTarget,
+    type RefDescriptor,
+    type TypeDescriptor,
+} from "./descriptor.js";
+import {
+    type ClassDescriptor,
+    type FieldMap,
+    makeClass,
+    makeObject,
+    makeRef,
+    makeTable,
+    type ObjectDescriptor,
+    type TableDescriptor,
+} from "./items.js";
 import type { VosFileRef } from "./values.js";
 
 /**
@@ -57,7 +75,25 @@ export const v = {
 
     /** List wrapper `[T]`. */
     list: <T extends AnyTypeDescriptor>(inner: T): TypeDescriptor<"list", Infer<T>[]> => makeDescriptor<"list", Infer<T>[]>("list", { inner }),
+
+    /** Primary-key reference `&T`; named `table` / `class` targets only. */
+    ref: <T extends ReferenceTarget>(target: T): RefDescriptor<T["name"]> => makeRef(target),
+
+    /** Persistent table declaration. */
+    table: <N extends string, F extends FieldMap>(name: N, fields: F): TableDescriptor<N, F> => makeTable(name, fields),
+
+    /** Non-persistent named class declaration. */
+    class: <N extends string, F extends FieldMap>(name: N, fields: F): ClassDescriptor<N, F> => makeClass(name, fields),
+
+    /** Anonymous structural object for parameters and projections. */
+    object: <F extends FieldMap>(fields: F): ObjectDescriptor<F> => makeObject(fields),
 };
 
-/** Builtin builder names, useful for conformance checks and tooling. */
-export type VBuiltinName = Exclude<keyof typeof v, "vector" | "optional" | "list">;
+/** Builtin scalar builder names, useful for conformance checks and tooling. */
+export type VBuiltinName = Exclude<BuiltinKind, "vector">;
+
+/** Item builder names. */
+export type VItemName = "table" | "class" | "object" | "ref";
+
+/** Wrapper builder names. */
+export type VWrapperName = "vector" | "optional" | "list";

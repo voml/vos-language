@@ -6,12 +6,15 @@
  * compiled into canonical VOS source or a canonical VOS artifact before any
  * host consumes it.
  *
- * The protocol intentionally mirrors the frozen VOS type algebra in
+ * The protocol mirrors the frozen VOS type algebra in
  * `vos/documentation/builtins.md`. Builtin names are case-sensitive and the
  * public surface must not offer a wide `string()` / `number()` / `json()`.
  */
 
-declare const PHANTOM: unique symbol;
+import type { ReferenceKey } from "./values.js";
+
+/** Phantom carrier of the author-side value type. Never present at runtime. */
+export declare const PHANTOM: unique symbol;
 
 /** Open bracket attribute, for example `[primary]` or `[tag(1)]`. */
 export interface Attribute {
@@ -44,10 +47,16 @@ export type BuiltinKind =
     | "vector";
 
 /** Wrapper kinds. VOS wrappers are not builtins. */
-export type WrapperKind = "optional" | "list";
+export type WrapperKind = "optional" | "list" | "ref";
 
 /** Every scalar descriptor kind: builtin or wrapper. */
 export type ScalarKind = BuiltinKind | WrapperKind;
+
+/** Named declaration a `&T` reference can point at. */
+export interface ReferenceTarget {
+    readonly kind: string;
+    readonly name: string;
+}
 
 /** A VOS scalar type descriptor. */
 export interface TypeDescriptor<K extends ScalarKind = ScalarKind, V = unknown> {
@@ -58,14 +67,30 @@ export interface TypeDescriptor<K extends ScalarKind = ScalarKind, V = unknown> 
     readonly dim?: number;
     /** Wrapped descriptor of `optional` and `list`. */
     readonly inner?: AnyTypeDescriptor;
+    /** Target declaration of `&T`. */
+    readonly target?: ReferenceTarget;
     /** Phantom author-side value type. Never present at runtime. */
     readonly [PHANTOM]: V;
+    /** Wrap as `T?`. */
+    optional(): TypeDescriptor<"optional", V | null>;
+    /** Wrap as `[T]`. */
+    list(): TypeDescriptor<"list", V[]>;
     /** Append the `[primary]` attribute. */
     primary(): TypeDescriptor<K, V>;
     /** Append the `[unique]` attribute. */
     unique(): TypeDescriptor<K, V>;
     /** Append an arbitrary bracket attribute, preserving it losslessly. */
     attribute(name: string, ...args: readonly (string | number)[]): TypeDescriptor<K, V>;
+}
+
+/** A named field: a scalar descriptor plus its VOS field name. */
+export interface FieldDescriptor<Name extends string = string, V = unknown> extends TypeDescriptor<ScalarKind, V> {
+    readonly name: Name;
+}
+
+/** A `&T` reference descriptor. */
+export interface RefDescriptor<Target extends string = string> extends TypeDescriptor<"ref", ReferenceKey> {
+    readonly target: ReferenceTarget & { readonly name: Target };
 }
 
 /** Any scalar descriptor, used where the concrete kind is not yet known. */
@@ -75,12 +100,20 @@ export type AnyTypeDescriptor = TypeDescriptor<ScalarKind, unknown>;
 export type Infer<D> = D extends { readonly [PHANTOM]: infer V } ? V : never;
 
 interface DescriptorOptions {
+    readonly name?: string;
     readonly attrs?: readonly Attribute[];
     readonly dim?: number;
     readonly inner?: AnyTypeDescriptor;
+    readonly target?: ReferenceTarget;
 }
 
 const DESCRIPTOR_PROTO = {
+    optional(this: AnyTypeDescriptor) {
+        return makeDescriptor("optional", { inner: this });
+    },
+    list(this: AnyTypeDescriptor) {
+        return makeDescriptor("list", { inner: this });
+    },
     primary(this: AnyTypeDescriptor) {
         return withAttribute(this, "primary");
     },
@@ -93,11 +126,14 @@ const DESCRIPTOR_PROTO = {
 };
 
 /**
- * Build a descriptor as plain data on a shared prototype. `JSON.stringify` and
- * `structuredClone` therefore see data only, never builder functions.
+ * Build a descriptor as plain data on a shared prototype. Serialization and
+ * cloning therefore see data only, never builder functions.
  */
 export function makeDescriptor<K extends ScalarKind, V>(kind: K, options: DescriptorOptions = {}): TypeDescriptor<K, V> {
     const descriptor = Object.create(DESCRIPTOR_PROTO) as Record<string, unknown>;
+    if (options.name !== undefined) {
+        descriptor.name = options.name;
+    }
     descriptor.kind = kind;
     descriptor.attrs = options.attrs ?? [];
     if (options.dim !== undefined) {
@@ -106,7 +142,21 @@ export function makeDescriptor<K extends ScalarKind, V>(kind: K, options: Descri
     if (options.inner !== undefined) {
         descriptor.inner = options.inner;
     }
+    if (options.target !== undefined) {
+        descriptor.target = options.target;
+    }
     return descriptor as unknown as TypeDescriptor<K, V>;
+}
+
+/** Name a field descriptor without mutating the source descriptor. */
+export function withName<K extends ScalarKind, V, N extends string>(descriptor: TypeDescriptor<K, V>, name: N): FieldDescriptor<N, V> {
+    return makeDescriptor<K, V>(descriptor.kind, {
+        name,
+        attrs: descriptor.attrs,
+        dim: descriptor.dim,
+        inner: descriptor.inner,
+        target: descriptor.target,
+    }) as unknown as FieldDescriptor<N, V>;
 }
 
 function withAttribute<K extends ScalarKind, V>(
@@ -114,9 +164,12 @@ function withAttribute<K extends ScalarKind, V>(
     name: string,
     ...args: readonly string[]
 ): TypeDescriptor<K, V> {
+    const source = descriptor as TypeDescriptor<K, V> & { readonly name?: string };
     return makeDescriptor<K, V>(descriptor.kind, {
+        name: source.name,
         attrs: [...descriptor.attrs, { name, args }],
         dim: descriptor.dim,
         inner: descriptor.inner,
+        target: descriptor.target,
     });
 }

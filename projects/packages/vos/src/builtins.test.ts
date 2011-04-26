@@ -29,9 +29,11 @@ const BUILTIN_NAMES = [
 
 const WRAPPER_NAMES = ["vector", "optional", "list"] as const;
 
+const ITEM_NAMES = ["table", "class", "object", "ref"] as const;
+
 describe("v builtin builders", () => {
-    it("exposes exactly the frozen VOS builtin list plus wrappers", () => {
-        expect(Object.keys(v).sort()).toEqual([...BUILTIN_NAMES, ...WRAPPER_NAMES].sort());
+    it("exposes exactly the frozen VOS builtin list plus wrappers and item builders", () => {
+        expect(Object.keys(v).sort()).toEqual([...BUILTIN_NAMES, ...WRAPPER_NAMES, ...ITEM_NAMES].sort());
     });
 
     it("never offers a wide string / number / json builder", () => {
