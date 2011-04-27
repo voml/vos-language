@@ -25,8 +25,10 @@ export {
 } from "./descriptor.js";
 export {
     type ClassDescriptor,
+    type FieldAccess,
     type FieldMap,
     type ItemKind,
+    type ItemMetadataKey,
     type NamedFieldMap,
     type NamedItemDescriptor,
     type NamedItemKind,
@@ -35,5 +37,6 @@ export {
     type StructuralDescriptor,
     type TableDescriptor,
 } from "./items.js";
+export { emitSource, type EmittableItem } from "./emit.js";
 export type { ReferenceKey, VosFileRef } from "./values.js";
 export { checkSource, type VosCheckResult, type VosDiagnostic } from "./legacy-check.js";

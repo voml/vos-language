@@ -121,9 +121,15 @@ describe("declaration validation", () => {
         expect(() => v.table("User", { "user-id": v.uuid() })).toThrow(/not a valid VOS identifier/);
     });
 
-    it("rejects field names that collide with the descriptor surface", () => {
-        for (const reserved of ["kind", "name", "fields"]) {
-            expect(() => v.table("User", { [reserved]: v.utf8() })).toThrow(/is reserved/);
-        }
+    it("accepts field names that collide with declaration metadata", () => {
+        const Event = v.table("Event", { kind: v.utf8(), fields: v.bool(), name: v.uuid() });
+
+        expect(Event.kind).toBe("table");
+        expect(Event.name).toBe("Event");
+        expect(Object.keys(Event.fields)).toEqual(["kind", "fields", "name"]);
+        expect(Event.fields.kind.name).toBe("kind");
+        expect(Event.fields.kind.kind).toBe("utf8");
+        expect(Event.fields.name.kind).toBe("uuid");
+        expectTypeOf<Infer<typeof Event>>().toEqualTypeOf<{ kind: string; fields: boolean; name: string }>();
     });
 });

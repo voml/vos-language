@@ -50,16 +50,22 @@ export interface StructuralDescriptor<F extends FieldMap> {
     readonly [PHANTOM]: RowOf<F>;
 }
 
+/** Declaration metadata properties. A field with the same name stays reachable through `fields`. */
+export type ItemMetadataKey = "kind" | "name" | "fields";
+
+/** Direct field access, excluding the keys already owned by declaration metadata. */
+export type FieldAccess<F extends FieldMap> = Omit<NamedFieldMap<F>, ItemMetadataKey>;
+
 /** Persistent `table` descriptor. */
-export type TableDescriptor<N extends string = string, F extends FieldMap = FieldMap> = NamedItemDescriptor<"table", N, F> & NamedFieldMap<F>;
+export type TableDescriptor<N extends string = string, F extends FieldMap = FieldMap> = NamedItemDescriptor<"table", N, F> & FieldAccess<F>;
 
 /** Non-persistent named `class` descriptor. */
-export type ClassDescriptor<N extends string = string, F extends FieldMap = FieldMap> = NamedItemDescriptor<"class", N, F> & NamedFieldMap<F>;
+export type ClassDescriptor<N extends string = string, F extends FieldMap = FieldMap> = NamedItemDescriptor<"class", N, F> & FieldAccess<F>;
 
 /** Anonymous structural object descriptor with direct field access. */
-export type ObjectDescriptor<F extends FieldMap = FieldMap> = StructuralDescriptor<F> & NamedFieldMap<F>;
+export type ObjectDescriptor<F extends FieldMap = FieldMap> = StructuralDescriptor<F> & FieldAccess<F>;
 
-const RESERVED_FIELD_NAMES: readonly string[] = ["kind", "name", "fields"];
+const ITEM_METADATA_KEYS: readonly string[] = ["kind", "fields", "name"];
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 /** Declare a persistent `table`. */
@@ -94,9 +100,6 @@ function makeItem(kind: ItemKind, name: string | undefined, fields: FieldMap): u
     const fieldNames = Object.keys(fields);
     for (const fieldName of fieldNames) {
         assertIdentifier(fieldName, `v.${kind} field name`);
-        if (RESERVED_FIELD_NAMES.includes(fieldName)) {
-            throw new Error(`v.${kind} field name \`${fieldName}\` is reserved`);
-        }
     }
 
     const namedFields: Record<string, FieldDescriptor> = {};
@@ -107,6 +110,9 @@ function makeItem(kind: ItemKind, name: string | undefined, fields: FieldMap): u
     const descriptor: Record<string, unknown> = name === undefined ? { kind, fields: namedFields } : { name, kind, fields: namedFields };
 
     for (const fieldName of fieldNames) {
+        if (ITEM_METADATA_KEYS.includes(fieldName)) {
+            continue;
+        }
         Object.defineProperty(descriptor, fieldName, {
             value: namedFields[fieldName],
             enumerable: false,
