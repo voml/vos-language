@@ -40,7 +40,7 @@ tooling differs.
 | Your stack                  | Install / validate                                        | Typical workflow                                                                |
 |-----------------------------|-----------------------------------------------------------|---------------------------------------------------------------------------------|
 | **Any editor**              | [VS Code / Cursor extension](#editor-syntax-highlighting) | Edit `.vos` → run your stack's check → use generated code                       |
-| **TypeScript / JavaScript** | [`@game-gpt/vos`](#typescript--javascript)                | `checkSource()` for quick feedback; use your app's generator for full semantics |
+| **TypeScript / JavaScript** | [`@voml/vos`](#typescript--javascript)                | `checkSource()` for quick feedback; use your app's generator for full semantics |
 | **Rust**                    | [`vos` crate](#rust)                                      | `parse_document` / product CLI for full diagnostics                             |
 | **Iris ORM**                | [`@yydb/iris`](#iris-orm-typescript--rust-hosts)          | `.iris` schema (VOS syntax) → `iris check` / `iris generate`                    |
 | **YYDB / YYDS native**      | Product docs                                              | `.vos` is native DDL/operations — use host `check` / CLI                        |
@@ -64,13 +64,13 @@ Highlighting helps you read schema; it does not replace semantic checking.
 Add the lightweight checker to your app or tooling repo:
 
 ```bash
-npm install @game-gpt/vos
+npm install @voml/vos
 # or
-pnpm add @game-gpt/vos
+pnpm add @voml/vos
 ```
 
 ```ts
-import {checkSource} from "@game-gpt/vos";
+import {checkSource} from "@voml/vos";
 
 const result = checkSource(`
 table User {
@@ -181,7 +181,7 @@ Use generated types/clients in application code (TS, Rust, …)
 | Package                | Who it is for                                         |
 |------------------------|-------------------------------------------------------|
 | `@game-gpt/vos-skills` | **This package** — AI help writing VOS (any language) |
-| `@game-gpt/vos`        | TS/JS lightweight source check                        |
+| `@voml/vos`        | TS/JS lightweight source check                        |
 | `vos` (Rust)           | Full parser / AST / inspect                           |
 | `@yydb/iris-skills`    | Iris ORM agent workflows (optional add-on)            |
 | `@yydb/iris`           | Iris typed data access                                |

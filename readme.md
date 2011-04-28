@@ -143,7 +143,7 @@ change the language contract. The invariant is simple: **formal VOS, YYDB, and Y
 | Let an agent design, review, or integrate VOS | [`@game-gpt/vos-skills`](./projects/packages/vos-skills)  |
 | Explore the language in a browser            | [vos-language.pages.dev](https://vos-language.pages.dev/) |
 | Parse VOS or integrate it into a Rust host   | [`projects/crates`](./projects/crates)                   |
-| Check VOS source from TypeScript             | [`@game-gpt/vos`](./projects/packages/vos)                 |
+| Check VOS source from TypeScript             | [`@voml/vos`](./projects/packages/vos)                 |
 | Work on the TypeScript packages or homepage  | [`projects/packages`](./projects/packages)                   |
 | Add `.vos` highlighting to VS Code or Cursor | [`vos-on-vscode`](./projects/packages/vos-on-vscode)       |
 | Use the shared grammar with Shiki            | [`@game-gpt/vos-textmate`](projects/packages/vos-textmate) |
@@ -165,7 +165,7 @@ vos-language/
 └── projects/packages/vos-skills/   Agent Skills npm package (`@game-gpt/vos-skills`)
 ```
 
-Public applications should depend on the facade for their host: `vos` in Rust or `@game-gpt/vos` in TypeScript. Internal
+Public applications should depend on the facade for their host: `vos` in Rust or `@voml/vos` in TypeScript. Internal
 Rust crates keep the implementation maintainable; they are not competing public APIs.
 
 ## Conformance is a product feature

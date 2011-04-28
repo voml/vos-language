@@ -8,7 +8,7 @@ consumes that grammar.
 
 | Package                                  | Purpose                                                        | Status                     |
 |------------------------------------------|----------------------------------------------------------------|----------------------------|
-| [`@game-gpt/vos`](./vos)                 | Public TypeScript source-checking API                          | Lightweight checker        |
+| [`@voml/vos`](./vos)                     | Public TypeScript source-checking API                          | Lightweight checker        |
 | [`@game-gpt/vos-homepage`](./homepage)   | Homepage, language tour, and browser playground                | Private application        |
 | [`@game-gpt/vos-textmate`](vos-textmate) | Shared `.vos` grammar for Shiki and editor tooling             | Internal workspace package |
 | [`@game-gpt/vos-skills`](./vos-skills)   | Agent Skills for **users** authoring `.vos` (`npx skills add`) | Public npm package         |
@@ -20,7 +20,7 @@ supported surface instead of pretending to offer full AST or conformance parity.
 ## Try the public API
 
 ```ts
-import {checkSource} from "@game-gpt/vos";
+import {checkSource} from "@voml/vos";
 
 const result = checkSource(`
 table User {

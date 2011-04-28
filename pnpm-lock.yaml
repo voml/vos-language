@@ -14,9 +14,6 @@ importers:
 
   projects/packages/homepage:
     dependencies:
-      '@game-gpt/vos':
-        specifier: workspace:*
-        version: link:../vos
       '@game-gpt/vos-textmate':
         specifier: workspace:*
         version: link:../vos-textmate
@@ -32,6 +29,9 @@ importers:
       '@vmz/ui-icons':
         specifier: 0.1.12
         version: 0.1.12(@vmz/ui@0.1.12)
+      '@voml/vos':
+        specifier: workspace:*
+        version: link:../vos
       shiki:
         specifier: ^3.12.2
         version: 3.23.0

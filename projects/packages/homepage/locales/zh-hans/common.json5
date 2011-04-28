@@ -90,7 +90,7 @@
   playgroundPreview: '结构预览',
   playgroundOk: '结构看起来正常',
   playgroundFailed: '需要处理',
-  playgroundHint: '关注模型表面：嵌套、顶层声明与命名服务参数。完整解析落在 `vos` crate / `@game-gpt/vos`。',
+  playgroundHint: '关注模型表面：嵌套、顶层声明与命名服务参数。完整解析落在 `vos` crate / `@voml/vos`。',
   playgroundSamplePersistence: '表与引用',
   playgroundSampleService: '服务',
   playgroundCopy: '复制',

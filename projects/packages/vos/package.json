@@ -1,5 +1,5 @@
 {
-    "name": "@game-gpt/vos",
+    "name": "@voml/vos",
     "version": "0.1.0",
     "description": "VOS (Virtual Object Schema) — public TypeScript API",
     "homepage": "https://vos-language.pages.dev/",

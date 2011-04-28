@@ -18,7 +18,7 @@ Reserve package names before Trusted Publisher real releases:
 
 ```bash
 pnpm placeholder          # status
-pnpm placeholder:publish  # publish @game-gpt/vos + @game-gpt/vos-skills @0.0.0
+pnpm placeholder:publish  # publish @voml/vos + @game-gpt/vos-skills @0.0.0
 pnpm placeholder:trust    # configure Trusted Publisher (needs NPM_TOTP_SECRET in .env.placeholder.local)
 ```
 

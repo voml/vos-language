@@ -1,4 +1,4 @@
-# `@game-gpt/vos`
+# `@voml/vos`
 
 Fast, dependency-free source checks for VOS in TypeScript and browser environments.
 
@@ -11,13 +11,13 @@ named.
 ## Install
 
 ```bash
-pnpm add @game-gpt/vos
+pnpm add @voml/vos
 ```
 
 ## Check source
 
 ```ts
-import {checkSource} from "@game-gpt/vos";
+import {checkSource} from "@voml/vos";
 
 const result = checkSource(`
 namespace example::identity

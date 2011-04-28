@@ -6,7 +6,7 @@ The VOS homepage turns the language contract into an approachable product experi
 explanations of relationships and lifecycle, and an interactive playground with structural checks.
 
 This is a private workspace application built with **VMZ** (`@vmz/vmz@0.1.12`), **@vmz/ui**, **@vmz/ui-icons**, and
-**@vmz/plugin-shiki** (VOS grammar via `@game-gpt/vos-textmate/shiki`). It consumes `@game-gpt/vos` for browser-side
+**@vmz/plugin-shiki** (VOS grammar via `@game-gpt/vos-textmate/shiki`). It consumes `@voml/vos` for browser-side
 `checkSource` feedback.
 
 ## Run locally
@@ -32,7 +32,7 @@ Release static site (CDN — Cloudflare Pages, Netlify, etc.):
 pnpm homepage
 ```
 
-(`pnpm homepage` builds `@game-gpt/vos` to `dist/` first — required for static SSR on Node 22.)
+(`pnpm homepage` builds `@voml/vos` to `dist/` first — required for static SSR on Node 22.)
 
 Outputs land under **`dist/cdn`** (`static` profile). Local dev/SSR uses **`dist/browser`**; WeChat uses **`dist/wechat`**.
 

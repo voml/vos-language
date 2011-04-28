@@ -1,7 +1,7 @@
 /**
  * Public TypeScript surface for VOS.
  *
- * `import { v } from "@game-gpt/vos"` builds VOS type descriptors. Descriptors
+ * `import { v } from "@voml/vos"` builds VOS type descriptors. Descriptors
  * are author-side data: they must be compiled into canonical VOS source or a
  * canonical VOS artifact before a host consumes them.
  *

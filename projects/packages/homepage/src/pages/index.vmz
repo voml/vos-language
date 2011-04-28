@@ -173,7 +173,7 @@
       </div>
       <div class="package-stack">
         <article>
-          <div><span class="package-icon">TS</span><code>@game-gpt/vos</code></div>
+          <div><span class="package-icon">TS</span><code>@voml/vos</code></div>
           <p>{pkgVos}</p>
           <span class="package-role">TYPE CHECKS · RUNTIME</span>
         </article>
