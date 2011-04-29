@@ -8,9 +8,6 @@ description = "Virtual Object Schema (VOS) language facade"
 readme = "readme.md"
 
 [dependencies]
-vos-ast = { workspace = true }
-vos-parser = { workspace = true }
 vos-generator = { workspace = true }
-vos-inspect = { workspace = true }
 vos-contract = { workspace = true }
 uuid = { workspace = true }
