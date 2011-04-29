@@ -39,4 +39,3 @@ export {
 } from "./items.js";
 export { emitSource, type EmittableItem } from "./emit.js";
 export type { ReferenceKey, VosFileRef } from "./values.js";
-export { checkSource, type VosCheckResult, type VosDiagnostic } from "./legacy-check.js";
