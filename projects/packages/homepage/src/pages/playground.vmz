@@ -178,7 +178,7 @@
 </style>
 
 <script client>
-import { checkSource } from '@voml/vos';
+import { checkSource } from '@voml/vos-language';
 import { SAMPLES } from '../lib/samples.ts';
 import {
   playgroundEyebrow,

@@ -6,17 +6,18 @@
     "description": "VOS homepage — VMZ + @vmz/ui + @vmz/ui-icons dogfood",
     "homepage": "https://vos-language.pages.dev/",
     "scripts": {
-        "predev": "pnpm --filter @voml/vos build",
+        "predev": "pnpm --filter @voml/vos build && pnpm --filter @voml/vos-language build",
         "dev": "vmz dev . --out-dir dist/browser --target browser",
-        "prebuild": "pnpm --filter @voml/vos build",
+        "prebuild": "pnpm --filter @voml/vos build && pnpm --filter @voml/vos-language build",
         "build": "vmz build . --release --out-dir dist/browser --target browser",
-        "prebuild:static": "pnpm --filter @voml/vos build",
+        "prebuild:static": "pnpm --filter @voml/vos build && pnpm --filter @voml/vos-language build",
         "build:static": "vmz check . && vmz build . --release --profile static --out-dir dist/cdn --target browser",
         "check": "vmz check .",
         "serve": "vmz serve . --out-dir dist/browser"
     },
     "dependencies": {
         "@voml/vos": "workspace:*",
+        "@voml/vos-language": "workspace:*",
         "@game-gpt/vos-textmate": "workspace:*",
         "@vmz/core": "0.1.12",
         "@vmz/plugin-shiki": "0.1.12",
