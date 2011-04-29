@@ -1,0 +1,12 @@
+[package]
+name = "vos-format"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "Internal VOS formatter — apps depend on the `vos` crate (`vos::format`) only"
+readme = "readme.md"
+
+[dependencies]
+oak-vos = { workspace = true }

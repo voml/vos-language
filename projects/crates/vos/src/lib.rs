@@ -12,6 +12,7 @@
 #![warn(missing_docs)]
 
 pub use vos_contract as contract;
+pub use vos_format as format;
 pub use vos_generator as generator;
 
 /// Strict resolved contract artifact.
