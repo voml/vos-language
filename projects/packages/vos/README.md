@@ -100,10 +100,10 @@ An anonymous `object` is not a schema declaration and is rejected by `emitSource
 
 ## Scope
 
-This package is the modelling surface. It never parses VOS source, never owns a CST/AST, never formats, and never
-manages database lifecycle. Descriptors must be compiled into canonical VOS source or a canonical VOS artifact before a
-host consumes them. More declaration items (`enums`, `flags`, `union`, and the dynamic row builder) are added only once
-their VOS contract is frozen — this package does not invent names ahead of the language.
+This package is the modelling surface. It never parses VOS source, never owns a CST/AST, never formats, never manages
+database lifecycle, and provides no CLI. Descriptors must be compiled into canonical VOS source or a canonical VOS
+artifact before a host consumes them. More declaration items (`enums`, `flags`, `union`, and the dynamic row builder)
+are added only once their VOS contract is frozen — this package does not invent names ahead of the language.
 
 Use the Rust [`vos` facade](../../crates/vos) for conformance-grade parsing. Source checks for TypeScript hosts live in
 [`@voml/vos-language`](../vos-language).

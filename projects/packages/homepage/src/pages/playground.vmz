@@ -218,7 +218,7 @@ export default class PlaygroundPage {
 
   onMount() {
     this.applyLocaleCopy();
-    this.runCheck();
+    void this.runCheck();
     this._unwatchLocale = watchDocumentLocale((id) => this.applyLocaleCopy(id));
   }
 
@@ -252,23 +252,23 @@ export default class PlaygroundPage {
   selectSample(kind) {
     this.sampleKind = kind;
     this.source = SAMPLES[kind];
-    this.runCheck();
+    void this.runCheck();
   }
 
   resetSample() {
     this.source = SAMPLES[this.sampleKind];
-    this.runCheck();
+    void this.runCheck();
   }
 
   onSourceInput(e) {
     const target = e && e.target;
     this.source = target && typeof target.value === 'string' ? target.value : '';
-    this.runCheck();
+    void this.runCheck();
   }
 
-  runCheck() {
+  async runCheck() {
     try {
-      const result = checkSource(this.source);
+      const result = await checkSource(this.source);
       this.resultOk = !!result.ok;
       if (result.ok) {
         this.diagnostics = [];

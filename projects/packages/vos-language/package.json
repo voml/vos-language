@@ -1,7 +1,7 @@
 {
     "name": "@voml/vos-language",
-    "version": "0.0.0",
-    "description": "VOS language tooling — source checks and diagnostics for TypeScript hosts",
+    "version": "0.0.1",
+    "description": "VOS language tooling — source checks and diagnostics backed by the Rust WebAssembly core",
     "homepage": "https://vos-language.pages.dev/",
     "repository": {
         "type": "git",
@@ -10,7 +10,9 @@
     },
     "type": "module",
     "license": "MPL-2.0",
-    "sideEffects": false,
+    "sideEffects": [
+        "./lib/vos_wasm.js"
+    ],
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -18,19 +20,25 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js",
             "default": "./dist/index.js"
-        }
+        },
+        "./wasm": "./lib/vos_wasm_bg.wasm"
     },
     "files": [
         "dist",
-        "src"
+        "lib",
+        "README.md"
     ],
     "scripts": {
-        "build": "tsup src/index.ts --format esm --dts --clean",
+        "build:wasm": "node ../../../scripts/build-wasm.mjs",
+        "build:ts": "tsc -p tsconfig.build.json",
+        "build": "pnpm run build:wasm && pnpm run build:ts",
+        "pretypecheck": "pnpm run build:wasm",
         "typecheck": "tsc --noEmit",
+        "pretest": "pnpm run build:wasm",
         "test": "vitest run"
     },
     "devDependencies": {
-        "tsup": "^8.5.0",
+        "@types/node": "^20.10.0",
         "typescript": "^5.9.2",
         "vitest": "^3.2.4"
     }

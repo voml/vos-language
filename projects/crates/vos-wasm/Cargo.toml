@@ -1,0 +1,20 @@
+[package]
+name = "vos-wasm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "WebAssembly export surface for the VOS language toolchain"
+readme = "readme.md"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+vos = { workspace = true }
+wasm-bindgen = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+# Enables the webassembly backend for the `getrandom` instance pulled in by `uuid`.
+getrandom = { workspace = true }

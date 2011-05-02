@@ -9,7 +9,7 @@ consumes that grammar.
 | Package                                        | Purpose                                                                 | Status                     |
 |------------------------------------------------|-------------------------------------------------------------------------|----------------------------|
 | [`@voml/vos`](./vos)                           | Public TypeScript declaration and type-modelling API (`v.*`, `Infer`)    | Modelling surface          |
-| [`@voml/vos-language`](./vos-language)         | Public TypeScript language API (`.vos` source checks and diagnostics)    | Lightweight checker        |
+| [`@voml/vos-language`](./vos-language)         | Language API (`.vos` source checks and diagnostics) backed by the Rust wasm core | Wasm-backed checker        |
 | [`@game-gpt/vos-homepage`](./homepage)         | Homepage, language tour, and browser playground                          | Private application        |
 | [`@game-gpt/vos-textmate`](vos-textmate)       | Shared `.vos` grammar for Shiki and editor tooling                       | Internal workspace package |
 | [`@game-gpt/vos-skills`](./vos-skills)         | Agent Skills for **users** authoring `.vos` (`npx skills add`)           | Public npm package         |
@@ -38,22 +38,23 @@ Source checks belong to the language package, not to the modelling package:
 ```ts
 import { checkSource } from "@voml/vos-language";
 
-const result = checkSource(`
+const result = await checkSource(`
 table User {
-    @@user_id: uuid,
-    @user_name: utf8,
+    @@id: uuid,
+    name: utf8,
 }
 `);
 
 if (!result.ok) {
     for (const diagnostic of result.diagnostics) {
-        console.error(`${diagnostic.line}: ${diagnostic.message}`);
+        console.error(`${diagnostic.line ?? "L?"}: ${diagnostic.message}`);
     }
 }
 ```
 
-Today `checkSource` performs fast structural checks suitable for a browser playground or early editor feedback. Use the
-Rust facade for the canonical typed AST, full semantic diagnostics, catalog IR, or conformance-grade parsing.
+The check runs in the Rust WebAssembly core staged into `lib/` by `scripts/build-wasm.mjs`; the TypeScript surface only
+loads and types it. Use the Rust facade for the canonical typed AST, full semantic diagnostics, catalog IR, or
+conformance-grade parsing.
 
 ## Run the homepage
 

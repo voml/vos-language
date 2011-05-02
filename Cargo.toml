@@ -3,7 +3,7 @@ resolver = "2"
 members = ["projects/crates/*"]
 
 [workspace.package]
-version = "0.0.0"
+version = "0.0.1"
 edition = "2024"
 authors = ["Yggdrasill Team <192607617@qq.com>"]
 license = "MPL-2.0"
@@ -17,8 +17,10 @@ serde_json = "1"
 sha2 = "0.10"
 dejavu = { git = "https://github.com/doki-land/dejavu-engine.git", branch = "dev" }
 uuid = { version = "1", features = ["v7", "rng-getrandom"] }
-getrandom = { version = "0.3", features = ["js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 vos-generator = { path = "projects/crates/vos-generator" }
 vos-format = { path = "projects/crates/vos-format" }
 vos-contract = { path = "projects/crates/vos-contract" }
+vos = { path = "projects/crates/vos" }
+wasm-bindgen = "0.2"
 oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "d40b8f60de795d7b0773d0a1e8061bdb423a9507", package = "oak-vos" }
