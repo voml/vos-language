@@ -90,7 +90,7 @@
   playgroundPreview: 'structure preview',
   playgroundOk: 'Structure looks sound',
   playgroundFailed: 'Needs attention',
-  playgroundHint: 'Focus on the model surface: nesting, top-level items, and named service parameters. Full parse lands in the `vos` crate / `@voml/vos`.',
+  playgroundHint: 'Focus on the model surface: nesting, top-level items, and named service parameters. Full parse lands in the `vos` crate / `@voml/vos-language`.',
   playgroundSamplePersistence: 'Tables & refs',
   playgroundSampleService: 'Services',
   playgroundCopy: 'Copy',

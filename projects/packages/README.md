@@ -6,21 +6,37 @@ consumes that grammar.
 
 ## Packages
 
-| Package                                  | Purpose                                                        | Status                     |
-|------------------------------------------|----------------------------------------------------------------|----------------------------|
-| [`@voml/vos`](./vos)                     | Public TypeScript source-checking API                          | Lightweight checker        |
-| [`@game-gpt/vos-homepage`](./homepage)   | Homepage, language tour, and browser playground                | Private application        |
-| [`@game-gpt/vos-textmate`](vos-textmate) | Shared `.vos` grammar for Shiki and editor tooling             | Internal workspace package |
-| [`@game-gpt/vos-skills`](./vos-skills)   | Agent Skills for **users** authoring `.vos` (`npx skills add`) | Public npm package         |
-| [`vscode-vos`](./vscode-vos)             | VS Code/Cursor syntax highlighting                             | Private extension package  |
+| Package                                        | Purpose                                                                 | Status                     |
+|------------------------------------------------|-------------------------------------------------------------------------|----------------------------|
+| [`@voml/vos`](./vos)                           | Public TypeScript declaration and type-modelling API (`v.*`, `Infer`)    | Modelling surface          |
+| [`@voml/vos-language`](./vos-language)         | Public TypeScript language API (`.vos` source checks and diagnostics)    | Lightweight checker        |
+| [`@game-gpt/vos-homepage`](./homepage)         | Homepage, language tour, and browser playground                          | Private application        |
+| [`@game-gpt/vos-textmate`](vos-textmate)       | Shared `.vos` grammar for Shiki and editor tooling                       | Internal workspace package |
+| [`@game-gpt/vos-skills`](./vos-skills)         | Agent Skills for **users** authoring `.vos` (`npx skills add`)           | Public npm package         |
+| [`vscode-vos`](./vscode-vos)                   | VS Code/Cursor syntax highlighting                                       | Private extension package  |
 
 The Rust implementation is currently the reference parser. The TypeScript API deliberately describes its narrower
 supported surface instead of pretending to offer full AST or conformance parity.
 
-## Try the public API
+## Model a table
 
 ```ts
-import {checkSource} from "@voml/vos";
+import { v, type Infer } from "@voml/vos";
+
+const User = v.table("User", {
+    user_id: v.uuid().primary(),
+    user_name: v.utf8().unique(),
+});
+
+type UserRow = Infer<typeof User>;
+```
+
+## Check source
+
+Source checks belong to the language package, not to the modelling package:
+
+```ts
+import { checkSource } from "@voml/vos-language";
 
 const result = checkSource(`
 table User {

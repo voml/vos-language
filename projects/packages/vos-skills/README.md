@@ -31,7 +31,7 @@ The skill includes a full guide at `skills/vos-language/references/hosts.md`. Su
 
 | You build with…             | Validate / integrate                                            |
 |-----------------------------|-----------------------------------------------------------------|
-| **TypeScript / JavaScript** | `npm install @voml/vos` → `checkSource()`                   |
+| **TypeScript / JavaScript** | `npm install @voml/vos` (modelling) and `@voml/vos-language` (checks) |
 | **Rust**                    | `vos = "0.1"` in Cargo.toml → `vos::parse_oak` and VOS contracts |
 | **Iris ORM**                | `@yydb/iris` + `iris check` / `iris generate` on `.iris` schema |
 | **YYDB / YYDS**             | Host `check` / CLI (native `.vos`)                              |
