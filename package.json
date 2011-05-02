@@ -1,17 +1,16 @@
 {
-    "name": "@game-gpt/vos-workspace",
+    "name": "@vos/vos-workspace",
     "private": true,
     "description": "Virtual Object Schema (VOS) language workspace",
     "homepage": "https://vos-language.pages.dev/",
-    "packageManager": "pnpm@10.0.0",
     "type": "module",
     "scripts": {
         "fmt": "node scripts/format.mjs",
         "fmt:check": "node scripts/format.mjs --check",
         "dev": "pnpm --filter @game-gpt/vos-homepage dev",
-        "homepage": "pnpm --filter @voml/vos build && pnpm --filter @game-gpt/vos-homepage build:static",
-        "build": "pnpm -r --filter @voml/vos --filter @game-gpt/vos-homepage run build",
-        "typecheck": "pnpm -r --filter @voml/vos --filter @game-gpt/vos-skills run typecheck",
+        "homepage": "pnpm --filter @voml/vos build && pnpm --filter @voml/vos-language build && pnpm --filter @game-gpt/vos-homepage build:static",
+        "build": "pnpm -r --filter @voml/vos --filter @voml/vos-language --filter @game-gpt/vos-homepage run build",
+        "typecheck": "pnpm -r --filter @voml/vos --filter @voml/vos-language --filter @game-gpt/vos-skills run typecheck",
         "check:homepage": "pnpm --filter @game-gpt/vos-homepage check",
         "sync-grammar": "pnpm --filter @game-gpt/vos-textmate sync-vscode",
         "test:rs": "cargo test --workspace",
@@ -22,12 +21,15 @@
         "placeholder:publish": "node scripts/ci/publish-placeholder.mjs publish",
         "placeholder:trust": "node scripts/ci/publish-placeholder.mjs trust"
     },
-    "devDependencies": {
-        "@biomejs/biome": "^2.4.8"
-    },
     "pnpm": {
         "onlyBuiltDependencies": [
             "esbuild"
         ]
-    }
+    },
+    "dependencies": {
+    },
+    "devDependencies": {
+        "@doki-land/nifty": "^0.1.3"
+    },
+    "packageManager": "pnpm@10.0.0"
 }

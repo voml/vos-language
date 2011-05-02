@@ -1,6 +1,6 @@
 {
-    "name": "@game-gpt/vos-skills",
-    "version": "0.1.0",
+    "name": "@voml/vos-skills",
+    "version": "0.0.0",
     "description": "Agent Skills for users authoring VOS (.vos) schema — install via npx; guides TypeScript, Rust, Iris, and other stacks",
     "type": "module",
     "license": "MPL-2.0",

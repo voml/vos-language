@@ -1,7 +1,7 @@
 {
     "private": true,
     "name": "@game-gpt/vos-homepage",
-    "version": "0.1.0",
+    "version": "0.0.0",
     "type": "module",
     "description": "VOS homepage — VMZ + @vmz/ui + @vmz/ui-icons dogfood",
     "homepage": "https://vos-language.pages.dev/",
