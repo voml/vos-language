@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { v } from "./builtins.js";
-import type { Infer, RefDescriptor } from "./descriptor.js";
-import type { ReferenceKey, VosFileRef } from "./values.js";
+import { v } from "../src/builtins.js";
+import type { Infer, RefDescriptor } from "../src/descriptor.js";
+import type { ReferenceKey, VosFileRef } from "../src/values.js";
 
 const User = v.table("User", {
     user_id: v.uuid().primary(),

@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { v, type VBuiltinName } from "./builtins.js";
-import type { Infer } from "./descriptor.js";
-import type { VosFileRef } from "./values.js";
+import { v, type VBuiltinName } from "../src/builtins.js";
+import type { Infer } from "../src/descriptor.js";
+import type { VosFileRef } from "../src/values.js";
 
 /** The frozen VOS builtin list from `vos/documentation/builtins.md`. */
 const BUILTIN_NAMES = [

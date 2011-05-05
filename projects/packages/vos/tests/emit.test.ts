@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { v } from "./builtins.js";
-import { emitSource } from "./emit.js";
+import { v } from "../src/builtins.js";
+import { emitSource } from "../src/emit.js";
 
 const User = v.table("User", {
     user_id: v.uuid().primary(),

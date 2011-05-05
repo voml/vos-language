@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { v } from "./builtins.js";
-import type { Infer } from "./descriptor.js";
+import { v } from "../src/builtins.js";
+import type { Infer } from "../src/descriptor.js";
 
 describe("descriptor attributes", () => {
     it("appends primary and unique without mutating the source descriptor", () => {
