@@ -6,7 +6,9 @@
  * - No NPM_TOKEN; OIDC Trusted Publisher (permissions.id-token: write)
  * - Contract: file=publish-npm.yml env=NPM_PUBLISH repo=voml/vos-language
  *
- * Prereq: @voml/vos built (dist/) before publish; CI workflow runs build.
+ * Prereq: each package's `build` runs before publish. `@voml/vos-language`
+ * builds its Rust WebAssembly core, so CI needs the nightly toolchain and the
+ * `wasm32-unknown-unknown` target (see publish-npm.yml).
  */
 
 import { spawnSync } from 'node:child_process';
@@ -20,6 +22,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 /** @type {{ dir: string, publishName?: string, prebuild?: string }[]} */
 const JS_PACKAGES = [
     { dir: 'projects/packages/vos', prebuild: 'pnpm --filter @voml/vos build' },
+    { dir: 'projects/packages/vos-language', prebuild: 'pnpm --filter @voml/vos-language build' },
     { dir: 'projects/packages/vos-skills' },
 ];
 
@@ -75,6 +78,16 @@ function copyTree(src, dest, filter) {
             fs.copyFileSync(from, to);
         }
     }
+}
+
+/**
+ * Nested ignore files would travel into the staging directory, where
+ * `npm-packlist` honours them and drops the `lib/` WebAssembly artifact, so the
+ * published package would ship without its wasm core. Never stage them: the
+ * generated directories stay ignored in git instead.
+ */
+function stageAllowed(p) {
+    return !/^\.(git|npm)ignore$/.test(path.basename(p));
 }
 
 /**
@@ -189,7 +202,7 @@ function publishJs(version) {
                 if (!fs.existsSync(from)) continue;
                 const st = fs.statSync(from);
                 const to = path.join(stage, f);
-                if (st.isDirectory()) copyTree(from, to);
+                if (st.isDirectory()) copyTree(from, to, stageAllowed);
                 else {
                     fs.mkdirSync(path.dirname(to), { recursive: true });
                     fs.copyFileSync(from, to);
@@ -206,7 +219,7 @@ function publishJs(version) {
             copyTree(abs, stage, (p) => {
                 const rel = path.relative(abs, p);
                 if (rel.includes('node_modules') || rel.includes('tests')) return false;
-                return true;
+                return stageAllowed(p);
             });
         }
 

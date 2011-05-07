@@ -72,6 +72,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # `@voml/vos-language` publishes a Rust WebAssembly core, so the nightly
+      # toolchain pinned in `rust-toolchain.toml` and the wasm target must be
+      # present. The build script installs a matching `wasm-bindgen` CLI itself.
+      - name: Setup Rust for the wasm core
+        run: |
+          rustup toolchain install nightly-2026-07-20 --profile minimal
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2026-07-20
+
       - name: Strip token-style npmrc (OIDC only)
         shell: bash
         run: |
