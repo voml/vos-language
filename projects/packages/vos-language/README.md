@@ -1,23 +1,13 @@
-# `@voml/vos-language`
+# 🧰 `@voml/vos-language`
 
-VOS language tooling for TypeScript hosts: checks and diagnostics for `.vos` source.
+> **`.vos` source checks and diagnostics for TypeScript hosts, running on a Rust WebAssembly core.**
 
-The implementation is the **Rust WebAssembly core**, not TypeScript. `lib/` holds the wasm-bindgen output built from
-`projects/crates/vos-wasm` by `scripts/build-wasm.mjs`, and `src/index.ts` only loads and types it. Source checks are
-never re-implemented on the TypeScript side: syntax and semantics stay owned by `oak-vos` and the `vos` facade.
+The implementation is the Rust core, not TypeScript. The wasm module is exported from `projects/crates/vos-wasm` and
+the TypeScript surface only loads and types it — syntax and semantics stay owned by `oak-vos` and the `vos` facade.
+Declaration and type modelling live in
+[`@voml/vos`](https://www.npmjs.com/package/@voml/vos).
 
-Declaration and type modelling live in [`@voml/vos`](../vos) — `v.table`, `v.object`, descriptors and `Infer`. This
-package owns the language layer only.
-
-Try the interactive playground on the [VOS homepage](https://vos-language.pages.dev/playground).
-
-## Install
-
-```bash
-pnpm add @voml/vos-language
-```
-
-## Check source
+## 🔍 Check source
 
 Loading the wasm core is asynchronous, so the check is asynchronous too:
 
@@ -52,7 +42,7 @@ type VosCheckResult = {
 };
 ```
 
-## Initialising the wasm core
+## ⚙️ Initialising the wasm core
 
 `checkSource` initialises the core on demand. Omitting the argument uses wasm-bindgen's default loader, which fetches
 `lib/vos_wasm_bg.wasm` — the browser and Worker path:
@@ -75,26 +65,15 @@ const result = await checkSource(source);
 
 `initWasm` is idempotent: repeated calls reuse the first load.
 
-## Build
+## 🚧 Scope
 
-```bash
-pnpm build            # builds projects/crates/vos-wasm and stages lib/
-pnpm typecheck
-pnpm test
-```
+- **Reports what the Rust core reports.** A diagnostic that cannot be located to a line is returned without a line
+  number rather than guessed.
+- **No second implementation.** This package never re-implements VOS parsing, resolution or diagnostics in TypeScript,
+  and never manages database lifecycle.
+- **Narrow by design.** For the full contract, catalog and generator APIs, use the `vos` crate in this repository's
+  Rust workspace.
 
-`lib/` is generated output and is not committed; `typecheck`, `test` and `build` all rebuild it first when it is
-missing or stale. The build needs the `wasm32-unknown-unknown` target and a `wasm-bindgen` CLI matching the version in
-`Cargo.lock` (the build script installs it when it differs).
+---
 
-Because the repository-local `.cargo/config.toml` patches `oak-vos` to a sibling checkout, the build is driven from
-outside the repository so the `oak-vos` revision pinned in `Cargo.toml` is used instead.
-
-## Scope
-
-This package reports what the Rust core reports. Diagnostics that cannot be located to a line are returned without a
-line number rather than guessed. Use the Rust [`vos` facade](../../crates/vos) directly for the full contract,
-catalog and generator APIs.
-
-See the [TypeScript workspace guide](../README.md) and main [VOS overview](../../../readme.md) for the surrounding
-project.
+`@voml/vos` — [declaration and type modelling](https://www.npmjs.com/package/@voml/vos)

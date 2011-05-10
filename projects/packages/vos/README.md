@@ -1,20 +1,13 @@
-# `@voml/vos`
+# 📐 `@voml/vos`
 
-VOS declaration and type modelling for TypeScript: descriptors for VOS builtin types, wrappers, tables, classes and
-objects, plus the `Infer` projection used to type rows.
+> **VOS (Virtual Object Schema) type modelling for TypeScript** — descriptors for builtin types, wrappers, tables,
+> classes and objects, plus the `Infer` projection used to type rows.
 
-Source checking and language diagnostics are **not** part of this package — they live in
-[`@voml/vos-language`](../vos-language).
+Descriptors are author-side data. They compile into canonical VOS source, and a host (YYDB, Iris, …) consumes that —
+this package never parses or checks `.vos` source itself. Source checks live in
+[`@voml/vos-language`](https://www.npmjs.com/package/@voml/vos-language).
 
-Try the interactive playground on the [VOS homepage](https://vos-language.pages.dev/playground).
-
-## Install
-
-```bash
-pnpm add @voml/vos
-```
-
-## Model a table
+## 🧱 Model a table
 
 ```ts
 import { v } from "@voml/vos";
@@ -34,9 +27,9 @@ const PublicUser = v.class("PublicUser", {
 `table` carries persistence identity, `class` is a non-persistent DTO, and `object` is a structural object used for
 nested values, projection results and parameters. One `object` never stands in for all three.
 
-## Builtins and wrappers
+## 🔤 Builtins and wrappers
 
-VOS has no wide `string` builtin, so the builder set stays one-to-one with VOS:
+VOS has no wide `string` builtin, so the builder set stays one-to-one with the language:
 
 ```ts
 v.i8() v.i16() v.i32() v.i64()
@@ -61,10 +54,10 @@ v.utf8().unique()           // @name
 v.utf8().attribute("wire")  // any [attr] / [attr(args)]
 ```
 
-There is deliberately no `v.string()`, no wide `v.number()` and no plain `v.json()`: those would hide the wire,
-layout and validation differences that VOS keeps distinct.
+There is deliberately no `v.string()`, no wide `v.number()` and no plain `v.json()`: each of those would hide wire,
+layout or validation differences that VOS keeps distinct.
 
-## Infer a row type
+## 🧬 Infer a row type
 
 Descriptors carry runtime identity, so the row type is derived from the descriptor instead of being restated:
 
@@ -81,13 +74,12 @@ type UserRow = Infer<typeof User>;
 const row: UserRow = { user_id: "u_1", user_name: "Ada" };
 ```
 
-Field symbols and field values are separate: `User.user_name` is the field descriptor, while `row.user_name` is the
+Field symbols and field values stay separate: `User.user_name` is the field descriptor, while `row.user_name` is the
 value and only exists inside a host callback.
 
-## Emit canonical VOS source
+## 🧾 Emit canonical VOS source
 
-Descriptors are author-side data. `emitSource` renders a declaration descriptor as canonical VOS source, which the
-VOS pipeline then parses and checks:
+`emitSource` renders a declaration descriptor as canonical VOS source, which the VOS pipeline then parses and checks:
 
 ```ts
 import { emitSource, v } from "@voml/vos";
@@ -98,23 +90,15 @@ const source = emitSource(User);
 
 An anonymous `object` is not a schema declaration and is rejected by `emitSource`; declare it with `v.class` instead.
 
-## Scope
+## 🚧 Scope
 
-This package is the modelling surface. It never parses VOS source, never owns a CST/AST, never formats, never manages
-database lifecycle, and provides no CLI. Descriptors must be compiled into canonical VOS source or a canonical VOS
-artifact before a host consumes them. More declaration items (`enums`, `flags`, `union`, and the dynamic row builder)
-are added only once their VOS contract is frozen — this package does not invent names ahead of the language.
+- **Modelling only.** No source parser, no CST/AST, no formatter, no CLI. Descriptors must be compiled into canonical
+  VOS source or a canonical VOS artifact before a host consumes them.
+- **No invented names.** `enums`, `flags`, `union` and the dynamic row builder are added only once their VOS contract
+  is frozen.
+- **Narrow by design.** For conformance-grade parsing, the resolved contract, catalog identity and code generation,
+  use the `vos` crate in this repository's Rust workspace.
 
-Use the Rust [`vos` facade](../../crates/vos) for conformance-grade parsing. Source checks for TypeScript hosts live in
-[`@voml/vos-language`](../vos-language).
+---
 
-## Development
-
-```bash
-pnpm build
-pnpm typecheck
-pnpm test
-```
-
-See the [TypeScript workspace guide](../README.md) and main [VOS overview](../../../readme.md) for the surrounding
-project.
+`@voml/vos-language` — [checks `.vos` source](https://www.npmjs.com/package/@voml/vos-language)
