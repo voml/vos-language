@@ -7,13 +7,13 @@ on:
     paths:
       - "projects/crates/**"
       - "specifications/fixtures/**"
-      - "check-rust.yml"
+      - ".github/workflows/check-rust.yml"
   pull_request:
     branches: [master, dev]
     paths:
       - "projects/crates/**"
       - "specifications/fixtures/**"
-      - "check-rust.yml"
+      - ".github/workflows/check-rust.yml"
 
 # Path filters: pushes that only touch homepage/ do not run this
 # workflow. Use workflow_dispatch to force a run.
