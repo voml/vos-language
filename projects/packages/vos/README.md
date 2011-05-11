@@ -3,8 +3,8 @@
 > **VOS (Virtual Object Schema) type modelling for TypeScript** — descriptors for builtin types, wrappers, tables,
 > classes and objects, plus the `Infer` projection used to type rows.
 
-Descriptors are author-side data. They compile into canonical VOS source, and a host (YYDB, Iris, …) consumes that —
-this package never parses or checks `.vos` source itself. Source checks live in
+Descriptors are author-side data. A host (YYDB, Iris, …) consumes them as a canonical VOS artifact — this package never
+renders or parses `.vos` source itself. Source checks live in
 [`@voml/vos-language`](https://www.npmjs.com/package/@voml/vos-language).
 
 ## 🧱 Model a table
@@ -77,23 +77,10 @@ const row: UserRow = { user_id: "u_1", user_name: "Ada" };
 Field symbols and field values stay separate: `User.user_name` is the field descriptor, while `row.user_name` is the
 value and only exists inside a host callback.
 
-## 🧾 Emit canonical VOS source
-
-`emitSource` renders a declaration descriptor as canonical VOS source, which the VOS pipeline then parses and checks:
-
-```ts
-import { emitSource, v } from "@voml/vos";
-
-const User = v.table("User", { user_id: v.uuid().primary() });
-const source = emitSource(User);
-```
-
-An anonymous `object` is not a schema declaration and is rejected by `emitSource`; declare it with `v.class` instead.
-
 ## 🚧 Scope
 
-- **Modelling only.** No source parser, no CST/AST, no formatter, no CLI. Descriptors must be compiled into canonical
-  VOS source or a canonical VOS artifact before a host consumes them.
+- **Modelling only.** No source parser, no CST/AST, no formatter, no CLI. Descriptors must be compiled into a canonical
+  VOS artifact before a host consumes them; this package does not render VOS source text.
 - **No invented names.** `enums`, `flags`, `union` and the dynamic row builder are added only once their VOS contract
   is frozen.
 - **Narrow by design.** For conformance-grade parsing, the resolved contract, catalog identity and code generation,

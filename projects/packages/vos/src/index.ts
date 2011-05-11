@@ -2,12 +2,12 @@
  * Public TypeScript surface for VOS.
  *
  * `import { v } from "@voml/vos"` builds VOS type descriptors. Descriptors
- * are author-side data: they must be compiled into canonical VOS source or a
- * canonical VOS artifact before a host consumes them.
+ * are author-side data: they must be compiled into a canonical VOS artifact
+ * before a host consumes them. This package does not render them as VOS source
+ * text and never parses VOS source itself.
  *
  * The canonical VOS parser, resolver, catalog and semantic diagnostics live in
- * the Oak backed `oak-vos` pipeline exposed by the `vos` Rust facade. This
- * package never parses VOS source itself.
+ * the Oak backed `oak-vos` pipeline exposed by the `vos` Rust facade.
  */
 
 export { v, type VBuiltinName, type VItemName, type VWrapperName } from "./builtins.js";
@@ -37,5 +37,4 @@ export {
     type StructuralDescriptor,
     type TableDescriptor,
 } from "./items.js";
-export { emitSource, type EmittableItem } from "./emit.js";
 export type { ReferenceKey, VosFileRef } from "./values.js";

@@ -3,8 +3,7 @@
  *
  * A descriptor carries plain, serializable data (`kind`, `attrs`, …) plus a few
  * builder helpers. It is **not** a stable database ABI: a descriptor must be
- * compiled into canonical VOS source or a canonical VOS artifact before any
- * host consumes it.
+ * compiled into a canonical VOS artifact before any host consumes it.
  *
  * The protocol mirrors the frozen VOS type algebra in
  * `vos/documentation/builtins.md`. Builtin names are case-sensitive and the
