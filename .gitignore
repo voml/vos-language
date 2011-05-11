@@ -1,47 +1,38 @@
 # OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
 
 # IDEs
 .idea/
 .vscode/
-*.iml
 .settings/
 .classpath
 .project
 .factorypath
 .cursor/
+*.iml
+*.log
+*.txt
 
 # Rust
+.cargo/config.toml
 target/
+Cargo.lock
+
 
 # Node
+.cache/
 node_modules/
 dist/
+.placeholder-npm-cache.json
+.env.placeholder.local
+scripts/.placeholder-npm-cache.json
 pnpm-lock.yaml
 
 # Java/Maven
-target/
 *.class
 *.jar
 *.war
 *.ear
-
-# Rust
-.cargo/config.toml
-Cargo.lock
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Temp files
-*.swp
-*.swo
-*.db
-*.db-wal
-*.db-shm
-*.log
-
-# npm placeholder / trust (local only)
-.placeholder-npm-cache.json
-scripts/.placeholder-npm-cache.json
-.env.placeholder.local

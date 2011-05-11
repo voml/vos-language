@@ -11,14 +11,14 @@ File: [`social-preview.jpg`](./social-preview.jpg) — **1280×640**, target &lt
 
 ## Layout brief
 
-| Item | Value |
-|------|-------|
-| Size | 1280×640 (2:1，GenerateImage 后 cover 裁切) |
-| Tagline | Schema-first language for structured data |
-| Primary | `#047857` reliable green |
-| Energy | `#6EE7B7` mint |
-| Background | deep `#0a1f17` |
-| Mood | dark poster, structured, trustworthy |
+| Item       | Value                                       |
+|------------|---------------------------------------------|
+| Size       | 1280×640 (2:1，GenerateImage 后 cover 裁切) |
+| Tagline    | Schema-first language for structured data   |
+| Primary    | `#047857` reliable green                    |
+| Energy     | `#6EE7B7` mint                              |
+| Background | deep `#0a1f17`                              |
+| Mood       | dark poster, structured, trustworthy        |
 
 **构图：** 左文右图。右侧中心 hub 向外辐射的 schema 节点星座，mint 高光，绿色 glow。
 

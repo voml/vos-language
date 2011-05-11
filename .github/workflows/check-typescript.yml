@@ -1,0 +1,61 @@
+name: vos.ts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, dev]
+    paths:
+      - "projects/packages/**"
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+      - "nifty.config.ts"
+      - ".github/workflows/check-typescript.yml"
+  pull_request:
+    branches: [master, dev]
+    paths:
+      - "projects/packages/**"
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+      - "nifty.config.ts"
+      - ".github/workflows/check-typescript.yml"
+
+# Path filters: pushes that only touch Rust crates do not run this
+# workflow. Use workflow_dispatch to force a run.
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  check:
+    name: typecheck · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # `@voml/vos-language` typecheck and tests build the wasm core first.
+      - name: Setup Rust for wasm core
+        run: |
+          rustup toolchain install nightly-2026-07-20 --profile minimal
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2026-07-20
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm -r --filter @voml/vos --filter @voml/vos-language test
