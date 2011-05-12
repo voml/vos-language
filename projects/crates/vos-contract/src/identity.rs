@@ -112,7 +112,11 @@ pub struct BoundFieldContract {
 
 /// A canonical type after user-defined names are bound to durable identities.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", rename_all_fields = "camelCase", deny_unknown_fields)]
+#[serde(
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
 pub enum ResolvedCanonicalType {
     /// Builtin scalar or standard VOS type name.
     Builtin(Vec<String>),
@@ -226,7 +230,10 @@ impl ResolvedContract {
         if self.format_version != RESOLVED_CONTRACT_FORMAT_VERSION
             || self.identity_manifest_version != IDENTITY_MANIFEST_VERSION
             || self.schema_fingerprint.len() != 64
-            || !self.schema_fingerprint.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || !self
+                .schema_fingerprint
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit())
         {
             return Err(ArtifactError {
                 code: "RES011".to_owned(),
@@ -239,7 +246,8 @@ impl ResolvedContract {
         let mut paths = BTreeSet::new();
         let mut field_ids = BTreeSet::new();
         for item in &self.types {
-            if item.type_id == 0 || !type_ids.insert(item.type_id)
+            if item.type_id == 0
+                || !type_ids.insert(item.type_id)
                 || item.canonical_path.is_empty()
                 || item.canonical_path.iter().any(String::is_empty)
                 || !paths.insert(&item.canonical_path)
@@ -254,7 +262,8 @@ impl ResolvedContract {
             let mut names = BTreeSet::new();
             let mut slots = BTreeSet::new();
             for field in &item.fields {
-                if field.field_id == 0 || !field_ids.insert(field.field_id)
+                if field.field_id == 0
+                    || !field_ids.insert(field.field_id)
                     || field.canonical_name.is_empty()
                     || !names.insert(&field.canonical_name)
                     || !slots.insert(field.virtual_field_index)
@@ -268,11 +277,7 @@ impl ResolvedContract {
         }
         for item in &self.types {
             for field in &item.fields {
-                validate_resolved_type(
-                    &field.canonical_type,
-                    &type_by_path,
-                    &path_by_type,
-                )?;
+                validate_resolved_type(&field.canonical_type, &type_by_path, &path_by_type)?;
             }
         }
         let expected = resolved_schema_fingerprint(&ResolvedIdentityProjection {
@@ -296,12 +301,11 @@ fn validate_resolved_type(
 ) -> Result<(), ArtifactError> {
     match ty {
         ResolvedCanonicalType::User { path, type_id } => {
-            if type_by_path.get(path) != Some(type_id)
-                || path_by_type.get(type_id) != Some(path)
-            {
+            if type_by_path.get(path) != Some(type_id) || path_by_type.get(type_id) != Some(path) {
                 return Err(ArtifactError {
                     code: "RES015".to_owned(),
-                    message: "resolved user type reference is not present in the contract".to_owned(),
+                    message: "resolved user type reference is not present in the contract"
+                        .to_owned(),
                 });
             }
         }
@@ -341,21 +345,55 @@ fn validate_resolved_type(
 #[allow(missing_docs)]
 pub enum IdentityChange {
     /// A type was added with a new durable identity.
-    TypeAdded { type_id: u64, canonical_path: Vec<String> },
+    TypeAdded {
+        type_id: u64,
+        canonical_path: Vec<String>,
+    },
     /// A type disappeared and must remain a tombstone in durable history.
-    TypeRemoved { type_id: u64, canonical_path: Vec<String> },
+    TypeRemoved {
+        type_id: u64,
+        canonical_path: Vec<String>,
+    },
     /// A type kept its identity while its canonical path changed.
-    TypeRenamed { type_id: u64, from: Vec<String>, to: Vec<String> },
+    TypeRenamed {
+        type_id: u64,
+        from: Vec<String>,
+        to: Vec<String>,
+    },
     /// A type kept its identity while its declaration kind changed.
-    TypeKindChanged { type_id: u64, from: TypeContractKind, to: TypeContractKind },
+    TypeKindChanged {
+        type_id: u64,
+        from: TypeContractKind,
+        to: TypeContractKind,
+    },
     /// A field was added with a new durable identity.
-    FieldAdded { type_id: u64, field_id: u64, canonical_name: String, virtual_field_index: u32 },
+    FieldAdded {
+        type_id: u64,
+        field_id: u64,
+        canonical_name: String,
+        virtual_field_index: u32,
+    },
     /// A field disappeared and must remain a tombstone in durable history.
-    FieldRemoved { type_id: u64, field_id: u64, canonical_name: String, virtual_field_index: u32 },
+    FieldRemoved {
+        type_id: u64,
+        field_id: u64,
+        canonical_name: String,
+        virtual_field_index: u32,
+    },
     /// A field kept its identity while its canonical name changed.
-    FieldRenamed { type_id: u64, field_id: u64, from: String, to: String },
+    FieldRenamed {
+        type_id: u64,
+        field_id: u64,
+        from: String,
+        to: String,
+    },
     /// A field kept its identity while its virtual slot changed.
-    FieldReordered { type_id: u64, field_id: u64, from: u32, to: u32 },
+    FieldReordered {
+        type_id: u64,
+        field_id: u64,
+        from: u32,
+        to: u32,
+    },
     /// A field identity kept its name but changed semantic content.
     FieldChanged { type_id: u64, field_id: u64 },
 }
@@ -455,7 +493,8 @@ impl IdentityHistory {
         let mut active_field_ids = BTreeSet::new();
         let mut active_slots = BTreeSet::new();
         for item in &self.snapshot.types {
-            if item.type_id == 0 || !active_type_ids.insert(item.type_id)
+            if item.type_id == 0
+                || !active_type_ids.insert(item.type_id)
                 || item.canonical_path.is_empty()
                 || item.canonical_path.iter().any(String::is_empty)
                 || !active_paths.insert(&item.canonical_path)
@@ -468,8 +507,10 @@ impl IdentityHistory {
             let mut names = BTreeSet::new();
             let mut slots = BTreeSet::new();
             for field in &item.fields {
-                if field.field_id == 0 || !active_field_ids.insert(field.field_id)
-                    || field.canonical_name.is_empty() || !names.insert(&field.canonical_name)
+                if field.field_id == 0
+                    || !active_field_ids.insert(field.field_id)
+                    || field.canonical_name.is_empty()
+                    || !names.insert(&field.canonical_name)
                     || !slots.insert(field.virtual_field_index)
                     || !active_slots.insert((item.type_id, field.virtual_field_index))
                 {
@@ -504,7 +545,8 @@ impl IdentityHistory {
                 || active_field_ids.contains(&item.field_id)
                 || item.canonical_name.is_empty()
                 || item.retired_at_revision > self.revision
-                || (!active_type_ids.contains(&item.type_id) && !retired_type_ids.contains(&item.type_id))
+                || (!active_type_ids.contains(&item.type_id)
+                    && !retired_type_ids.contains(&item.type_id))
                 || active_slots.contains(&(item.type_id, item.virtual_field_index))
                 || !retired_slots.insert((item.type_id, item.virtual_field_index))
             {
@@ -688,36 +730,63 @@ pub fn compare_identity(
     current: &IdentityBoundProjection,
 ) -> Result<IdentityEvolution, Vec<ContractDiagnostic>> {
     let mut diagnostics = Vec::new();
-    let previous_types = previous.types.iter().map(|item| (item.type_id, item)).collect::<BTreeMap<_, _>>();
-    let current_types = current.types.iter().map(|item| (item.type_id, item)).collect::<BTreeMap<_, _>>();
+    let previous_types = previous
+        .types
+        .iter()
+        .map(|item| (item.type_id, item))
+        .collect::<BTreeMap<_, _>>();
+    let current_types = current
+        .types
+        .iter()
+        .map(|item| (item.type_id, item))
+        .collect::<BTreeMap<_, _>>();
 
     for previous_type in &previous.types {
-        if let Some(current_type) = current.types.iter().find(|item| item.canonical_path == previous_type.canonical_path) {
-            if current_type.type_id != previous_type.type_id {
-                diagnostics.push(diagnostic("ID012", "type path changed durable ID"));
-            }
+        if let Some(current_type) = current
+            .types
+            .iter()
+            .find(|item| item.canonical_path == previous_type.canonical_path)
+            && current_type.type_id != previous_type.type_id
+        {
+            diagnostics.push(diagnostic("ID012", "type path changed durable ID"));
         }
         for previous_field in &previous_type.fields {
-            if let Some(current_type) = current.types.iter().find(|item| item.type_id == previous_type.type_id) {
-                if let Some(current_field) = current_type.fields.iter().find(|item| item.field_id == previous_field.field_id) {
-                    if current_field.virtual_field_index != previous_field.virtual_field_index {
-                        diagnostics.push(diagnostic("ID027", "assigned virtual field index cannot change"));
-                    }
+            if let Some(current_type) = current
+                .types
+                .iter()
+                .find(|item| item.type_id == previous_type.type_id)
+            {
+                if let Some(current_field) = current_type
+                    .fields
+                    .iter()
+                    .find(|item| item.field_id == previous_field.field_id)
+                    && current_field.virtual_field_index != previous_field.virtual_field_index
+                {
+                    diagnostics.push(diagnostic(
+                        "ID027",
+                        "assigned virtual field index cannot change",
+                    ));
                 }
-                if let Some(current_field) = current_type.fields.iter().find(|item| item.canonical_name == previous_field.canonical_name) {
-                    if current_field.field_id != previous_field.field_id {
-                        diagnostics.push(diagnostic("ID013", "field name changed durable ID"));
-                    }
+                if let Some(current_field) = current_type
+                    .fields
+                    .iter()
+                    .find(|item| item.canonical_name == previous_field.canonical_name)
+                    && current_field.field_id != previous_field.field_id
+                {
+                    diagnostics.push(diagnostic("ID013", "field name changed durable ID"));
                 }
             }
         }
     }
     for current_type in &current.types {
         for current_field in &current_type.fields {
-            if let Some(previous_type) = previous.types.iter().find(|item| item.fields.iter().any(|field| field.field_id == current_field.field_id)) {
-                if previous_type.type_id != current_type.type_id {
-                    diagnostics.push(diagnostic("ID014", "field identity moved between types"));
-                }
+            if let Some(previous_type) = previous.types.iter().find(|item| {
+                item.fields
+                    .iter()
+                    .any(|field| field.field_id == current_field.field_id)
+            }) && previous_type.type_id != current_type.type_id
+            {
+                diagnostics.push(diagnostic("ID014", "field identity moved between types"));
             }
         }
     }
@@ -726,7 +795,11 @@ pub fn compare_identity(
     }
 
     let mut changes = Vec::new();
-    let type_ids = previous_types.keys().chain(current_types.keys()).copied().collect::<BTreeSet<_>>();
+    let type_ids = previous_types
+        .keys()
+        .chain(current_types.keys())
+        .copied()
+        .collect::<BTreeSet<_>>();
     for type_id in type_ids {
         match (previous_types.get(&type_id), current_types.get(&type_id)) {
             (None, Some(current_type)) => changes.push(IdentityChange::TypeAdded {
@@ -762,7 +835,12 @@ pub fn compare_identity(
                         to: current_type.kind,
                     });
                 }
-                compare_fields(type_id, &previous_type.fields, &current_type.fields, &mut changes);
+                compare_fields(
+                    type_id,
+                    &previous_type.fields,
+                    &current_type.fields,
+                    &mut changes,
+                );
             }
             (None, None) => unreachable!(),
         }
@@ -788,27 +866,48 @@ pub fn resolve_identity_units(
     units: &[&IdentityBoundProjection],
 ) -> Result<ResolvedIdentityProjection, Vec<ContractDiagnostic>> {
     let mut diagnostics = Vec::new();
-    let manifest_version = units.first().map(|unit| unit.manifest_version.clone()).unwrap_or_else(|| IDENTITY_MANIFEST_VERSION.to_owned());
+    let manifest_version = units
+        .first()
+        .map(|unit| unit.manifest_version.clone())
+        .unwrap_or_else(|| IDENTITY_MANIFEST_VERSION.to_owned());
     let mut types = Vec::new();
     let mut type_paths = BTreeMap::new();
     let mut seen_type_ids = BTreeMap::new();
     let mut field_ids = BTreeSet::new();
     for unit in units {
         if unit.manifest_version != manifest_version {
-            diagnostics.push(diagnostic("RES003", "identity manifest version differs across source units"));
+            diagnostics.push(diagnostic(
+                "RES003",
+                "identity manifest version differs across source units",
+            ));
         }
         for item in &unit.types {
-            if type_paths.insert(item.canonical_path.clone(), item).is_some() {
-                diagnostics.push(diagnostic("RES004", "duplicate type path across source units"));
+            if type_paths
+                .insert(item.canonical_path.clone(), item)
+                .is_some()
+            {
+                diagnostics.push(diagnostic(
+                    "RES004",
+                    "duplicate type path across source units",
+                ));
             }
             if item.type_id == 0 {
                 diagnostics.push(diagnostic("RES005", "zero type ID in source unit"));
-            } else if seen_type_ids.insert(item.type_id, item.canonical_path.clone()).is_some() {
-                diagnostics.push(diagnostic("RES007", "duplicate type ID across source units"));
+            } else if seen_type_ids
+                .insert(item.type_id, item.canonical_path.clone())
+                .is_some()
+            {
+                diagnostics.push(diagnostic(
+                    "RES007",
+                    "duplicate type ID across source units",
+                ));
             }
             for field in &item.fields {
                 if !field_ids.insert(field.field_id) {
-                    diagnostics.push(diagnostic("RES006", "duplicate field ID across source units"));
+                    diagnostics.push(diagnostic(
+                        "RES006",
+                        "duplicate field ID across source units",
+                    ));
                 }
             }
             types.push(item);
@@ -893,14 +992,19 @@ fn resolve_type(
             if !path.is_empty() {
                 let mut relative = namespace.to_vec();
                 relative.extend(path.iter().cloned());
-                if let Some(type_id) = type_ids.get(&relative) {
-                    if !candidates.iter().any(|(_, candidate_id)| candidate_id == type_id) {
-                        candidates.push((relative, *type_id));
-                    }
+                if let Some(type_id) = type_ids.get(&relative)
+                    && !candidates
+                        .iter()
+                        .any(|(_, candidate_id)| candidate_id == type_id)
+                {
+                    candidates.push((relative, *type_id));
                 }
             }
             if candidates.len() > 1 {
-                diagnostics.push(diagnostic("RES002", &format!("ambiguous type {}", path.join("::"))));
+                diagnostics.push(diagnostic(
+                    "RES002",
+                    &format!("ambiguous type {}", path.join("::")),
+                ));
                 return ResolvedCanonicalType::Builtin(path.clone());
             }
             if let Some((canonical_path, type_id)) = candidates.first() {
@@ -911,13 +1015,28 @@ fn resolve_type(
             } else if path.len() == 1 && is_builtin(path[0].as_str()) {
                 ResolvedCanonicalType::Builtin(canonical_builtin_path(path))
             } else {
-                diagnostics.push(diagnostic("RES001", &format!("unknown type {}", path.join("::"))));
+                diagnostics.push(diagnostic(
+                    "RES001",
+                    &format!("unknown type {}", path.join("::")),
+                ));
                 ResolvedCanonicalType::Builtin(path.clone())
             }
         }
-        CanonicalType::Reference(inner) => ResolvedCanonicalType::Reference(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
-        CanonicalType::Optional(inner) => ResolvedCanonicalType::Optional(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
-        CanonicalType::List(inner) => ResolvedCanonicalType::List(Box::new(resolve_type(inner, namespace, type_ids, diagnostics))),
+        CanonicalType::Reference(inner) => ResolvedCanonicalType::Reference(Box::new(
+            resolve_type(inner, namespace, type_ids, diagnostics),
+        )),
+        CanonicalType::Optional(inner) => ResolvedCanonicalType::Optional(Box::new(resolve_type(
+            inner,
+            namespace,
+            type_ids,
+            diagnostics,
+        ))),
+        CanonicalType::List(inner) => ResolvedCanonicalType::List(Box::new(resolve_type(
+            inner,
+            namespace,
+            type_ids,
+            diagnostics,
+        ))),
         CanonicalType::Generic { path, arguments } => {
             if path == &["DateTime".to_owned()]
                 && arguments.len() == 1
@@ -930,8 +1049,12 @@ fn resolve_type(
                     arguments: arguments
                         .iter()
                         .map(|argument| match argument {
-                            CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(resolve_type(ty, namespace, type_ids, diagnostics)),
-                            CanonicalTypeArgument::Literal(value) => ResolvedCanonicalTypeArgument::Literal(value.clone()),
+                            CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(
+                                resolve_type(ty, namespace, type_ids, diagnostics),
+                            ),
+                            CanonicalTypeArgument::Literal(value) => {
+                                ResolvedCanonicalTypeArgument::Literal(value.clone())
+                            }
                         })
                         .collect(),
                 }
@@ -943,18 +1066,49 @@ fn resolve_type(
 fn is_builtin(name: &str) -> bool {
     matches!(
         name,
-        "i8" | "i16" | "i32" | "i64" | "u8" | "u16" | "u32" | "u64"
-            | "f32" | "f64" | "bool" | "utf8" | "utf16" | "uuid" | "decimal"
-            | "d128" | "date" | "time" | "datetime" | "bytes"
+        "i8" | "i16"
+            | "i32"
+            | "i64"
+            | "u8"
+            | "u16"
+            | "u32"
+            | "u64"
+            | "f32"
+            | "f64"
+            | "bool"
+            | "utf8"
+            | "utf16"
+            | "uuid"
+            | "decimal"
+            | "d128"
+            | "date"
+            | "time"
+            | "datetime"
+            | "bytes"
     )
 }
 
 fn is_canonical_builtin(name: &str) -> bool {
     matches!(
         name,
-        "i8" | "i16" | "i32" | "i64" | "u8" | "u16" | "u32" | "u64"
-            | "f32" | "f64" | "bool" | "utf8" | "utf16" | "uuid" | "decimal"
-            | "date" | "time" | "datetime" | "bytes"
+        "i8" | "i16"
+            | "i32"
+            | "i64"
+            | "u8"
+            | "u16"
+            | "u32"
+            | "u64"
+            | "f32"
+            | "f64"
+            | "bool"
+            | "utf8"
+            | "utf16"
+            | "uuid"
+            | "decimal"
+            | "date"
+            | "time"
+            | "datetime"
+            | "bytes"
     )
 }
 
@@ -1002,7 +1156,12 @@ pub fn evolve_identity(
     {
         diagnostics.push(diagnostic("ID015", "retired type ID cannot be reused"));
     }
-    if current.types.iter().flat_map(|item| item.fields.iter()).any(|item| retired_field_ids.contains(&item.field_id)) {
+    if current
+        .types
+        .iter()
+        .flat_map(|item| item.fields.iter())
+        .any(|item| retired_field_ids.contains(&item.field_id))
+    {
         diagnostics.push(diagnostic("ID016", "retired field ID cannot be reused"));
     }
     let retired_slots = previous
@@ -1013,10 +1172,17 @@ pub fn evolve_identity(
     if current
         .types
         .iter()
-        .flat_map(|item| item.fields.iter().map(move |field| (item.type_id, field.virtual_field_index)))
+        .flat_map(|item| {
+            item.fields
+                .iter()
+                .map(move |field| (item.type_id, field.virtual_field_index))
+        })
         .any(|slot| retired_slots.contains(&slot))
     {
-        diagnostics.push(diagnostic("ID026", "retired virtual field slot cannot be reused"));
+        diagnostics.push(diagnostic(
+            "ID026",
+            "retired virtual field slot cannot be reused",
+        ));
     }
     if !diagnostics.is_empty() {
         return Err(diagnostics);
@@ -1095,11 +1261,24 @@ fn compare_fields(
     current: &[BoundFieldContract],
     changes: &mut Vec<IdentityChange>,
 ) {
-    let previous_fields = previous.iter().map(|item| (item.field_id, item)).collect::<BTreeMap<_, _>>();
-    let current_fields = current.iter().map(|item| (item.field_id, item)).collect::<BTreeMap<_, _>>();
-    let field_ids = previous_fields.keys().chain(current_fields.keys()).copied().collect::<BTreeSet<_>>();
+    let previous_fields = previous
+        .iter()
+        .map(|item| (item.field_id, item))
+        .collect::<BTreeMap<_, _>>();
+    let current_fields = current
+        .iter()
+        .map(|item| (item.field_id, item))
+        .collect::<BTreeMap<_, _>>();
+    let field_ids = previous_fields
+        .keys()
+        .chain(current_fields.keys())
+        .copied()
+        .collect::<BTreeSet<_>>();
     for field_id in field_ids {
-        match (previous_fields.get(&field_id), current_fields.get(&field_id)) {
+        match (
+            previous_fields.get(&field_id),
+            current_fields.get(&field_id),
+        ) {
             (None, Some(field)) => changes.push(IdentityChange::FieldAdded {
                 type_id,
                 field_id,
@@ -1129,7 +1308,8 @@ fn compare_fields(
                         to: current.virtual_field_index,
                     });
                 }
-                if CanonicalFieldContract::from(*previous) != CanonicalFieldContract::from(*current) {
+                if CanonicalFieldContract::from(*previous) != CanonicalFieldContract::from(*current)
+                {
                     changes.push(IdentityChange::FieldChanged { type_id, field_id });
                 }
             }
@@ -1238,7 +1418,11 @@ struct CanonicalFieldContract {
 
 impl From<&BoundFieldContract> for CanonicalFieldContract {
     fn from(field: &BoundFieldContract) -> Self {
-        let mut attributes = field.attributes.iter().map(|attribute| attribute.name.clone()).collect::<Vec<_>>();
+        let mut attributes = field
+            .attributes
+            .iter()
+            .map(|attribute| attribute.name.clone())
+            .collect::<Vec<_>>();
         attributes.sort();
         Self {
             field_id: field.field_id,

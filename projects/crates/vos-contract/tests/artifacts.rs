@@ -1,12 +1,10 @@
 use serde_json::{Value, json};
 use vos_contract::{
-    compare_identity, evolve_identity, bind_identity, resolve_contract,
+    ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityBoundProjection,
+    IdentityChange, IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedContract,
+    SchemaProjection, TypeContractKind, TypeIdentity, bind_identity, compare_identity,
+    evolve_identity, parse_oak, resolve_contract, resolve_identity_types, resolve_identity_units,
     resolved_schema_fingerprint, schema_fingerprint,
-    ContractDiagnostic,
-    FieldIdentity, IdentityBoundProjection, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
-    ResolvedCanonicalType, ResolvedContract, TypeContractKind, TypeIdentity, resolve_identity_types,
-    resolve_identity_units,
-    IDENTITY_MANIFEST_VERSION, parse_oak,
 };
 
 #[test]
@@ -107,7 +105,7 @@ fn attribute_groups_and_arguments_require_oak_structure() {
         let source = format!("class T {{ {attribute} id: uuid }}");
         let diagnostics = parse_oak(&source).unwrap().project_schema().unwrap_err();
         assert_eq!(diagnostics[0].code, "VOS005");
-        assert_eq!(&source[diagnostics[0].span.clone().unwrap()], attribute);
+        assert_eq!(&source[diagnostics[0].span.unwrap()], attribute);
     }
 }
 
@@ -398,9 +396,8 @@ fn identity_fingerprint_ignores_provenance_spans_and_attribute_syntax_spacing() 
 #[test]
 fn identity_manifest_fixture_binds_and_produces_fingerprint() {
     let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
-    let manifest_json = include_str!(
-        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
-    );
+    let manifest_json =
+        include_str!("../../../../specifications/fixtures/contracts/identity_basic.manifest.json");
     let projection = parse_oak(source).unwrap().project_schema().unwrap();
     let manifest = IdentityManifest::from_json(manifest_json).unwrap();
     let bound = bind_identity(&projection, &manifest).unwrap();
@@ -488,7 +485,12 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
     }));
     let mut moved = current.clone();
     moved.types[0].fields[0].virtual_field_index = 3;
-    assert!(compare_identity(&previous, &moved).unwrap_err().iter().any(|item| item.code == "ID027"));
+    assert!(
+        compare_identity(&previous, &moved)
+            .unwrap_err()
+            .iter()
+            .any(|item| item.code == "ID027")
+    );
     assert!(evolution.changes.contains(&IdentityChange::FieldRemoved {
         type_id: 1,
         field_id: 3,
@@ -506,7 +508,10 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
 #[test]
 fn identity_evolution_rejects_implicit_id_rebinding() {
     let previous = bind_identity(
-        &parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap(),
+        &parse_oak("class A { id: uuid }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &IdentityManifest {
             format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
             types: vec![TypeIdentity {
@@ -523,7 +528,10 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
     )
     .unwrap();
     let current_type_rebound = bind_identity(
-        &parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap(),
+        &parse_oak("class A { id: uuid }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &IdentityManifest {
             format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
             types: vec![TypeIdentity {
@@ -543,7 +551,10 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
     assert!(diagnostics.iter().any(|item| item.code == "ID012"));
 
     let current_field_rebound = bind_identity(
-        &parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap(),
+        &parse_oak("class A { id: uuid }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &IdentityManifest {
             format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
             types: vec![TypeIdentity {
@@ -630,29 +641,62 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     assert_eq!(IdentityHistory::from_json(&serialized).unwrap(), evolved);
     let mut corrupted: Value = serde_json::from_str(&serialized).unwrap();
     corrupted["retiredFields"][0]["fieldId"] = json!(2);
-    assert_eq!(IdentityHistory::from_json(&corrupted.to_string()).unwrap_err().code, "ID023");
+    assert_eq!(
+        IdentityHistory::from_json(&corrupted.to_string())
+            .unwrap_err()
+            .code,
+        "ID023"
+    );
     let mut unknown: Value = serde_json::from_str(&serialized).unwrap();
     unknown["unexpected"] = json!(true);
-    assert_eq!(IdentityHistory::from_json(&unknown.to_string()).unwrap_err().code, "ID020");
+    assert_eq!(
+        IdentityHistory::from_json(&unknown.to_string())
+            .unwrap_err()
+            .code,
+        "ID020"
+    );
     for (pointer, value, code) in [
         ("/snapshot/manifestVersion", json!("unsupported"), "ID021"),
         ("/snapshot/types/0/typeId", json!(0), "ID024"),
         ("/snapshot/types/0/canonicalPath", json!([""]), "ID024"),
         ("/snapshot/types/0/fields/0/fieldId", json!(0), "ID025"),
-        ("/snapshot/types/0/fields/0/canonicalName", json!(""), "ID025"),
+        (
+            "/snapshot/types/0/fields/0/canonicalName",
+            json!(""),
+            "ID025",
+        ),
         ("/retiredFields/0/retiredAtRevision", json!(2), "ID023"),
         ("/retiredFields/0/typeId", json!(99), "ID023"),
         ("/retiredFields/0/virtualFieldIndex", json!(0), "ID023"),
     ] {
         let mut invalid: Value = serde_json::from_str(&serialized).unwrap();
         *invalid.pointer_mut(pointer).unwrap() = value;
-        assert_eq!(IdentityHistory::from_json(&invalid.to_string()).unwrap_err().code, code, "{pointer}");
+        assert_eq!(
+            IdentityHistory::from_json(&invalid.to_string())
+                .unwrap_err()
+                .code,
+            code,
+            "{pointer}"
+        );
     }
-    for (pointer, code) in [("/snapshot/types", "ID024"), ("/snapshot/types/0/fields", "ID025")] {
+    for (pointer, code) in [
+        ("/snapshot/types", "ID024"),
+        ("/snapshot/types/0/fields", "ID025"),
+    ] {
         let mut invalid: Value = serde_json::from_str(&serialized).unwrap();
-        let entries = invalid.pointer_mut(pointer).unwrap().as_array_mut().unwrap();
+        let entries = invalid
+            .pointer_mut(pointer)
+            .unwrap()
+            .as_array_mut()
+            .unwrap();
         entries.push(entries[0].clone());
-        assert_eq!(IdentityHistory::from_json(&invalid.to_string()).unwrap_err().code, code, "{pointer}");
+        assert_eq!(
+            IdentityHistory::from_json(&invalid.to_string())
+                .unwrap_err()
+                .code,
+            code,
+            "{pointer}"
+        );
     }
 
     let reused = bind_identity(
@@ -686,7 +730,10 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     assert!(diagnostics.iter().any(|item| item.code == "ID016"));
 
     let reused_slot = bind_identity(
-        &parse_oak("class A { id: uuid, replacement: bool }").unwrap().project_schema().unwrap(),
+        &parse_oak("class A { id: uuid, replacement: bool }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &IdentityManifest {
             format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
             types: vec![TypeIdentity {
@@ -694,8 +741,16 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
                 type_id: 1,
                 kind: TypeContractKind::Class,
                 fields: vec![
-                    FieldIdentity { canonical_name: "id".to_owned(), field_id: 2, virtual_field_index: 0 },
-                    FieldIdentity { canonical_name: "replacement".to_owned(), field_id: 4, virtual_field_index: 1 },
+                    FieldIdentity {
+                        canonical_name: "id".to_owned(),
+                        field_id: 2,
+                        virtual_field_index: 0,
+                    },
+                    FieldIdentity {
+                        canonical_name: "replacement".to_owned(),
+                        field_id: 4,
+                        virtual_field_index: 1,
+                    },
                 ],
             }],
         },
@@ -708,7 +763,10 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
 #[test]
 fn identity_history_tombstones_all_fields_when_type_is_removed() {
     let previous = bind_identity(
-        &parse_oak("class A { id: uuid, label: utf8 }").unwrap().project_schema().unwrap(),
+        &parse_oak("class A { id: uuid, label: utf8 }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &IdentityManifest {
             format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
             types: vec![TypeIdentity {
@@ -716,8 +774,16 @@ fn identity_history_tombstones_all_fields_when_type_is_removed() {
                 type_id: 1,
                 kind: TypeContractKind::Class,
                 fields: vec![
-                    FieldIdentity { canonical_name: "id".to_owned(), field_id: 2, virtual_field_index: 0 },
-                    FieldIdentity { canonical_name: "label".to_owned(), field_id: 3, virtual_field_index: 1 },
+                    FieldIdentity {
+                        canonical_name: "id".to_owned(),
+                        field_id: 2,
+                        virtual_field_index: 0,
+                    },
+                    FieldIdentity {
+                        canonical_name: "label".to_owned(),
+                        field_id: 3,
+                        virtual_field_index: 1,
+                    },
                 ],
             }],
         },
@@ -739,17 +805,22 @@ fn identity_history_tombstones_all_fields_when_type_is_removed() {
     let evolved = evolve_identity(&history, current).unwrap();
     assert_eq!(evolved.retired_types.len(), 1);
     assert_eq!(
-        evolved.retired_fields.iter().map(|field| field.field_id).collect::<Vec<_>>(),
+        evolved
+            .retired_fields
+            .iter()
+            .map(|field| field.field_id)
+            .collect::<Vec<_>>(),
         vec![2, 3]
     );
 }
 
 #[test]
 fn identity_type_resolution_binds_user_types_and_keeps_builtins() {
-    let projection = parse_oak("class Address { city: utf8 }\nclass User { address: Address?, id: uuid }")
-        .unwrap()
-        .project_schema()
-        .unwrap();
+    let projection =
+        parse_oak("class Address { city: utf8 }\nclass User { address: Address?, id: uuid }")
+            .unwrap()
+            .project_schema()
+            .unwrap();
     let manifest = IdentityManifest {
         format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
         types: vec![
@@ -830,23 +901,41 @@ fn relative_and_qualified_types_resolve_to_the_same_namespace_identity() {
                 canonical_path: vec!["demo".to_owned(), "Address".to_owned()],
                 type_id: 1,
                 kind: TypeContractKind::Class,
-                fields: vec![FieldIdentity { canonical_name: "city".to_owned(), field_id: 1, virtual_field_index: 0 }],
+                fields: vec![FieldIdentity {
+                    canonical_name: "city".to_owned(),
+                    field_id: 1,
+                    virtual_field_index: 0,
+                }],
             },
             TypeIdentity {
                 canonical_path: vec!["demo".to_owned(), "User".to_owned()],
                 type_id: 2,
                 kind: TypeContractKind::Class,
                 fields: vec![
-                    FieldIdentity { canonical_name: "local".to_owned(), field_id: 2, virtual_field_index: 0 },
-                    FieldIdentity { canonical_name: "qualified".to_owned(), field_id: 3, virtual_field_index: 1 },
+                    FieldIdentity {
+                        canonical_name: "local".to_owned(),
+                        field_id: 2,
+                        virtual_field_index: 0,
+                    },
+                    FieldIdentity {
+                        canonical_name: "qualified".to_owned(),
+                        field_id: 3,
+                        virtual_field_index: 1,
+                    },
                 ],
             },
         ],
     };
     let bound = bind_identity(&projection, &manifest).unwrap();
     let resolved = resolve_identity_types(&bound).unwrap();
-    let expected = ResolvedCanonicalType::User { path: vec!["demo".to_owned(), "Address".to_owned()], type_id: 1 };
-    assert_eq!(resolved.types[1].fields[0].canonical_type, ResolvedCanonicalType::Optional(Box::new(expected.clone())));
+    let expected = ResolvedCanonicalType::User {
+        path: vec!["demo".to_owned(), "Address".to_owned()],
+        type_id: 1,
+    };
+    assert_eq!(
+        resolved.types[1].fields[0].canonical_type,
+        ResolvedCanonicalType::Optional(Box::new(expected.clone()))
+    );
     assert_eq!(resolved.types[1].fields[1].canonical_type, expected);
 }
 
@@ -902,7 +991,10 @@ fn multi_unit_resolution_joins_global_symbol_table_without_reparsing() {
 
 #[test]
 fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
-    let projection = parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap();
+    let projection = parse_oak("class A { id: uuid }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
     let first = bind_identity(
         &projection,
         &IdentityManifest {
@@ -924,7 +1016,10 @@ fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
     let mut different_version = first.clone();
     different_version.manifest_version = "other-manifest".to_owned();
     let duplicate_ids = bind_identity(
-        &parse_oak("class B { id: uuid }").unwrap().project_schema().unwrap(),
+        &parse_oak("class B { id: uuid }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &IdentityManifest {
             format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
             types: vec![TypeIdentity {
@@ -940,14 +1035,18 @@ fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
         },
     )
     .unwrap();
-    assert!(resolve_identity_units(&[&first, &duplicate_path])
-        .unwrap_err()
-        .iter()
-        .any(|item| item.code == "RES004"));
-    assert!(resolve_identity_units(&[&first, &different_version])
-        .unwrap_err()
-        .iter()
-        .any(|item| item.code == "RES003"));
+    assert!(
+        resolve_identity_units(&[&first, &duplicate_path])
+            .unwrap_err()
+            .iter()
+            .any(|item| item.code == "RES004")
+    );
+    assert!(
+        resolve_identity_units(&[&first, &different_version])
+            .unwrap_err()
+            .iter()
+            .any(|item| item.code == "RES003")
+    );
     let diagnostics = resolve_identity_units(&[&first, &duplicate_ids]).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "RES007"));
     assert!(diagnostics.iter().any(|item| item.code == "RES006"));
@@ -969,22 +1068,47 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
     assert_eq!(ResolvedContract::from_json(&json).unwrap(), contract);
     let mut invalid: Value = serde_json::from_str(&json).unwrap();
     invalid["schemaFingerprint"] = json!("not-a-fingerprint");
-    assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES011");
+    assert_eq!(
+        ResolvedContract::from_json(&invalid.to_string())
+            .unwrap_err()
+            .code,
+        "RES011"
+    );
     invalid["schemaFingerprint"] = json!("0".repeat(64));
-    assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES014");
+    assert_eq!(
+        ResolvedContract::from_json(&invalid.to_string())
+            .unwrap_err()
+            .code,
+        "RES014"
+    );
     let mut invalid_generic: Value = serde_json::from_str(&json).unwrap();
     invalid_generic["types"][0]["fields"][0]["canonicalType"] = json!({
         "generic": { "path": [], "arguments": [] }
     });
-    assert_eq!(ResolvedContract::from_json(&invalid_generic.to_string()).unwrap_err().code, "RES016");
+    assert_eq!(
+        ResolvedContract::from_json(&invalid_generic.to_string())
+            .unwrap_err()
+            .code,
+        "RES016"
+    );
     let mut invalid_builtin: Value = serde_json::from_str(&json).unwrap();
     invalid_builtin["types"][0]["fields"][0]["canonicalType"] = json!({
         "builtin": ["not-a-type"]
     });
-    assert_eq!(ResolvedContract::from_json(&invalid_builtin.to_string()).unwrap_err().code, "RES016");
+    assert_eq!(
+        ResolvedContract::from_json(&invalid_builtin.to_string())
+            .unwrap_err()
+            .code,
+        "RES016"
+    );
     let mut unknown: Value = serde_json::from_str(&json).unwrap();
     unknown["unexpected"] = json!(true);
-    assert_eq!(ResolvedContract::from_json(&unknown.to_string()).unwrap_err().code, "RES010");
+    assert_eq!(
+        ResolvedContract::from_json(&unknown.to_string())
+            .unwrap_err()
+            .code,
+        "RES010"
+    );
 }
 
 #[test]
@@ -992,15 +1116,20 @@ fn resolved_contract_fixture_matches_reviewed_golden() {
     let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
     let manifest = IdentityManifest::from_json(include_str!(
         "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
-    )).unwrap();
+    ))
+    .unwrap();
     let projection = parse_oak(source).unwrap().project_schema().unwrap();
     let contract = resolve_contract(&projection, &manifest).unwrap();
     let actual: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
     let expected: Value = serde_json::from_str(include_str!(
         "../../../../specifications/fixtures/contracts/identity_basic.resolved.json"
-    )).unwrap();
+    ))
+    .unwrap();
     assert_eq!(actual, expected);
-    assert_eq!(ResolvedContract::from_json(&expected.to_string()).unwrap(), contract);
+    assert_eq!(
+        ResolvedContract::from_json(&expected.to_string()).unwrap(),
+        contract
+    );
 }
 
 #[test]
@@ -1036,26 +1165,45 @@ fn resolved_contract_rejects_dangling_user_type_references() {
     };
     let contract = resolve_contract(&projection, &manifest).unwrap();
     let valid: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
-    for pointer in ["/types/0", "/types/0/fields/0", "/types/0/fields/0/canonicalType/user"] {
+    for pointer in [
+        "/types/0",
+        "/types/0/fields/0",
+        "/types/0/fields/0/canonicalType/user",
+    ] {
         let mut unknown = valid.clone();
-        unknown.pointer_mut(pointer).unwrap().as_object_mut().unwrap()
+        unknown
+            .pointer_mut(pointer)
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
             .insert("unexpected".to_owned(), json!(true));
-        assert_eq!(ResolvedContract::from_json(&unknown.to_string()).unwrap_err().code, "RES010");
+        assert_eq!(
+            ResolvedContract::from_json(&unknown.to_string())
+                .unwrap_err()
+                .code,
+            "RES010"
+        );
     }
     let mut invalid: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
     invalid["types"][0]["fields"][0]["canonicalType"] = json!({
         "user": { "path": ["Missing"], "typeId": 99 }
     });
     invalid["schemaFingerprint"] = json!("0".repeat(64));
-    assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES015");
+    assert_eq!(
+        ResolvedContract::from_json(&invalid.to_string())
+            .unwrap_err()
+            .code,
+        "RES015"
+    );
 }
 
 #[test]
 fn builtin_aliases_resolve_to_one_canonical_spelling() {
-    let projection = parse_oak("class T { amount: d128, created: DateTime<UTC>, updated: datetime }")
-        .unwrap()
-        .project_schema()
-        .unwrap();
+    let projection =
+        parse_oak("class T { amount: d128, created: DateTime<UTC>, updated: datetime }")
+            .unwrap()
+            .project_schema()
+            .unwrap();
     let manifest = IdentityManifest {
         format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
         types: vec![TypeIdentity {
@@ -1063,17 +1211,38 @@ fn builtin_aliases_resolve_to_one_canonical_spelling() {
             type_id: 1,
             kind: TypeContractKind::Class,
             fields: vec![
-                FieldIdentity { canonical_name: "amount".to_owned(), field_id: 2, virtual_field_index: 0 },
-                FieldIdentity { canonical_name: "created".to_owned(), field_id: 3, virtual_field_index: 1 },
-                FieldIdentity { canonical_name: "updated".to_owned(), field_id: 4, virtual_field_index: 2 },
+                FieldIdentity {
+                    canonical_name: "amount".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 0,
+                },
+                FieldIdentity {
+                    canonical_name: "created".to_owned(),
+                    field_id: 3,
+                    virtual_field_index: 1,
+                },
+                FieldIdentity {
+                    canonical_name: "updated".to_owned(),
+                    field_id: 4,
+                    virtual_field_index: 2,
+                },
             ],
         }],
     };
     let bound = bind_identity(&projection, &manifest).unwrap();
     let resolved = resolve_identity_types(&bound).unwrap();
-    assert_eq!(resolved.types[0].fields[0].canonical_type, ResolvedCanonicalType::Builtin(vec!["decimal".to_owned()]));
-    assert_eq!(resolved.types[0].fields[1].canonical_type, ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()]));
-    assert_eq!(resolved.types[0].fields[2].canonical_type, ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()]));
+    assert_eq!(
+        resolved.types[0].fields[0].canonical_type,
+        ResolvedCanonicalType::Builtin(vec!["decimal".to_owned()])
+    );
+    assert_eq!(
+        resolved.types[0].fields[1].canonical_type,
+        ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()])
+    );
+    assert_eq!(
+        resolved.types[0].fields[2].canonical_type,
+        ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()])
+    );
 }
 
 #[test]
@@ -1092,23 +1261,35 @@ fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
         }],
     };
     let decimal = resolve_contract(
-        &parse_oak("class T { amount: decimal }").unwrap().project_schema().unwrap(),
+        &parse_oak("class T { amount: decimal }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &manifest,
     )
     .unwrap();
     let alias = resolve_contract(
-        &parse_oak("class T { amount: d128 }").unwrap().project_schema().unwrap(),
+        &parse_oak("class T { amount: d128 }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
         &manifest,
     )
     .unwrap();
     assert_eq!(decimal.schema_fingerprint, alias.schema_fingerprint);
     let resolved = resolve_identity_types(
         &bind_identity(
-            &parse_oak("class T { amount: decimal }").unwrap().project_schema().unwrap(),
+            &parse_oak("class T { amount: decimal }")
+                .unwrap()
+                .project_schema()
+                .unwrap(),
             &manifest,
         )
         .unwrap(),
     )
     .unwrap();
-    assert_eq!(decimal.schema_fingerprint, resolved_schema_fingerprint(&resolved));
+    assert_eq!(
+        decimal.schema_fingerprint,
+        resolved_schema_fingerprint(&resolved)
+    );
 }

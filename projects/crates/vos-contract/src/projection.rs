@@ -1,6 +1,8 @@
 use core::range::Range;
 
-use oak_vos::{VosDeclarationKind, VosField, VosFieldAttribute, VosRoot, VosTypeArgument, VosTypeSyntax};
+use oak_vos::{
+    VosDeclarationKind, VosField, VosFieldAttribute, VosRoot, VosTypeArgument, VosTypeSyntax,
+};
 use serde::{Deserialize, Serialize};
 
 /// Current artifact format version for the first resolved contract envelope.
@@ -69,7 +71,10 @@ pub struct TypeContract {
     /// Fields in source order. Order is not identity.
     pub fields: Vec<FieldContract>,
     /// Source span of the declaration.
-    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
     pub span: Range<usize>,
 }
 
@@ -97,7 +102,10 @@ pub struct FieldContract {
     /// Exact default syntax when present.
     pub default_value: Option<String>,
     /// Source span of the field.
-    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
     pub span: Range<usize>,
 }
 
@@ -142,7 +150,10 @@ pub struct AttributeContract {
     /// Original attribute syntax.
     pub syntax: String,
     /// Source span of the attribute.
-    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
     pub span: Range<usize>,
 }
 
@@ -156,7 +167,10 @@ pub struct ContractDiagnostic {
     /// Human-readable diagnostic message.
     pub message: String,
     /// Source span when available.
-    #[serde(serialize_with = "serialize_optional_span", deserialize_with = "deserialize_optional_span")]
+    #[serde(
+        serialize_with = "serialize_optional_span",
+        deserialize_with = "deserialize_optional_span"
+    )]
     pub span: Option<Range<usize>>,
 }
 
@@ -181,7 +195,10 @@ pub struct OperationProjection {
     /// Exact body source slice.
     pub body: Option<SyntaxSliceContract>,
     /// Full declaration span.
-    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
     pub span: Range<usize>,
 }
 
@@ -220,7 +237,10 @@ pub struct OperationParameter {
     /// Canonical parameter type.
     pub type_expr: CanonicalType,
     /// Full parameter span.
-    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
     pub span: Range<usize>,
 }
 
@@ -232,12 +252,17 @@ pub struct SyntaxSliceContract {
     /// Exact source text.
     pub text: String,
     /// Source byte span.
-    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
     pub span: Range<usize>,
 }
 
 /// Projects Oak operation declarations without parsing their bodies.
-pub fn project_operations(root: &VosRoot) -> Result<Vec<OperationProjection>, Vec<ContractDiagnostic>> {
+pub fn project_operations(
+    root: &VosRoot,
+) -> Result<Vec<OperationProjection>, Vec<ContractDiagnostic>> {
     let mut operations = Vec::new();
     let mut diagnostics = Vec::new();
     for declaration in &root.declarations {
@@ -249,25 +274,42 @@ pub fn project_operations(root: &VosRoot) -> Result<Vec<OperationProjection>, Ve
             _ => continue,
         };
         let Some(name) = declaration.name.clone() else {
-            diagnostics.push(diagnostic("OPR001", "operation declaration is missing a name", Some(declaration.span.clone())));
+            diagnostics.push(diagnostic(
+                "OPR001",
+                "operation declaration is missing a name",
+                Some(declaration.span),
+            ));
             continue;
         };
         operations.push(OperationProjection {
             kind,
             name,
-            identity_key: operation_identity_key(kind, declaration.name.as_deref().unwrap_or_default(), &declaration.parameters, declaration.return_type_expr.as_ref()),
-            parameters: declaration.parameters.iter().map(|parameter| OperationParameter {
-                name: parameter.name.clone(),
-                type_expr: canonical_type(&parameter.type_expr),
-                span: parameter.span.clone(),
-            }).collect(),
+            identity_key: operation_identity_key(
+                kind,
+                declaration.name.as_deref().unwrap_or_default(),
+                &declaration.parameters,
+                declaration.return_type_expr.as_ref(),
+            ),
+            parameters: declaration
+                .parameters
+                .iter()
+                .map(|parameter| OperationParameter {
+                    name: parameter.name.clone(),
+                    type_expr: canonical_type(&parameter.type_expr),
+                    span: parameter.span,
+                })
+                .collect(),
             return_type: declaration.return_type_expr.as_ref().map(canonical_type),
             signature: declaration.signature.as_ref().map(slice_contract),
             body: declaration.body.as_ref().map(slice_contract),
-            span: declaration.span.clone(),
+            span: declaration.span,
         });
     }
-    if diagnostics.is_empty() { Ok(operations) } else { Err(diagnostics) }
+    if diagnostics.is_empty() {
+        Ok(operations)
+    } else {
+        Err(diagnostics)
+    }
 }
 
 fn operation_identity_key(
@@ -287,7 +329,9 @@ fn operation_identity_key(
         .map(|parameter| canonical_type_key(&canonical_type(&parameter.type_expr)))
         .collect::<Vec<_>>()
         .join(",");
-    let result = return_type.map(|value| canonical_type_key(&canonical_type(value))).unwrap_or_else(|| "unit".to_owned());
+    let result = return_type
+        .map(|value| canonical_type_key(&canonical_type(value)))
+        .unwrap_or_else(|| "unit".to_owned());
     format!("{kind}:{name}({parameters})->{result}")
 }
 
@@ -312,7 +356,9 @@ fn canonical_type_key(value: &CanonicalType) -> String {
 }
 
 /// Projects Oak operation declarations into a strict versioned artifact.
-pub fn project_operations_artifact(root: &VosRoot) -> Result<OperationProjectionArtifact, Vec<ContractDiagnostic>> {
+pub fn project_operations_artifact(
+    root: &VosRoot,
+) -> Result<OperationProjectionArtifact, Vec<ContractDiagnostic>> {
     Ok(OperationProjectionArtifact {
         envelope: ContractEnvelope {
             stage: OPERATION_PROJECTION_STAGE.to_owned(),
@@ -320,14 +366,20 @@ pub fn project_operations_artifact(root: &VosRoot) -> Result<OperationProjection
             language_version: LANGUAGE_VERSION.to_owned(),
             canonicalization_version: CANONICALIZATION_VERSION.to_owned(),
             schema_fingerprint: None,
-            source_units: vec![SourceUnit { source_unit_id: 0, source: root.source.clone() }],
+            source_units: vec![SourceUnit {
+                source_unit_id: 0,
+                source: root.source.clone(),
+            }],
         },
         operations: project_operations(root)?,
     })
 }
 
 fn slice_contract(slice: &oak_vos::VosSyntaxSlice) -> SyntaxSliceContract {
-    SyntaxSliceContract { text: slice.text.clone(), span: slice.span.clone() }
+    SyntaxSliceContract {
+        text: slice.text.clone(),
+        span: slice.span,
+    }
 }
 
 /// Projects the supported Oak syntax without claiming symbol resolution.
@@ -337,36 +389,65 @@ pub fn project_schema(root: &VosRoot) -> Result<SchemaProjection, Vec<ContractDi
     let mut diagnostics = Vec::new();
     for declaration in &root.declarations {
         match declaration.kind {
-            VosDeclarationKind::Namespace => namespace = declaration.path.clone().unwrap_or_default(),
+            VosDeclarationKind::Namespace => {
+                namespace = declaration.path.clone().unwrap_or_default()
+            }
             VosDeclarationKind::Table | VosDeclarationKind::Class => {
                 let Some(name) = declaration.name.clone() else {
-                    diagnostics.push(diagnostic("VOS001", "type declaration is missing a name", Some(declaration.span.clone())));
+                    diagnostics.push(diagnostic(
+                        "VOS001",
+                        "type declaration is missing a name",
+                        Some(declaration.span),
+                    ));
                     continue;
                 };
                 let mut canonical_path = namespace.clone();
                 canonical_path.push(name);
-                if types.iter().any(|item: &TypeContract| item.canonical_path == canonical_path) {
-                    diagnostics.push(diagnostic("VOS002", "duplicate type declaration", Some(declaration.span.clone())));
+                if types
+                    .iter()
+                    .any(|item: &TypeContract| item.canonical_path == canonical_path)
+                {
+                    diagnostics.push(diagnostic(
+                        "VOS002",
+                        "duplicate type declaration",
+                        Some(declaration.span),
+                    ));
                     continue;
                 }
                 let mut field_names = std::collections::BTreeSet::new();
                 for field in &declaration.fields {
                     if !field_names.insert(&field.name) {
-                        diagnostics.push(diagnostic("VOS003", "duplicate field declaration", Some(field.name_span.clone())));
+                        diagnostics.push(diagnostic(
+                            "VOS003",
+                            "duplicate field declaration",
+                            Some(field.name_span),
+                        ));
                     }
                 }
-                let fields = declaration.fields.iter().map(resolve_field).collect::<Result<Vec<_>, _>>();
+                let fields = declaration
+                    .fields
+                    .iter()
+                    .map(resolve_field)
+                    .collect::<Result<Vec<_>, _>>();
                 match fields {
                     Ok(fields) => types.push(TypeContract {
                         canonical_path,
-                        kind: if declaration.kind == VosDeclarationKind::Table { TypeContractKind::Table } else { TypeContractKind::Class },
+                        kind: if declaration.kind == VosDeclarationKind::Table {
+                            TypeContractKind::Table
+                        } else {
+                            TypeContractKind::Class
+                        },
                         fields,
-                        span: declaration.span.clone(),
+                        span: declaration.span,
                     }),
                     Err(error) => diagnostics.push(error),
                 }
             }
-            _ => diagnostics.push(diagnostic("VOS004", "declaration is not supported by this contract projection", Some(declaration.span.clone()))),
+            _ => diagnostics.push(diagnostic(
+                "VOS004",
+                "declaration is not supported by this contract projection",
+                Some(declaration.span),
+            )),
         }
     }
     if diagnostics.is_empty() {
@@ -377,7 +458,10 @@ pub fn project_schema(root: &VosRoot) -> Result<SchemaProjection, Vec<ContractDi
                 language_version: LANGUAGE_VERSION.to_owned(),
                 canonicalization_version: CANONICALIZATION_VERSION.to_owned(),
                 schema_fingerprint: None,
-                source_units: vec![SourceUnit { source_unit_id: 0, source: root.source.clone() }],
+                source_units: vec![SourceUnit {
+                    source_unit_id: 0,
+                    source: root.source.clone(),
+                }],
             },
             types,
         })
@@ -394,17 +478,33 @@ impl SchemaProjection {
 
     /// Reads and validates a strict V0 schema projection artifact.
     pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
-        let projection: Self = serde_json::from_str(input).map_err(|error| ArtifactError { code: "ART001".to_owned(), message: error.to_string() })?;
+        let projection: Self = serde_json::from_str(input).map_err(|error| ArtifactError {
+            code: "ART001".to_owned(),
+            message: error.to_string(),
+        })?;
         projection.validate()?;
         Ok(projection)
     }
 
     fn validate(&self) -> Result<(), ArtifactError> {
-        if self.envelope.stage != PROJECTION_STAGE || self.envelope.contract_format_version != CONTRACT_FORMAT_VERSION || self.envelope.language_version != LANGUAGE_VERSION || self.envelope.canonicalization_version != CANONICALIZATION_VERSION {
-            return Err(ArtifactError { code: "ART002".to_owned(), message: "unsupported schema projection version or stage".to_owned() });
+        if self.envelope.stage != PROJECTION_STAGE
+            || self.envelope.contract_format_version != CONTRACT_FORMAT_VERSION
+            || self.envelope.language_version != LANGUAGE_VERSION
+            || self.envelope.canonicalization_version != CANONICALIZATION_VERSION
+        {
+            return Err(ArtifactError {
+                code: "ART002".to_owned(),
+                message: "unsupported schema projection version or stage".to_owned(),
+            });
         }
-        if self.envelope.schema_fingerprint.is_some() || self.envelope.source_units.len() != 1 || self.envelope.source_units[0].source_unit_id != 0 {
-            return Err(ArtifactError { code: "ART003".to_owned(), message: "invalid V0 source unit or fingerprint state".to_owned() });
+        if self.envelope.schema_fingerprint.is_some()
+            || self.envelope.source_units.len() != 1
+            || self.envelope.source_units[0].source_unit_id != 0
+        {
+            return Err(ArtifactError {
+                code: "ART003".to_owned(),
+                message: "invalid V0 source unit or fingerprint state".to_owned(),
+            });
         }
         let source = &self.envelope.source_units[0].source;
         for type_contract in &self.types {
@@ -428,7 +528,10 @@ impl OperationProjectionArtifact {
 
     /// Reads and validates a strict operation projection artifact.
     pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
-        let artifact: Self = serde_json::from_str(input).map_err(|error| ArtifactError { code: "OPR010".to_owned(), message: error.to_string() })?;
+        let artifact: Self = serde_json::from_str(input).map_err(|error| ArtifactError {
+            code: "OPR010".to_owned(),
+            message: error.to_string(),
+        })?;
         artifact.validate()?;
         Ok(artifact)
     }
@@ -439,27 +542,45 @@ impl OperationProjectionArtifact {
             || self.envelope.language_version != LANGUAGE_VERSION
             || self.envelope.canonicalization_version != CANONICALIZATION_VERSION
         {
-            return Err(ArtifactError { code: "OPR011".to_owned(), message: "unsupported operation projection version or stage".to_owned() });
+            return Err(ArtifactError {
+                code: "OPR011".to_owned(),
+                message: "unsupported operation projection version or stage".to_owned(),
+            });
         }
-        if self.envelope.schema_fingerprint.is_some() || self.envelope.source_units.len() != 1 || self.envelope.source_units[0].source_unit_id != 0 {
-            return Err(ArtifactError { code: "OPR012".to_owned(), message: "invalid operation projection source unit or fingerprint state".to_owned() });
+        if self.envelope.schema_fingerprint.is_some()
+            || self.envelope.source_units.len() != 1
+            || self.envelope.source_units[0].source_unit_id != 0
+        {
+            return Err(ArtifactError {
+                code: "OPR012".to_owned(),
+                message: "invalid operation projection source unit or fingerprint state".to_owned(),
+            });
         }
         let source = &self.envelope.source_units[0].source;
         for operation in &self.operations {
             validate_span(&operation.span, source, "operation span")?;
             if operation.name.is_empty() {
-                return Err(ArtifactError { code: "OPR013".to_owned(), message: "operation name cannot be empty".to_owned() });
+                return Err(ArtifactError {
+                    code: "OPR013".to_owned(),
+                    message: "operation name cannot be empty".to_owned(),
+                });
             }
             if operation.identity_key.is_empty() {
-                return Err(ArtifactError { code: "OPR015".to_owned(), message: "operation identity key cannot be empty".to_owned() });
+                return Err(ArtifactError {
+                    code: "OPR015".to_owned(),
+                    message: "operation identity key cannot be empty".to_owned(),
+                });
             }
             for parameter in &operation.parameters {
                 validate_span(&parameter.span, source, "operation parameter span")?;
             }
             for slice in operation.signature.iter().chain(operation.body.iter()) {
                 validate_span(&slice.span, source, "operation syntax slice")?;
-                if source.get(slice.span.clone()) != Some(slice.text.as_str()) {
-                    return Err(ArtifactError { code: "OPR014".to_owned(), message: "operation syntax slice does not match source".to_owned() });
+                if source.get(slice.span) != Some(slice.text.as_str()) {
+                    return Err(ArtifactError {
+                        code: "OPR014".to_owned(),
+                        message: "operation syntax slice does not match source".to_owned(),
+                    });
                 }
             }
         }
@@ -477,13 +598,22 @@ pub struct ArtifactError {
 }
 
 fn validate_span(span: &Range<usize>, source: &str, label: &str) -> Result<(), ArtifactError> {
-    if span.start > span.end || span.end > source.len() || !source.is_char_boundary(span.start) || !source.is_char_boundary(span.end) {
-        return Err(ArtifactError { code: "ART004".to_owned(), message: format!("invalid {label}") });
+    if span.start > span.end
+        || span.end > source.len()
+        || !source.is_char_boundary(span.start)
+        || !source.is_char_boundary(span.end)
+    {
+        return Err(ArtifactError {
+            code: "ART004".to_owned(),
+            message: format!("invalid {label}"),
+        });
     }
     Ok(())
 }
 
-fn deserialize_span<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Range<usize>, D::Error> {
+fn deserialize_span<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Range<usize>, D::Error> {
     let span = SpanWire::deserialize(deserializer)?;
     if span.start > span.end {
         return Err(serde::de::Error::custom("span start is after span end"));
@@ -491,14 +621,18 @@ fn deserialize_span<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result
     Ok((span.start..span.end).into())
 }
 
-fn deserialize_optional_span<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<Range<usize>>, D::Error> {
-    Option::<SpanWire>::deserialize(deserializer)?.map(|span| {
-        if span.start > span.end {
-            Err(serde::de::Error::custom("span start is after span end"))
-        } else {
-            Ok((span.start..span.end).into())
-        }
-    }).transpose()
+fn deserialize_optional_span<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Range<usize>>, D::Error> {
+    Option::<SpanWire>::deserialize(deserializer)?
+        .map(|span| {
+            if span.start > span.end {
+                Err(serde::de::Error::custom("span start is after span end"))
+            } else {
+                Ok((span.start..span.end).into())
+            }
+        })
+        .transpose()
 }
 
 #[derive(Deserialize)]
@@ -512,50 +646,88 @@ fn resolve_field(field: &VosField) -> Result<FieldContract, ContractDiagnostic> 
     Ok(FieldContract {
         canonical_name: field.name.clone(),
         canonical_type: canonical_type(&field.type_expr),
-        attributes: field.attributes.iter().map(resolve_attribute).collect::<Result<Vec<_>, _>>()?,
+        attributes: field
+            .attributes
+            .iter()
+            .map(resolve_attribute)
+            .collect::<Result<Vec<_>, _>>()?,
         default_value: field.default_value.as_ref().map(|value| value.text.clone()),
-        span: field.span.clone(),
+        span: field.span,
     })
 }
 
-fn resolve_attribute(attribute: &VosFieldAttribute) -> Result<AttributeContract, ContractDiagnostic> {
+fn resolve_attribute(
+    attribute: &VosFieldAttribute,
+) -> Result<AttributeContract, ContractDiagnostic> {
     let name = if attribute.text == "@@" {
         "primary".to_owned()
     } else if attribute.text == "@" {
         "unique".to_owned()
     } else {
         let Some(name) = &attribute.name else {
-            return Err(diagnostic("VOS005", "attribute has no structured name", Some(attribute.span.clone())));
+            return Err(diagnostic(
+                "VOS005",
+                "attribute has no structured name",
+                Some(attribute.span),
+            ));
         };
         if attribute.text != format!("[{name}]") {
-            return Err(diagnostic("VOS005", "attribute group or arguments require structured Oak attribute output", Some(attribute.span.clone())));
+            return Err(diagnostic(
+                "VOS005",
+                "attribute group or arguments require structured Oak attribute output",
+                Some(attribute.span),
+            ));
         }
         name.clone()
     };
-    Ok(AttributeContract { name, syntax: attribute.text.clone(), span: attribute.span.clone() })
+    Ok(AttributeContract {
+        name,
+        syntax: attribute.text.clone(),
+        span: attribute.span,
+    })
 }
 
-fn serialize_span<S: serde::Serializer>(span: &Range<usize>, serializer: S) -> Result<S::Ok, S::Error> {
+fn serialize_span<S: serde::Serializer>(
+    span: &Range<usize>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
     (span.start..span.end).serialize(serializer)
 }
 
-fn serialize_optional_span<S: serde::Serializer>(span: &Option<Range<usize>>, serializer: S) -> Result<S::Ok, S::Error> {
-    span.as_ref().map(|span| span.start..span.end).serialize(serializer)
+fn serialize_optional_span<S: serde::Serializer>(
+    span: &Option<Range<usize>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    span.as_ref()
+        .map(|span| span.start..span.end)
+        .serialize(serializer)
 }
 
 fn canonical_type(value: &VosTypeSyntax) -> CanonicalType {
     match value {
         VosTypeSyntax::Named { path, .. } => CanonicalType::Named(path.clone()),
-        VosTypeSyntax::Reference { target, .. } => CanonicalType::Reference(Box::new(canonical_type(target))),
-        VosTypeSyntax::Optional { inner, .. } => CanonicalType::Optional(Box::new(canonical_type(inner))),
-        VosTypeSyntax::List { element, .. } => CanonicalType::List(Box::new(canonical_type(element))),
-        VosTypeSyntax::Generic { path, arguments, .. } => CanonicalType::Generic {
+        VosTypeSyntax::Reference { target, .. } => {
+            CanonicalType::Reference(Box::new(canonical_type(target)))
+        }
+        VosTypeSyntax::Optional { inner, .. } => {
+            CanonicalType::Optional(Box::new(canonical_type(inner)))
+        }
+        VosTypeSyntax::List { element, .. } => {
+            CanonicalType::List(Box::new(canonical_type(element)))
+        }
+        VosTypeSyntax::Generic {
+            path, arguments, ..
+        } => CanonicalType::Generic {
             path: path.clone(),
             arguments: arguments
                 .iter()
                 .map(|argument| match argument {
-                    VosTypeArgument::Type(value) => CanonicalTypeArgument::Type(canonical_type(value)),
-                    VosTypeArgument::Literal(value) => CanonicalTypeArgument::Literal(value.text.clone()),
+                    VosTypeArgument::Type(value) => {
+                        CanonicalTypeArgument::Type(canonical_type(value))
+                    }
+                    VosTypeArgument::Literal(value) => {
+                        CanonicalTypeArgument::Literal(value.text.clone())
+                    }
                 })
                 .collect(),
         },
@@ -563,5 +735,9 @@ fn canonical_type(value: &VosTypeSyntax) -> CanonicalType {
 }
 
 fn diagnostic(code: &str, message: &str, span: Option<Range<usize>>) -> ContractDiagnostic {
-    ContractDiagnostic { code: code.to_owned(), message: message.to_owned(), span }
+    ContractDiagnostic {
+        code: code.to_owned(),
+        message: message.to_owned(),
+        span,
+    }
 }

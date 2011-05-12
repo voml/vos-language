@@ -8,24 +8,22 @@ mod identity;
 mod projection;
 
 pub use identity::{
-    bind_identity, compare_identity, resolved_schema_fingerprint, schema_fingerprint,
-    BoundFieldContract, BoundTypeContract,
-    evolve_identity, FieldIdentity, IdentityBoundProjection, IdentityChange, IdentityEvolution,
-    IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
-    resolve_contract, ResolvedContract, ResolvedFieldContract, ResolvedIdentityProjection,
-    ResolvedTypeContract,
-    resolve_identity_types, resolve_identity_units, RetiredFieldIdentity, RetiredTypeIdentity,
-    TypeIdentity,
-    IDENTITY_FINGERPRINT_VERSION, IDENTITY_HISTORY_FORMAT_VERSION, IDENTITY_MANIFEST_VERSION,
-    RESOLVED_CONTRACT_FORMAT_VERSION,
+    BoundFieldContract, BoundTypeContract, FieldIdentity, IDENTITY_FINGERPRINT_VERSION,
+    IDENTITY_HISTORY_FORMAT_VERSION, IDENTITY_MANIFEST_VERSION, IdentityBoundProjection,
+    IdentityChange, IdentityEvolution, IdentityHistory, IdentityManifest,
+    RESOLVED_CONTRACT_FORMAT_VERSION, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
+    ResolvedContract, ResolvedFieldContract, ResolvedIdentityProjection, ResolvedTypeContract,
+    RetiredFieldIdentity, RetiredTypeIdentity, TypeIdentity, bind_identity, compare_identity,
+    evolve_identity, resolve_contract, resolve_identity_types, resolve_identity_units,
+    resolved_schema_fingerprint, schema_fingerprint,
 };
 pub use projection::{
     ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
     CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, FieldContract,
-    LANGUAGE_VERSION, OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE,
-    PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract, TypeContractKind,
-    OperationKind, OperationParameter, OperationProjection, OperationProjectionArtifact,
-    SyntaxSliceContract, project_operations, project_operations_artifact,
+    LANGUAGE_VERSION, OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE, OperationKind,
+    OperationParameter, OperationProjection, OperationProjectionArtifact, PROJECTION_STAGE,
+    SchemaProjection, SourceUnit, SyntaxSliceContract, TypeContract, TypeContractKind,
+    project_operations, project_operations_artifact,
 };
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
@@ -81,7 +79,9 @@ impl ContractInput {
     }
 
     /// Projects Oak operation declarations into a versioned syntax artifact.
-    pub fn project_operations_artifact(&self) -> Result<OperationProjectionArtifact, Vec<ContractDiagnostic>> {
+    pub fn project_operations_artifact(
+        &self,
+    ) -> Result<OperationProjectionArtifact, Vec<ContractDiagnostic>> {
         projection::project_operations_artifact(&self.root)
     }
 }
@@ -91,8 +91,8 @@ mod tests {
     use super::parse_oak;
     use super::{
         CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION, CanonicalType, LANGUAGE_VERSION,
-        OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE, OperationProjectionArtifact,
-        OperationKind, PROJECTION_STAGE,
+        OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE, OperationKind,
+        OperationProjectionArtifact, PROJECTION_STAGE,
     };
     use oak_vos::VosDeclarationKind;
 
@@ -117,37 +117,58 @@ mod tests {
         let source = "class User { [primary] id: uuid, manager: &User?, }";
         let input = parse_oak(source).expect("Oak parses VOS");
         let fields = input.fields(&input.declarations()[0]);
-        assert_eq!(&source[fields[0].name_span.clone()], "id");
-        assert_eq!(&source[fields[0].type_syntax.span.clone()], "uuid");
-        assert_eq!(&source[fields[1].type_syntax.span.clone()], "&User?");
-        assert_eq!(&source[fields[0].attributes[0].span.clone()], "[primary]");
+        assert_eq!(&source[fields[0].name_span], "id");
+        assert_eq!(&source[fields[0].type_syntax.span], "uuid");
+        assert_eq!(&source[fields[1].type_syntax.span], "&User?");
+        assert_eq!(&source[fields[0].attributes[0].span], "[primary]");
     }
 
     #[test]
     fn projects_operation_parameters_and_return_type_without_reparsing() {
-        let source = "query active(status: utf8, limit: i64) -> [User] { User.filter(x => x.active) }";
+        let source =
+            "query active(status: utf8, limit: i64) -> [User] { User.filter(x => x.active) }";
         let operations = parse_oak(source).unwrap().project_operations().unwrap();
         assert_eq!(operations.len(), 1);
         assert_eq!(operations[0].name, "active");
         assert_eq!(operations[0].parameters[0].name, "status");
         assert_eq!(operations[0].parameters[1].name, "limit");
-        assert!(matches!(operations[0].return_type, Some(CanonicalType::List(_))));
-        assert_eq!(operations[0].body.as_ref().unwrap().text, "{ User.filter(x => x.active) }");
-        assert_eq!(&source[operations[0].span.clone()], source);
+        assert!(matches!(
+            operations[0].return_type,
+            Some(CanonicalType::List(_))
+        ));
+        assert_eq!(
+            operations[0].body.as_ref().unwrap().text,
+            "{ User.filter(x => x.active) }"
+        );
+        assert_eq!(&source[operations[0].span], source);
     }
 
     #[test]
     fn operation_artifact_is_strict_and_source_backed() {
-        let input = parse_oak("query active(status: utf8) -> [User] { User.filter(x => x.active) }").unwrap();
+        let input =
+            parse_oak("query active(status: utf8) -> [User] { User.filter(x => x.active) }")
+                .unwrap();
         let artifact = input.project_operations_artifact().unwrap();
         assert_eq!(artifact.envelope.stage, OPERATION_PROJECTION_STAGE);
-        assert_eq!(artifact.envelope.contract_format_version, OPERATION_CONTRACT_FORMAT_VERSION);
+        assert_eq!(
+            artifact.envelope.contract_format_version,
+            OPERATION_CONTRACT_FORMAT_VERSION
+        );
         let json = artifact.to_json().unwrap();
-        assert_eq!(OperationProjectionArtifact::from_json(&json).unwrap(), artifact);
+        assert_eq!(
+            OperationProjectionArtifact::from_json(&json).unwrap(),
+            artifact
+        );
 
         let mut invalid = serde_json::from_str::<serde_json::Value>(&json).unwrap();
-        invalid["operations"][0]["body"]["text"] = serde_json::Value::String("{ altered }".to_owned());
-        assert_eq!(OperationProjectionArtifact::from_json(&invalid.to_string()).unwrap_err().code, "OPR014");
+        invalid["operations"][0]["body"]["text"] =
+            serde_json::Value::String("{ altered }".to_owned());
+        assert_eq!(
+            OperationProjectionArtifact::from_json(&invalid.to_string())
+                .unwrap_err()
+                .code,
+            "OPR014"
+        );
     }
 
     #[test]
@@ -163,8 +184,14 @@ mod tests {
 
     #[test]
     fn operation_identity_key_ignores_formatting_and_source_order() {
-        let first = parse_oak("query active(status: utf8, limit: i64) -> [User] { User }").unwrap().project_operations().unwrap();
-        let second = parse_oak("\nquery active( status : utf8 , limit:i64 )->[User]{User}\n").unwrap().project_operations().unwrap();
+        let first = parse_oak("query active(status: utf8, limit: i64) -> [User] { User }")
+            .unwrap()
+            .project_operations()
+            .unwrap();
+        let second = parse_oak("\nquery active( status : utf8 , limit:i64 )->[User]{User}\n")
+            .unwrap()
+            .project_operations()
+            .unwrap();
         assert_eq!(first[0].identity_key, second[0].identity_key);
     }
 
