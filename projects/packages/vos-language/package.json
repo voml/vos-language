@@ -1,7 +1,7 @@
 {
     "name": "@voml/vos-language",
     "version": "0.0.2",
-    "description": "VOS language tooling — source checks and diagnostics backed by the Rust WebAssembly core",
+    "description": "VOS language tooling — source checks, catalog projection and formatting backed by the Rust WebAssembly core",
     "homepage": "https://vos-language.pages.dev/",
     "repository": {
         "type": "git",
@@ -20,6 +20,11 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js",
             "default": "./dist/index.js"
+        },
+        "./formatter": {
+            "types": "./dist/formatter.d.ts",
+            "import": "./dist/formatter.js",
+            "default": "./dist/formatter.js"
         },
         "./wasm": "./lib/vos_wasm_bg.wasm"
     },
