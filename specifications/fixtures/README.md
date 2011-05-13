@@ -92,13 +92,13 @@ production contract exists.
 From the repo root (`cargo` workspace):
 
 ```bash
-cargo test -p vos-contract --offline
+cargo test -p vos-types -p vos --offline
 ```
 
 The ordinary test path only compares outputs and is safe for CI. Intentional golden updates use:
 
 ```bash
-VOS_UPDATE_FIXTURES=1 cargo test -p vos-contract --offline
+VOS_UPDATE_FIXTURES=1 cargo test -p vos-types -p vos --offline
 ```
 
 That environment variable rewrites companion files. Review every generated diff; never treat blessing as a substitute

@@ -25,7 +25,7 @@ export type VosCheckResult = {
 /**
  * `catalogSource` 的结果。
  *
- * `catalog` 是 `vos-contract` 的 `SchemaProjection` 工件，字段名与形状由 Rust 侧的
+ * `catalog` 是 `vos-types` 的 `SchemaProjection` 工件，字段名与形状由 Rust 侧的
  * 序列化决定；canonical artifact 合同在 TS 里冻结之前以 `unknown` 交出，调用方需自行
  * 收窄，本包不伪造一层可能漂移的 TS 形状。
  */

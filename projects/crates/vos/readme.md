@@ -8,12 +8,13 @@ Use this crate when building a database host, compiler, generator, CLI, or devel
 ## Oak-backed contract input
 
 New integrations should begin with `vos::parse_oak`, which invokes Oak and returns
-`vos::contract::ContractInput`. VOS semantic consumers must operate on that Oak output and must not add another
+`vos::ContractInput`. VOS semantic consumers must operate on that Oak output and must not add another
 parser or reparse the source. After an explicit identity manifest is available, call `vos::resolve_contract` and pass
 the resulting `vos::ResolvedContract` to database or ORM adapters.
 
 ## Public modules
 
+- `vos::types` provides foundational semantic models and strict artifact readers from `vos-types`, without an Oak dependency.
 - `vos::parse_oak` is the Oak-owned frontend entry for contract consumers.
 - `vos::resolve_contract` is the resolved semantic contract entry for downstream hosts.
 - Oak owns the lexer, parser, CST, Builder AST, spans, and recovery. This crate owns no parser, AST or CST of its own.

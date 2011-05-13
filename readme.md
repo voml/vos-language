@@ -179,7 +179,7 @@ a concrete compatibility target.
 
 ```bash
 cd projects/crates
-cargo test -p vos-contract --offline
+cargo test -p vos-types -p vos --offline
 ```
 
 See the [fixture guide](./specifications/fixtures/README.md) before adding or updating goldens.

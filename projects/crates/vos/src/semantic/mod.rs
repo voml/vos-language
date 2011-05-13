@@ -1,4 +1,4 @@
-//! VOS semantic consumer boundary for Oak-owned syntax trees.
+//! Oak adapters and VOS semantic processing.
 
 #![warn(missing_docs)]
 
@@ -8,23 +8,11 @@ mod identity;
 mod projection;
 
 pub use identity::{
-    BoundFieldContract, BoundTypeContract, FieldIdentity, IDENTITY_FINGERPRINT_VERSION,
-    IDENTITY_HISTORY_FORMAT_VERSION, IDENTITY_MANIFEST_VERSION, IdentityBoundProjection,
-    IdentityChange, IdentityEvolution, IdentityHistory, IdentityManifest,
-    RESOLVED_CONTRACT_FORMAT_VERSION, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
-    ResolvedContract, ResolvedFieldContract, ResolvedIdentityProjection, ResolvedTypeContract,
-    RetiredFieldIdentity, RetiredTypeIdentity, TypeIdentity, bind_identity, compare_identity,
-    evolve_identity, resolve_contract, resolve_identity_types, resolve_identity_units,
-    resolved_schema_fingerprint, schema_fingerprint,
+    bind_identity, compare_identity, evolve_identity, resolve_contract, resolve_identity_types,
+    resolve_identity_units,
 };
-pub use projection::{
-    ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
-    CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, FieldContract,
-    LANGUAGE_VERSION, OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE, OperationKind,
-    OperationParameter, OperationProjection, OperationProjectionArtifact, PROJECTION_STAGE,
-    SchemaProjection, SourceUnit, SyntaxSliceContract, TypeContract, TypeContractKind,
-    project_operations, project_operations_artifact,
-};
+pub use projection::{project_operations, project_operations_artifact};
+pub use vos_types::*;
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
 pub fn parse_oak(source: &str) -> Result<ContractInput, String> {

@@ -44,7 +44,7 @@ type VosCheckResult = {
 
 ## 🗂️ Project the schema catalog
 
-`catalogSource` returns the resolved `vos-contract` `SchemaProjection` for the same source, so a host reads canonical
+`catalogSource` returns the `vos-types` `SchemaProjection` syntax artifact for the same source, so a host reads canonical
 paths, field types and attributes without owning a second parser:
 
 ```ts

@@ -10,5 +10,9 @@ readme = "readme.md"
 [dependencies]
 vos-format = { workspace = true }
 vos-generator = { workspace = true }
-vos-contract = { workspace = true }
+vos-types = { workspace = true }
 uuid = { workspace = true }
+oak-vos = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

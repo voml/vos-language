@@ -1,5 +1,5 @@
 use serde_json::{Value, json};
-use vos_contract::{
+use vos::{
     ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityBoundProjection,
     IdentityChange, IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedContract,
     SchemaProjection, TypeContractKind, TypeIdentity, bind_identity, compare_identity,
@@ -604,7 +604,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     )
     .unwrap();
     let initial = IdentityHistory {
-        format_version: vos_contract::IDENTITY_HISTORY_FORMAT_VERSION.to_owned(),
+        format_version: vos_types::IDENTITY_HISTORY_FORMAT_VERSION.to_owned(),
         manifest_version: IDENTITY_MANIFEST_VERSION.to_owned(),
         revision: 0,
         layout_epoch: 0,
@@ -790,7 +790,7 @@ fn identity_history_tombstones_all_fields_when_type_is_removed() {
     )
     .unwrap();
     let history = IdentityHistory {
-        format_version: vos_contract::IDENTITY_HISTORY_FORMAT_VERSION.to_owned(),
+        format_version: vos_types::IDENTITY_HISTORY_FORMAT_VERSION.to_owned(),
         manifest_version: IDENTITY_MANIFEST_VERSION.to_owned(),
         revision: 0,
         layout_epoch: 0,
