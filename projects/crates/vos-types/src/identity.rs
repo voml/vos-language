@@ -61,8 +61,10 @@ pub struct FieldIdentity {
     pub canonical_name: String,
     /// Durable field ID. Zero is reserved and invalid.
     pub field_id: u64,
-    /// Durable virtual slot. It is never inferred from source order.
-    pub virtual_field_index: u32,
+    /// Durable virtual slot of a stored field. It is never inferred from source
+    /// order, is never reused once retired, and is absent when durable storage
+    /// does not cover the field.
+    pub virtual_field_index: Option<u32>,
 }
 
 /// A projection with externally assigned durable identities.
@@ -95,8 +97,8 @@ pub struct BoundTypeContract {
 pub struct BoundFieldContract {
     /// Durable field identity.
     pub field_id: u64,
-    /// Durable virtual slot.
-    pub virtual_field_index: u32,
+    /// Durable virtual slot of a stored field, absent otherwise.
+    pub virtual_field_index: Option<u32>,
     /// Current canonical name.
     pub canonical_name: String,
     /// Canonical type projection.
@@ -155,8 +157,8 @@ pub enum ResolvedCanonicalTypeArgument {
 pub struct ResolvedFieldContract {
     /// Durable field identity.
     pub field_id: u64,
-    /// Durable virtual slot.
-    pub virtual_field_index: u32,
+    /// Durable virtual slot of a stored field, absent otherwise.
+    pub virtual_field_index: Option<u32>,
     /// Current canonical name.
     pub canonical_name: String,
     /// Resolved canonical type.
@@ -179,16 +181,6 @@ pub struct ResolvedTypeContract {
     pub kind: TypeContractKind,
     /// Resolved fields.
     pub fields: Vec<ResolvedFieldContract>,
-}
-
-/// An identity-bound projection with all user-defined field types resolved.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ResolvedIdentityProjection {
-    /// Identity manifest version.
-    pub manifest_version: String,
-    /// Resolved types in projection order.
-    pub types: Vec<ResolvedTypeContract>,
 }
 
 /// Versioned semantic contract consumed by database and ORM adapters.
@@ -259,11 +251,14 @@ impl ResolvedContract {
             let mut names = BTreeSet::new();
             let mut slots = BTreeSet::new();
             for field in &item.fields {
+                let slot_conflicts = field
+                    .virtual_field_index
+                    .is_some_and(|slot| !slots.insert(slot));
                 if field.field_id == 0
                     || !field_ids.insert(field.field_id)
                     || field.canonical_name.is_empty()
                     || !names.insert(&field.canonical_name)
-                    || !slots.insert(field.virtual_field_index)
+                    || slot_conflicts
                 {
                     return Err(ArtifactError {
                         code: "RES013".to_owned(),
@@ -277,10 +272,7 @@ impl ResolvedContract {
                 validate_resolved_type(&field.canonical_type, &type_by_path, &path_by_type)?;
             }
         }
-        let expected = resolved_schema_fingerprint(&ResolvedIdentityProjection {
-            manifest_version: self.identity_manifest_version.clone(),
-            types: self.types.clone(),
-        });
+        let expected = resolved_schema_fingerprint(&self.types);
         if expected != self.schema_fingerprint {
             return Err(ArtifactError {
                 code: "RES014".to_owned(),
@@ -368,14 +360,14 @@ pub enum IdentityChange {
         type_id: u64,
         field_id: u64,
         canonical_name: String,
-        virtual_field_index: u32,
+        virtual_field_index: Option<u32>,
     },
     /// A field disappeared and must remain a tombstone in durable history.
     FieldRemoved {
         type_id: u64,
         field_id: u64,
         canonical_name: String,
-        virtual_field_index: u32,
+        virtual_field_index: Option<u32>,
     },
     /// A field kept its identity while its canonical name changed.
     FieldRenamed {
@@ -384,12 +376,13 @@ pub enum IdentityChange {
         from: String,
         to: String,
     },
-    /// A field kept its identity while its virtual slot changed.
+    /// A field kept its identity while its durable virtual slot changed, when it
+    /// gained one or when it lost one.
     FieldReordered {
         type_id: u64,
         field_id: u64,
-        from: u32,
-        to: u32,
+        from: Option<u32>,
+        to: Option<u32>,
     },
     /// A field identity kept its name but changed semantic content.
     FieldChanged { type_id: u64, field_id: u64 },
@@ -453,8 +446,9 @@ pub struct RetiredFieldIdentity {
     pub type_id: u64,
     /// Last canonical name associated with the ID.
     pub canonical_name: String,
-    /// Last virtual slot associated with the ID.
-    pub virtual_field_index: u32,
+    /// Last virtual slot associated with the ID, absent for a field that durable
+    /// storage never covered.
+    pub virtual_field_index: Option<u32>,
     /// Revision at which the identity was retired.
     pub retired_at_revision: u64,
 }
@@ -504,12 +498,14 @@ impl IdentityHistory {
             let mut names = BTreeSet::new();
             let mut slots = BTreeSet::new();
             for field in &item.fields {
+                let slot_conflicts = field.virtual_field_index.is_some_and(|slot| {
+                    !slots.insert(slot) || !active_slots.insert((item.type_id, slot))
+                });
                 if field.field_id == 0
                     || !active_field_ids.insert(field.field_id)
                     || field.canonical_name.is_empty()
                     || !names.insert(&field.canonical_name)
-                    || !slots.insert(field.virtual_field_index)
-                    || !active_slots.insert((item.type_id, field.virtual_field_index))
+                    || slot_conflicts
                 {
                     return Err(ArtifactError {
                         code: "ID025".to_owned(),
@@ -536,6 +532,10 @@ impl IdentityHistory {
         let mut retired_field_ids = BTreeSet::new();
         let mut retired_slots = BTreeSet::new();
         for item in &self.retired_fields {
+            let slot_conflicts = item.virtual_field_index.is_some_and(|slot| {
+                active_slots.contains(&(item.type_id, slot))
+                    || !retired_slots.insert((item.type_id, slot))
+            });
             if item.field_id == 0
                 || item.type_id == 0
                 || !retired_field_ids.insert(item.field_id)
@@ -544,8 +544,7 @@ impl IdentityHistory {
                 || item.retired_at_revision > self.revision
                 || (!active_type_ids.contains(&item.type_id)
                     && !retired_type_ids.contains(&item.type_id))
-                || active_slots.contains(&(item.type_id, item.virtual_field_index))
-                || !retired_slots.insert((item.type_id, item.virtual_field_index))
+                || slot_conflicts
             {
                 return Err(ArtifactError {
                     code: "ID023".to_owned(),
@@ -577,9 +576,8 @@ pub fn schema_fingerprint(bound: &IdentityBoundProjection) -> String {
 }
 
 /// Computes a stable fingerprint from the fully resolved canonical model.
-pub fn resolved_schema_fingerprint(resolved: &ResolvedIdentityProjection) -> String {
-    let mut types = resolved
-        .types
+pub fn resolved_schema_fingerprint(types: &[ResolvedTypeContract]) -> String {
+    let mut types = types
         .iter()
         .map(CanonicalResolvedTypeContract::from)
         .collect::<Vec<_>>();

@@ -8,8 +8,8 @@ mod identity;
 mod projection;
 
 pub use identity::{
-    bind_identity, compare_identity, evolve_identity, resolve_contract, resolve_identity_types,
-    resolve_identity_units,
+    bind_identity, compare_identity, evolve_identity, resolve_contract,
+    resolve_contract_from_bound, resolve_contract_from_units,
 };
 pub use projection::{project_operations, project_operations_artifact};
 pub use vos_types::*;

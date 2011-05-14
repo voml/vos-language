@@ -257,17 +257,18 @@ pub fn compare_identity(
     })
 }
 
-/// Resolves all user-defined names in an identity-bound projection.
-pub fn resolve_identity_types(
+/// Resolves an identity-bound projection into the strict resolved contract.
+pub fn resolve_contract_from_bound(
     bound: &IdentityBoundProjection,
-) -> Result<ResolvedIdentityProjection, Vec<ContractDiagnostic>> {
-    resolve_identity_units(&[bound])
+) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
+    resolve_contract_from_units(&[bound])
 }
 
-/// Resolves a deterministic collection of already-bound source units together.
-pub fn resolve_identity_units(
+/// Resolves a deterministic collection of already-bound source units into one
+/// strict resolved contract.
+pub fn resolve_contract_from_units(
     units: &[&IdentityBoundProjection],
-) -> Result<ResolvedIdentityProjection, Vec<ContractDiagnostic>> {
+) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
     let mut diagnostics = Vec::new();
     let manifest_version = units
         .first()
@@ -355,29 +356,33 @@ pub fn resolve_identity_units(
         })
         .collect();
     if diagnostics.is_empty() {
-        Ok(ResolvedIdentityProjection {
-            manifest_version,
-            types,
-        })
+        Ok(resolved_contract(manifest_version, types))
     } else {
         Err(diagnostics)
     }
 }
 
-/// Builds the first strict resolved contract from one bound projection.
+/// Builds the strict resolved contract from one bound projection.
 pub fn resolve_contract(
     projection: &SchemaProjection,
     manifest: &IdentityManifest,
 ) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
     let bound = bind_identity(projection, manifest)?;
-    let resolved = resolve_identity_types(&bound)?;
-    let schema_fingerprint = resolved_schema_fingerprint(&resolved);
-    Ok(ResolvedContract {
+    resolve_contract_from_bound(&bound)
+}
+
+/// Wraps already-resolved types into the versioned contract envelope.
+fn resolved_contract(
+    identity_manifest_version: String,
+    types: Vec<ResolvedTypeContract>,
+) -> ResolvedContract {
+    let schema_fingerprint = resolved_schema_fingerprint(&types);
+    ResolvedContract {
         format_version: RESOLVED_CONTRACT_FORMAT_VERSION.to_owned(),
-        identity_manifest_version: resolved.manifest_version,
+        identity_manifest_version,
         schema_fingerprint,
-        types: resolved.types,
-    })
+        types,
+    }
 }
 
 fn resolve_type(
@@ -546,7 +551,7 @@ pub fn evolve_identity(
     let retired_slots = previous
         .retired_fields
         .iter()
-        .map(|item| (item.type_id, item.virtual_field_index))
+        .filter_map(|item| item.virtual_field_index.map(|slot| (item.type_id, slot)))
         .collect::<BTreeSet<_>>();
     if current
         .types
@@ -554,7 +559,7 @@ pub fn evolve_identity(
         .flat_map(|item| {
             item.fields
                 .iter()
-                .map(move |field| (item.type_id, field.virtual_field_index))
+                .filter_map(move |field| field.virtual_field_index.map(|slot| (item.type_id, slot)))
         })
         .any(|slot| retired_slots.contains(&slot))
     {
@@ -701,10 +706,10 @@ fn validate_field_manifest(identity: &TypeIdentity, diagnostics: &mut Vec<Contra
     let mut ids = BTreeSet::new();
     let mut slots = BTreeSet::new();
     for field in &identity.fields {
-        if field.field_id == 0
-            || !ids.insert(field.field_id)
-            || !slots.insert(field.virtual_field_index)
-        {
+        let slot_conflicts = field
+            .virtual_field_index
+            .is_some_and(|slot| !slots.insert(slot));
+        if field.field_id == 0 || !ids.insert(field.field_id) || slot_conflicts {
             diagnostics.push(diagnostic(
                 "ID009",
                 "field ID must be non-zero and field ID and virtual slot must be unique",

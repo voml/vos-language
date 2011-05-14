@@ -3,8 +3,8 @@ use vos::{
     ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityBoundProjection,
     IdentityChange, IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedContract,
     SchemaProjection, TypeContractKind, TypeIdentity, bind_identity, compare_identity,
-    evolve_identity, parse_oak, resolve_contract, resolve_identity_types, resolve_identity_units,
-    resolved_schema_fingerprint, schema_fingerprint,
+    evolve_identity, parse_oak, resolve_contract, resolve_contract_from_bound,
+    resolve_contract_from_units, resolved_schema_fingerprint, schema_fingerprint,
 };
 
 #[test]
@@ -145,7 +145,7 @@ fn identity_manifest_binding_ignores_manifest_and_source_order() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 10,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             },
             TypeIdentity {
@@ -156,12 +156,12 @@ fn identity_manifest_binding_ignores_manifest_and_source_order() {
                     FieldIdentity {
                         canonical_name: "a".to_owned(),
                         field_id: 12,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                     FieldIdentity {
                         canonical_name: "b".to_owned(),
                         field_id: 11,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                 ],
             },
@@ -209,7 +209,7 @@ fn identity_manifest_rejects_missing_unknown_duplicate_and_zero_ids() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 1,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             }],
         },
@@ -240,7 +240,7 @@ fn identity_manifest_rejects_rename_without_explicit_evolution_map() {
             fields: vec![FieldIdentity {
                 canonical_name: "old_name".to_owned(),
                 field_id: 2,
-                virtual_field_index: 0,
+                virtual_field_index: Some(0),
             }],
         }],
     };
@@ -278,12 +278,12 @@ fn identity_fingerprint_ignores_source_manifest_and_slot_order() {
                     FieldIdentity {
                         canonical_name: "b".to_owned(),
                         field_id: 11,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                     FieldIdentity {
                         canonical_name: "a".to_owned(),
                         field_id: 12,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                 ],
             },
@@ -294,7 +294,7 @@ fn identity_fingerprint_ignores_source_manifest_and_slot_order() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 10,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             },
         ],
@@ -309,7 +309,7 @@ fn identity_fingerprint_ignores_source_manifest_and_slot_order() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 10,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             },
             TypeIdentity {
@@ -320,12 +320,12 @@ fn identity_fingerprint_ignores_source_manifest_and_slot_order() {
                     FieldIdentity {
                         canonical_name: "a".to_owned(),
                         field_id: 12,
-                        virtual_field_index: 9,
+                        virtual_field_index: Some(9),
                     },
                     FieldIdentity {
                         canonical_name: "b".to_owned(),
                         field_id: 11,
-                        virtual_field_index: 8,
+                        virtual_field_index: Some(8),
                     },
                 ],
             },
@@ -352,7 +352,7 @@ fn identity_fingerprint_changes_for_semantic_changes() {
             fields: vec![FieldIdentity {
                 canonical_name: "id".to_owned(),
                 field_id: 2,
-                virtual_field_index: 0,
+                virtual_field_index: Some(0),
             }],
         }],
     };
@@ -384,7 +384,7 @@ fn identity_fingerprint_ignores_provenance_spans_and_attribute_syntax_spacing() 
             fields: vec![FieldIdentity {
                 canonical_name: "id".to_owned(),
                 field_id: 2,
-                virtual_field_index: 0,
+                virtual_field_index: Some(0),
             }],
         }],
     };
@@ -435,12 +435,12 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
                 FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 },
                 FieldIdentity {
                     canonical_name: "old".to_owned(),
                     field_id: 3,
-                    virtual_field_index: 1,
+                    virtual_field_index: Some(1),
                 },
             ],
         }],
@@ -459,12 +459,12 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
                 FieldIdentity {
                     canonical_name: "new_id".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 },
                 FieldIdentity {
                     canonical_name: "extra".to_owned(),
                     field_id: 4,
-                    virtual_field_index: 2,
+                    virtual_field_index: Some(2),
                 },
             ],
         }],
@@ -484,7 +484,7 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
         to: "new_id".to_owned(),
     }));
     let mut moved = current.clone();
-    moved.types[0].fields[0].virtual_field_index = 3;
+    moved.types[0].fields[0].virtual_field_index = Some(3);
     assert!(
         compare_identity(&previous, &moved)
             .unwrap_err()
@@ -495,13 +495,13 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
         type_id: 1,
         field_id: 3,
         canonical_name: "old".to_owned(),
-        virtual_field_index: 1,
+        virtual_field_index: Some(1),
     }));
     assert!(evolution.changes.contains(&IdentityChange::FieldAdded {
         type_id: 1,
         field_id: 4,
         canonical_name: "extra".to_owned(),
-        virtual_field_index: 2,
+        virtual_field_index: Some(2),
     }));
 }
 
@@ -521,7 +521,7 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             }],
         },
@@ -541,7 +541,7 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 8,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             }],
         },
@@ -564,7 +564,7 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 8,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             }],
         },
@@ -591,12 +591,12 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
                     FieldIdentity {
                         canonical_name: "id".to_owned(),
                         field_id: 2,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                     FieldIdentity {
                         canonical_name: "old".to_owned(),
                         field_id: 3,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                 ],
             }],
@@ -626,7 +626,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             }],
         },
@@ -714,12 +714,12 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
                     FieldIdentity {
                         canonical_name: "id".to_owned(),
                         field_id: 2,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                     FieldIdentity {
                         canonical_name: "replacement".to_owned(),
                         field_id: 3,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                 ],
             }],
@@ -744,12 +744,12 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
                     FieldIdentity {
                         canonical_name: "id".to_owned(),
                         field_id: 2,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                     FieldIdentity {
                         canonical_name: "replacement".to_owned(),
                         field_id: 4,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                 ],
             }],
@@ -777,12 +777,12 @@ fn identity_history_tombstones_all_fields_when_type_is_removed() {
                     FieldIdentity {
                         canonical_name: "id".to_owned(),
                         field_id: 2,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                     FieldIdentity {
                         canonical_name: "label".to_owned(),
                         field_id: 3,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                 ],
             }],
@@ -831,7 +831,7 @@ fn identity_type_resolution_binds_user_types_and_keeps_builtins() {
                 fields: vec![FieldIdentity {
                     canonical_name: "city".to_owned(),
                     field_id: 8,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             },
             TypeIdentity {
@@ -842,19 +842,19 @@ fn identity_type_resolution_binds_user_types_and_keeps_builtins() {
                     FieldIdentity {
                         canonical_name: "address".to_owned(),
                         field_id: 10,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                     FieldIdentity {
                         canonical_name: "id".to_owned(),
                         field_id: 11,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                 ],
             },
         ],
     };
     let bound = bind_identity(&projection, &manifest).unwrap();
-    let resolved = resolve_identity_types(&bound).unwrap();
+    let resolved = resolve_contract_from_bound(&bound).unwrap();
     assert!(matches!(
         &resolved.types[1].fields[0].canonical_type,
         ResolvedCanonicalType::Optional(inner)
@@ -881,12 +881,12 @@ fn identity_type_resolution_rejects_unknown_user_types() {
             fields: vec![FieldIdentity {
                 canonical_name: "address".to_owned(),
                 field_id: 2,
-                virtual_field_index: 0,
+                virtual_field_index: Some(0),
             }],
         }],
     };
     let bound = bind_identity(&projection, &manifest).unwrap();
-    let diagnostics = resolve_identity_types(&bound).unwrap_err();
+    let diagnostics = resolve_contract_from_bound(&bound).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "RES001"));
 }
 
@@ -904,7 +904,7 @@ fn relative_and_qualified_types_resolve_to_the_same_namespace_identity() {
                 fields: vec![FieldIdentity {
                     canonical_name: "city".to_owned(),
                     field_id: 1,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             },
             TypeIdentity {
@@ -915,19 +915,19 @@ fn relative_and_qualified_types_resolve_to_the_same_namespace_identity() {
                     FieldIdentity {
                         canonical_name: "local".to_owned(),
                         field_id: 2,
-                        virtual_field_index: 0,
+                        virtual_field_index: Some(0),
                     },
                     FieldIdentity {
                         canonical_name: "qualified".to_owned(),
                         field_id: 3,
-                        virtual_field_index: 1,
+                        virtual_field_index: Some(1),
                     },
                 ],
             },
         ],
     };
     let bound = bind_identity(&projection, &manifest).unwrap();
-    let resolved = resolve_identity_types(&bound).unwrap();
+    let resolved = resolve_contract_from_bound(&bound).unwrap();
     let expected = ResolvedCanonicalType::User {
         path: vec!["demo".to_owned(), "Address".to_owned()],
         type_id: 1,
@@ -958,7 +958,7 @@ fn multi_unit_resolution_joins_global_symbol_table_without_reparsing() {
             fields: vec![FieldIdentity {
                 canonical_name: "address".to_owned(),
                 field_id: 11,
-                virtual_field_index: 0,
+                virtual_field_index: Some(0),
             }],
         }],
     };
@@ -971,13 +971,13 @@ fn multi_unit_resolution_joins_global_symbol_table_without_reparsing() {
             fields: vec![FieldIdentity {
                 canonical_name: "city".to_owned(),
                 field_id: 21,
-                virtual_field_index: 0,
+                virtual_field_index: Some(0),
             }],
         }],
     };
     let users = bind_identity(&users, &user_manifest).unwrap();
     let addresses = bind_identity(&addresses, &address_manifest).unwrap();
-    let resolved = resolve_identity_units(&[&users, &addresses]).unwrap();
+    let resolved = resolve_contract_from_units(&[&users, &addresses]).unwrap();
     assert_eq!(resolved.types.len(), 2);
     assert_eq!(resolved.types[0].canonical_path, ["demo", "User"]);
     assert_eq!(
@@ -1006,7 +1006,7 @@ fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             }],
         },
@@ -1029,25 +1029,25 @@ fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             }],
         },
     )
     .unwrap();
     assert!(
-        resolve_identity_units(&[&first, &duplicate_path])
+        resolve_contract_from_units(&[&first, &duplicate_path])
             .unwrap_err()
             .iter()
             .any(|item| item.code == "RES004")
     );
     assert!(
-        resolve_identity_units(&[&first, &different_version])
+        resolve_contract_from_units(&[&first, &different_version])
             .unwrap_err()
             .iter()
             .any(|item| item.code == "RES003")
     );
-    let diagnostics = resolve_identity_units(&[&first, &duplicate_ids]).unwrap_err();
+    let diagnostics = resolve_contract_from_units(&[&first, &duplicate_ids]).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "RES007"));
     assert!(diagnostics.iter().any(|item| item.code == "RES006"));
 }
@@ -1148,7 +1148,7 @@ fn resolved_contract_rejects_dangling_user_type_references() {
                 fields: vec![FieldIdentity {
                     canonical_name: "target".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             },
             TypeIdentity {
@@ -1158,7 +1158,7 @@ fn resolved_contract_rejects_dangling_user_type_references() {
                 fields: vec![FieldIdentity {
                     canonical_name: "id".to_owned(),
                     field_id: 4,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 }],
             },
         ],
@@ -1214,23 +1214,23 @@ fn builtin_aliases_resolve_to_one_canonical_spelling() {
                 FieldIdentity {
                     canonical_name: "amount".to_owned(),
                     field_id: 2,
-                    virtual_field_index: 0,
+                    virtual_field_index: Some(0),
                 },
                 FieldIdentity {
                     canonical_name: "created".to_owned(),
                     field_id: 3,
-                    virtual_field_index: 1,
+                    virtual_field_index: Some(1),
                 },
                 FieldIdentity {
                     canonical_name: "updated".to_owned(),
                     field_id: 4,
-                    virtual_field_index: 2,
+                    virtual_field_index: Some(2),
                 },
             ],
         }],
     };
     let bound = bind_identity(&projection, &manifest).unwrap();
-    let resolved = resolve_identity_types(&bound).unwrap();
+    let resolved = resolve_contract_from_bound(&bound).unwrap();
     assert_eq!(
         resolved.types[0].fields[0].canonical_type,
         ResolvedCanonicalType::Builtin(vec!["decimal".to_owned()])
@@ -1256,7 +1256,7 @@ fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
             fields: vec![FieldIdentity {
                 canonical_name: "amount".to_owned(),
                 field_id: 2,
-                virtual_field_index: 0,
+                virtual_field_index: Some(0),
             }],
         }],
     };
@@ -1277,7 +1277,7 @@ fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
     )
     .unwrap();
     assert_eq!(decimal.schema_fingerprint, alias.schema_fingerprint);
-    let resolved = resolve_identity_types(
+    let resolved = resolve_contract_from_bound(
         &bind_identity(
             &parse_oak("class T { amount: decimal }")
                 .unwrap()
@@ -1290,6 +1290,6 @@ fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
     .unwrap();
     assert_eq!(
         decimal.schema_fingerprint,
-        resolved_schema_fingerprint(&resolved)
+        resolved_schema_fingerprint(&resolved.types)
     );
 }
