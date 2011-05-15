@@ -15,8 +15,21 @@ pub use vos_format as format;
 pub use vos_generator as generator;
 pub use vos_types as types;
 
+/// Oak syntax surface consumed by VOS hosts.
+pub use oak_vos as syntax;
+
 mod semantic;
 pub use semantic::*;
+
+/// Parses a VOS expression program (statements, `micro` declarations and an
+/// optional trailing result expression) through Oak.
+///
+/// This is the structured program projection consumed by hosts such as Iris to
+/// lower query and update bodies. It performs no name resolution or type
+/// checking.
+pub fn parse_program(source: &str) -> Result<syntax::VosProgram, String> {
+    oak_vos::parse_program(source)
+}
 
 /// Parses and validates a schema through Oak and the VOS schema contract.
 pub fn validate_schema(source: &str) -> Result<vos_types::SchemaProjection, String> {
