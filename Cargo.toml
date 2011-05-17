@@ -3,7 +3,7 @@ resolver = "2"
 members = ["projects/crates/*"]
 
 [workspace.package]
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 authors = ["Yggdrasill Team <192607617@qq.com>"]
 license = "MPL-2.0"
@@ -23,4 +23,4 @@ vos-format = { path = "projects/crates/vos-format" }
 vos-types = { path = "projects/crates/vos-types" }
 vos = { path = "projects/crates/vos" }
 wasm-bindgen = "0.2"
-oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "d9b1a4d5a4a8c4efdb814daf3acaacb3a1116db7", package = "oak-vos" }
+oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "a579d35bae5016fc82a24c4fb5511121fee11a2b", package = "oak-vos" }
