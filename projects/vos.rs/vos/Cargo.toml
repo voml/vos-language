@@ -1,0 +1,15 @@
+[package]
+name = "vos"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Virtual Object Schema (VOS) language facade"
+
+[dependencies]
+# Temporary pin to the upstream Iris implementation until the remote
+# repository completes its VOS rename. Local consumers should depend on `vos`.
+vos-remote = {
+    package = "iris",
+    git = "https://github.com/yy-database/iris-language.git",
+    branch = "dev",
+}

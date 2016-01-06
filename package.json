@@ -1,0 +1,12 @@
+{
+  "name": "@game-gpt/vos-workspace",
+  "private": true,
+  "description": "Virtual Object Schema (VOS) language workspace",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "pnpm --dir projects/vos.ts dev",
+    "test:rs": "cargo test --manifest-path projects/vos.rs/Cargo.toml --workspace",
+    "check:rs": "cargo check --manifest-path projects/vos.rs/Cargo.toml --workspace --all-targets",
+    "fmt:rs": "cargo fmt --manifest-path projects/vos.rs/Cargo.toml --all -- --check"
+  }
+}

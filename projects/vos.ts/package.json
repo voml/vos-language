@@ -1,0 +1,15 @@
+{
+  "name": "@game-gpt/vos-ts-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "pnpm --filter @game-gpt/vos-homepage dev",
+    "build": "pnpm -r --filter @game-gpt/vos --filter @game-gpt/vos-homepage run build",
+    "typecheck": "pnpm -r --filter @game-gpt/vos --filter @game-gpt/vos-homepage run typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
