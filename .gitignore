@@ -39,3 +39,8 @@ Thumbs.db
 *.db-wal
 *.db-shm
 *.log
+
+# npm placeholder / trust (local only)
+.placeholder-npm-cache.json
+scripts/.placeholder-npm-cache.json
+.env.placeholder.local

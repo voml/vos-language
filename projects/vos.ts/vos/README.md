@@ -2,6 +2,8 @@
 
 Fast, dependency-free source checks for VOS in TypeScript and browser environments.
 
+Try the interactive playground on the [VOS homepage](https://vos-language.pages.dev/playground).
+
 The package is the public TypeScript entry point for VOS. Its current API is intentionally small: it catches empty
 input, unbalanced braces and brackets, missing top-level declarations, and positional service parameters that should be
 named.
