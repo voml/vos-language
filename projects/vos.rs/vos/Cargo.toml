@@ -12,3 +12,4 @@ vos-ast = { workspace = true }
 vos-parser = { workspace = true }
 vos-generator = { workspace = true }
 vos-inspect = { workspace = true }
+uuid = { workspace = true }
