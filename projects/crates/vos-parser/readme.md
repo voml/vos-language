@@ -4,7 +4,7 @@ The internal VOS semantic lowering and baseline checker. Oak owns the source
 syntax frontend and this crate lowers its accepted VOS surface into the
 reference VOS AST before semantic checking.
 
-It turns normalized `.vos` source into the typed structures from `vos-ast`, emits stable diagnostics with byte spans,
+It first validates the source through `oak-vos`, then lowers normalized `.vos` source into the typed structures from `vos-ast`, emits stable diagnostics with byte spans,
 and adapts those diagnostics to source-aware miette reports for terminals and host applications.
 
 ## Entry points
@@ -15,7 +15,8 @@ and adapts those diagnostics to source-aware miette reports for terminals and ho
 - `check` validates a parsed document.
 - `report_diagnostic` and `report_diagnostics` attach file names and source text to failures.
 
-Parsing answers whether source is valid VOS. Optional style or policy decisions belong to `vos-inspect`, which runs
+Oak currently provides the structural syntax gate. The legacy semantic lowering remains in this crate until the full
+VOS Builder AST and conformance migration is complete. Optional style or policy decisions belong to `vos-inspect`, which runs
 after this baseline succeeds.
 
 ## Conformance

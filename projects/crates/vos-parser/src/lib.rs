@@ -32,10 +32,8 @@ pub fn normalize_source(source: &str) -> String {
     source.replace("\r\n", "\n").replace('\r', "\n")
 }
 
-/// Parse VOS source into a [`Document`] without semantic validation.
-pub fn parse(source: &str) -> Result<Document, Diagnostics> {
-    let source = normalize_source(source);
-    if let Err(message) = oak_vos::parse(&source) {
+pub(crate) fn validate_oak(source: &str) -> Result<(), Diagnostics> {
+    if let Err(message) = oak_vos::parse(source) {
         return Err(Diagnostics {
             errors: vec![Diagnostic::new(
                 format!("Oak VOS frontend rejected the source: {message}"),
@@ -44,6 +42,13 @@ pub fn parse(source: &str) -> Result<Document, Diagnostics> {
             )],
         });
     }
+    Ok(())
+}
+
+/// Parse VOS source into a [`Document`] without semantic validation.
+pub fn parse(source: &str) -> Result<Document, Diagnostics> {
+    let source = normalize_source(source);
+    validate_oak(&source)?;
     let mut parser = Parser::new(&source);
     match parser.parse_document() {
         Ok(items_ns) => Ok(Document {

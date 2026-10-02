@@ -130,3 +130,9 @@ fn dot_and_colon_colon_share_path_shape() {
     assert_eq!(c[1].1, Some(PathSep::ColonColon));
     assert_eq!(d[1].1, Some(PathSep::Dot));
 }
+
+#[test]
+fn oak_rejects_malformed_operation_delimiters_before_lowering() {
+    let error = parse_program("User.filter(x => x.name]").expect_err("Oak rejects mismatched delimiters");
+    assert!(error.errors.iter().any(|diagnostic| diagnostic.message.contains("Oak VOS frontend")));
+}
