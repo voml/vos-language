@@ -9,6 +9,7 @@ description = "Internal VOS parser — apps depend on the `vos` crate only"
 readme = "readme.md"
 
 [dependencies]
+oak-vos = { workspace = true }
 miette = { workspace = true }
 thiserror = { workspace = true }
 vos-ast = { workspace = true }
