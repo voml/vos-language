@@ -21,8 +21,9 @@ pub mod expr;
 pub mod op;
 
 pub use catalog::{
-    CatalogSnapshot, FieldId, FieldSlot, Revisions, TypeEntry, TypeId, TypeKind, VirtualFieldIndex,
-    catalog_from_document,
+    CatalogSnapshot, FieldId, FieldPath, FieldSlot, RenameMap, RetiredField, RetiredType,
+    Revisions, TypeEntry, TypeId, TypeKind, VirtualFieldIndex, catalog_from_document,
+    evolve_catalog,
 };
 pub use expr::{
     BinaryOp, Expr, FieldInit, FnDecl, FnKind, FnParam, Lambda, Let, PathSep, Program, ProjItem,
