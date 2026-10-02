@@ -19,8 +19,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 /** @type {{ dir: string, publishName?: string, prebuild?: string }[]} */
 const JS_PACKAGES = [
-    { dir: 'projects/vos.ts/vos', prebuild: 'pnpm --filter @game-gpt/vos build' },
-    { dir: 'projects/vos.ts/vos-skills' },
+    { dir: 'projects/packages/vos', prebuild: 'pnpm --filter @game-gpt/vos build' },
+    { dir: 'projects/packages/vos-skills' },
 ];
 
 function fail(msg) {

@@ -82,7 +82,7 @@ position.
 
 ## Run conformance
 
-From `projects/vos.rs`:
+From the repo root (`cargo` workspace):
 
 ```bash
 cargo test -p vos-parser --test conformance

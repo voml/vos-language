@@ -14,8 +14,8 @@
         "typecheck": "pnpm -r --filter @game-gpt/vos --filter @game-gpt/vos-skills run typecheck",
         "check:homepage": "pnpm --filter @game-gpt/vos-homepage check",
         "sync-grammar": "pnpm --filter @game-gpt/vos-textmate sync-vscode",
-        "test:rs": "cargo test --manifest-path projects/vos.rs/Cargo.toml --workspace",
-        "check:rs": "cargo check --manifest-path projects/vos.rs/Cargo.toml --workspace --all-targets",
+        "test:rs": "cargo test --workspace",
+        "check:rs": "cargo check --workspace --all-targets",
         "placeholder": "node scripts/ci/publish-placeholder.mjs",
         "placeholder:publish": "node scripts/ci/publish-placeholder.mjs publish",
         "placeholder:trust": "node scripts/ci/publish-placeholder.mjs trust"

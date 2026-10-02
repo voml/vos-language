@@ -31,7 +31,7 @@
             "scripts/**",
             "specifications/**",
             "!specifications/fixtures/**",
-            "projects/vos.ts/**",
+            "projects/packages/**",
             "!**/node_modules/**",
             "!**/dist/**",
             "!**/target/**",

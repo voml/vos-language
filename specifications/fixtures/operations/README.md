@@ -9,7 +9,7 @@ methods, projections, and explicit execution boundaries that belong to the same 
 
 | Stem                 | What it demonstrates                                        |
 |----------------------|-------------------------------------------------------------|
-| `insert_construct`   | Typed object construction and `.insert()` as distinct steps |
+| `insert_construct`   | Typed object construction, **`uuid()` → v7**, and `.insert()` as distinct steps |
 | `filter_map_collect` | A lazy query pipeline ending at an execution boundary       |
 | `projection_fields`  | Named projection fields, expressions, and `*` expansion     |
 | `update_delete`      | Entity and collection mutation forms                        |
