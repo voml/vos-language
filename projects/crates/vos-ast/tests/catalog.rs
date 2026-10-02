@@ -166,3 +166,85 @@ fn implicit_rename_allocates_new_identity() {
     assert_eq!(next.types[0].fields[0].field_id, FieldId(2));
     assert_eq!(next.retired_fields[0].field_id, FieldId(1));
 }
+
+#[test]
+fn rejects_rename_that_matches_one_field_identity_twice() {
+    let previous = catalog_from_document(&document(&[("old", TypeExpr::File)])).unwrap();
+    let renames = RenameMap {
+        fields: BTreeMap::from([(
+            FieldPath { type_name: "User".into(), field_name: "old".into() },
+            "new".into(),
+        )]),
+        ..RenameMap::default()
+    };
+    for fields in [
+        vec![("old", TypeExpr::File), ("new", TypeExpr::File)],
+        vec![("new", TypeExpr::File), ("old", TypeExpr::File)],
+    ] {
+        assert!(evolve_catalog(&previous, &document(&fields), &renames).is_err());
+    }
+}
+
+#[test]
+fn rejects_rename_that_matches_one_type_identity_twice() {
+    let previous = catalog_from_document(&document(&[("id", TypeExpr::File)])).unwrap();
+    let mut current = document(&[("id", TypeExpr::File)]);
+    let mut renamed = current.items[0].clone();
+    if let Item::Table(table) = &mut renamed { table.name = "Account".into(); }
+    current.items.push(renamed);
+    let renames = RenameMap {
+        types: BTreeMap::from([("User".into(), "Account".into())]),
+        ..RenameMap::default()
+    };
+    assert!(evolve_catalog(&previous, &current, &renames).is_err());
+}
+
+#[test]
+fn explicit_type_rename_and_type_reorder_preserve_identity() {
+    let mut initial = document(&[("id", TypeExpr::File)]);
+    let mut second = initial.items[0].clone();
+    if let Item::Table(table) = &mut second { table.name = "Account".into(); }
+    initial.items.push(second);
+    let previous = catalog_from_document(&initial).unwrap();
+    let mut current = initial.clone();
+    current.items.reverse();
+    if let Item::Table(table) = &mut current.items[1] { table.name = "Person".into(); }
+    let renames = RenameMap {
+        types: BTreeMap::from([("User".into(), "Person".into())]),
+        ..RenameMap::default()
+    };
+    let evolved = evolve_catalog(&previous, &current, &renames).unwrap();
+    assert_eq!(evolved.types[0].type_id, TypeId(2));
+    assert_eq!(evolved.types[1].type_id, TypeId(1));
+    assert_eq!(evolved.types[1].fields[0].field_id, FieldId(1));
+    assert!(evolved.retired_types.is_empty());
+}
+
+#[test]
+fn historical_tombstones_do_not_advance_layout_epoch_again() {
+    let initial = document(&[("id", TypeExpr::File), ("removed", TypeExpr::File)]);
+    let previous = catalog_from_document(&initial).unwrap();
+    let current = document(&[("id", TypeExpr::File)]);
+    let removed = evolve_catalog(&previous, &current, &RenameMap::default()).unwrap();
+    let repeated = evolve_catalog(&removed, &current, &RenameMap::default()).unwrap();
+    assert_eq!(repeated.revisions.layout_epoch, removed.revisions.layout_epoch);
+    assert_eq!(repeated.retired_fields, removed.retired_fields);
+}
+
+#[test]
+fn exhausted_identity_slot_and_revision_counters_are_rejected() {
+    let current = document(&[("id", TypeExpr::File)]);
+    let previous = catalog_from_document(&current).unwrap();
+    let mut exhausted = previous.clone();
+    exhausted.types[0].type_id = TypeId(u64::MAX);
+    assert!(evolve_catalog(&exhausted, &current, &RenameMap::default()).is_err());
+    exhausted = previous.clone();
+    exhausted.types[0].fields[0].field_id = FieldId(u64::MAX);
+    assert!(evolve_catalog(&exhausted, &current, &RenameMap::default()).is_err());
+    exhausted = previous.clone();
+    exhausted.types[0].fields[0].virtual_field = u32::MAX;
+    assert!(evolve_catalog(&exhausted, &current, &RenameMap::default()).is_err());
+    exhausted = previous;
+    exhausted.revisions.ddl = u64::MAX;
+    assert!(evolve_catalog(&exhausted, &current, &RenameMap::default()).is_err());
+}
