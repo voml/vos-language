@@ -65,7 +65,6 @@ pub fn parse(source: &str) -> Result<Document, Diagnostics> {
 }
 
 fn align_oak_declarations(root: &VosRoot, document: &Document) -> Result<(), Diagnostics> {
-    eprintln!("OAK={root:?} VOS={:?}", document.items);
     let oak_types: Vec<_> = root
         .declarations
         .iter()
