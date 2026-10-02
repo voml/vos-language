@@ -92,7 +92,7 @@
           <span class="mono">{schemaCaption}</span>
           <span class="schema-chip">{schemaChip}</span>
         </div>
-        <CodeBlock code={heroSample} caption={schemaCaption} copyLabel={copyLabel} onCopy={() => this.copyHero()} />
+        <VosCodeBlock code={heroSample} caption={schemaCaption} copyLabel={copyLabel} onCopy={() => this.copyHero()} />
         <div class="schema-card-foot">
           <span><b class="legend-dot orange" aria-hidden="true"></b>table</span>
           <span><b class="legend-dot cyan" aria-hidden="true"></b>reference</span>

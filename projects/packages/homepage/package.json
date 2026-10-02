@@ -17,11 +17,14 @@
     },
     "dependencies": {
         "@game-gpt/vos": "workspace:*",
-        "@vmz/core": "0.1.10",
-        "@vmz/ui": "0.1.10",
-        "@vmz/ui-icons": "0.1.10"
+        "@game-gpt/vos-textmate": "workspace:*",
+        "@vmz/core": "0.1.12",
+        "@vmz/plugin-shiki": "0.1.12",
+        "@vmz/ui": "0.1.12",
+        "@vmz/ui-icons": "0.1.12",
+        "shiki": "^3.12.2"
     },
     "devDependencies": {
-        "@vmz/vmz": "0.1.10"
+        "@vmz/vmz": "0.1.12"
     }
 }

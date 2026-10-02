@@ -50,10 +50,11 @@ pnpm install
 pnpm --filter @game-gpt/vos-homepage dev
 ```
 
-The homepage is a VMZ application (`@vmz/vmz`, `@vmz/ui`, `@vmz/ui-icons` at npm `0.1.10`) with file-based routes for
+The homepage is a VMZ application (`@vmz/vmz`, `@vmz/ui`, `@vmz/ui-icons` at npm `0.1.12`; Shiki via
+`@vmz/plugin-shiki` + `@game-gpt/vos-textmate/shiki`) with file-based routes for
 `/`, `/model`, and `/playground`. Build outputs use **`dist/<target>`** — `dist/cdn` for static CDN upload,
 `dist/browser` for local SSR dev, `dist/wechat` for WeChat. From the repo root, `pnpm homepage` writes the static release
-to `projects/vos.ts/homepage/dist/cdn`.
+to `projects/packages/homepage/dist/cdn`.
 
 ## Work on highlighting
 

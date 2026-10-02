@@ -1,7 +1,7 @@
 <template>
   <figure class="schema-panel">
     <figcaption if={caption}>{caption}</figcaption>
-    <CodeBlock code={code} caption={caption} copyLabel={copyLabel} onCopy={() => this.copyCode()} />
+    <VosCodeBlock code={code} caption={caption} copyLabel={copyLabel} onCopy={() => this.copyCode()} />
   </figure>
 </template>
 

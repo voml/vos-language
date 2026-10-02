@@ -54,7 +54,7 @@ This package is useful for immediate feedback in documentation, playgrounds, and
 the canonical VOS parser** and does not currently produce the Rust AST, catalog identity, or complete semantic
 diagnostics.
 
-Use the Rust [`vos` facade](../../vos.rs) for conformance-grade parsing. The TypeScript surface will grow only when
+Use the Rust [`vos` facade](../../crates/vos) for conformance-grade parsing. The TypeScript surface will grow only when
 behavior can be explicit and tested rather than approximated behind a larger-looking API.
 
 ## Development

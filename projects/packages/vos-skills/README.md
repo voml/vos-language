@@ -52,9 +52,9 @@ After the skill is installed, ask your agent:
 
 ## Maintainers
 
-Source: [voml/vos-language](https://github.com/voml/vos-language) → `projects/vos.ts/vos-skills`
+Source: [voml/vos-language](https://github.com/voml/vos-language) → `projects/packages/vos-skills`
 
 ```bash
 pnpm --filter @game-gpt/vos-skills typecheck
-npx skills add ./projects/vos.ts/vos-skills --list
+npx skills add ./projects/packages/vos-skills --list
 ```

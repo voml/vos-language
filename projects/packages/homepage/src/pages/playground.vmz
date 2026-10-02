@@ -50,7 +50,7 @@
           <Icon name="status.info" size="sm" />
           {previewLabel}
         </span>
-        <CodeBlock
+        <VosCodeBlock
           code={source}
           caption={previewLabel}
           copyLabel={copyLabel}
