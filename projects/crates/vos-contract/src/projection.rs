@@ -169,6 +169,9 @@ pub struct OperationProjection {
     pub kind: OperationKind,
     /// Operation name.
     pub name: String,
+    /// Canonical signature key used as input to durable identity assignment.
+    /// This is not itself a durable operation ID.
+    pub identity_key: String,
     /// Parameters projected from Oak's signature.
     pub parameters: Vec<OperationParameter>,
     /// Return type when the declaration has an arrow return type.
@@ -252,6 +255,7 @@ pub fn project_operations(root: &VosRoot) -> Result<Vec<OperationProjection>, Ve
         operations.push(OperationProjection {
             kind,
             name,
+            identity_key: operation_identity_key(kind, declaration.name.as_deref().unwrap_or_default(), &declaration.parameters, declaration.return_type_expr.as_ref()),
             parameters: declaration.parameters.iter().map(|parameter| OperationParameter {
                 name: parameter.name.clone(),
                 type_expr: canonical_type(&parameter.type_expr),
@@ -264,6 +268,47 @@ pub fn project_operations(root: &VosRoot) -> Result<Vec<OperationProjection>, Ve
         });
     }
     if diagnostics.is_empty() { Ok(operations) } else { Err(diagnostics) }
+}
+
+fn operation_identity_key(
+    kind: OperationKind,
+    name: &str,
+    parameters: &[oak_vos::VosParameter],
+    return_type: Option<&VosTypeSyntax>,
+) -> String {
+    let kind = match kind {
+        OperationKind::Query => "query",
+        OperationKind::Udf => "udf",
+        OperationKind::Micro => "micro",
+        OperationKind::Macro => "macro",
+    };
+    let parameters = parameters
+        .iter()
+        .map(|parameter| canonical_type_key(&canonical_type(&parameter.type_expr)))
+        .collect::<Vec<_>>()
+        .join(",");
+    let result = return_type.map(|value| canonical_type_key(&canonical_type(value))).unwrap_or_else(|| "unit".to_owned());
+    format!("{kind}:{name}({parameters})->{result}")
+}
+
+fn canonical_type_key(value: &CanonicalType) -> String {
+    match value {
+        CanonicalType::Named(path) => path.join("::"),
+        CanonicalType::Reference(inner) => format!("&{}", canonical_type_key(inner)),
+        CanonicalType::Optional(inner) => format!("{}?", canonical_type_key(inner)),
+        CanonicalType::List(inner) => format!("[{}]", canonical_type_key(inner)),
+        CanonicalType::Generic { path, arguments } => {
+            let arguments = arguments
+                .iter()
+                .map(|argument| match argument {
+                    CanonicalTypeArgument::Type(value) => canonical_type_key(value),
+                    CanonicalTypeArgument::Literal(value) => format!("#{value}"),
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("{}<{arguments}>", path.join("::"))
+        }
+    }
 }
 
 /// Projects Oak operation declarations into a strict versioned artifact.
@@ -404,6 +449,9 @@ impl OperationProjectionArtifact {
             validate_span(&operation.span, source, "operation span")?;
             if operation.name.is_empty() {
                 return Err(ArtifactError { code: "OPR013".to_owned(), message: "operation name cannot be empty".to_owned() });
+            }
+            if operation.identity_key.is_empty() {
+                return Err(ArtifactError { code: "OPR015".to_owned(), message: "operation identity key cannot be empty".to_owned() });
             }
             for parameter in &operation.parameters {
                 validate_span(&parameter.span, source, "operation parameter span")?;

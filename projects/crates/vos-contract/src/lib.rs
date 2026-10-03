@@ -158,6 +158,14 @@ mod tests {
         assert_eq!(operations[0].kind, OperationKind::Macro);
         assert_eq!(operations[0].name, "public_name");
         assert_eq!(operations[0].parameters[0].name, "value");
+        assert_eq!(operations[0].identity_key, "macro:public_name(utf8)->utf8");
+    }
+
+    #[test]
+    fn operation_identity_key_ignores_formatting_and_source_order() {
+        let first = parse_oak("query active(status: utf8, limit: i64) -> [User] { User }").unwrap().project_operations().unwrap();
+        let second = parse_oak("\nquery active( status : utf8 , limit:i64 )->[User]{User}\n").unwrap().project_operations().unwrap();
+        assert_eq!(first[0].identity_key, second[0].identity_key);
     }
 
     #[test]
