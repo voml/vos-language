@@ -1,0 +1,6 @@
+namespace demo;
+using shared::UserId;
+
+table User {
+    @@id: uuid,
+}

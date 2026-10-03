@@ -46,6 +46,26 @@ fn accepts_bracket_primary() {
 }
 
 #[test]
+fn preserves_using_source_items() {
+    let doc = parse_document(
+        r#"
+            namespace demo;
+            using shared::UserId;
+
+            table User {
+                @@id: uuid,
+            }
+            "#,
+    )
+    .unwrap();
+
+    let using = doc.usings().next().expect("using item");
+    assert_eq!(using.display(), "shared::UserId");
+    assert!(using.span.end > using.span.start);
+    assert!(matches!(doc.items.first(), Some(Item::Using(_))));
+}
+
+#[test]
 fn rejects_missing_primary() {
     let err = parse_document("table Project { title: utf8 }").unwrap_err();
     assert!(err.errors.iter().any(|e| e.message.contains("primary key")));

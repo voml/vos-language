@@ -23,7 +23,7 @@ use program::parse_macro_decl;
 use oak_vos::{VosDeclarationKind, VosRoot};
 use vos_ast::{
     BuiltinType, Class, Diagnostic, Diagnostics, Document, EnumVariant, Enums, Field,
-    FieldAttribute, Flags, Item, Literal, NamespacePath, Obsolete, Span, Table, TypeExpr,
+    FieldAttribute, Flags, Item, Literal, NamespacePath, Obsolete, Span, Table, TypeExpr, Using,
 };
 
 /// Normalize source for parsing and conformance (`*.normalized.vos`).
@@ -77,7 +77,7 @@ fn align_oak_declarations(root: &VosRoot, document: &Document) -> Result<(), Dia
                     | VosDeclarationKind::Enums
                     | VosDeclarationKind::Flags
             )
-        })
+    })
         .collect();
     let vos_types: Vec<_> = document
         .items
@@ -96,7 +96,7 @@ fn align_oak_declarations(root: &VosRoot, document: &Document) -> Result<(), Dia
         !oak_types
             .iter()
             .any(|oak| oak.kind == vos.0 && oak.name.as_deref() == Some(vos.1))
-    })
+        })
     {
         return Err(Diagnostics {
             errors: vec![Diagnostic::new(
@@ -344,9 +344,7 @@ impl<'a> Parser<'a> {
                 continue;
             }
             if self.peek_ident_is("using") {
-                // Imports are recognized so files can round-trip; resolution is
-                // still single-file for this slice.
-                self.parse_using()?;
+                items.push(Item::Using(self.parse_using()?));
                 continue;
             }
             if self.peek_ident_is("table") {
@@ -398,14 +396,18 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_using(&mut self) -> Result<(), Diagnostic> {
+    fn parse_using(&mut self) -> Result<Using, Diagnostic> {
+        let start = self.i;
         self.expect_ident("using")?;
-        let _ = self.expect_any_ident()?;
+        let mut segments = vec![self.expect_any_ident()?];
         while self.eat_punct_seq("::") {
-            let _ = self.expect_any_ident()?;
+            segments.push(self.expect_any_ident()?);
         }
         let _ = self.eat_punct(';');
-        Ok(())
+        Ok(Using {
+            segments,
+            span: Span::new(start, self.i),
+        })
     }
 
     fn parse_table(&mut self) -> Result<Table, Diagnostic> {
