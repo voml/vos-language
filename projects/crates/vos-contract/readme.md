@@ -10,3 +10,13 @@ with a `syntax-projection` envelope stage. It preserves table/class paths,
 field attributes, type wrappers and provenance. Named types remain unresolved,
 and no durable IDs or schema fingerprint are assigned. This artifact is for
 conformance and tooling, not production database or ORM lowering.
+
+`resolve_contract` binds an explicit `IdentityManifest` to the Oak projection
+and produces the strict `vos-resolved-contract-v1` artifact. Downstream hosts
+must validate its identities, references and fingerprint before lowering.
+
+Run `pnpm conformance:contracts` (or `cargo test -p vos-contract`) for the
+projection, identity, resolved-artifact and diagnostic gates. Reviewed fixtures
+live in `specifications/fixtures/contracts/`. The basic resolved golden shares
+its source and identity manifest with the projection fixture. These gates do
+not establish operation/service or downstream execution support.

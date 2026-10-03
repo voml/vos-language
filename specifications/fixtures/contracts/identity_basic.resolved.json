@@ -1,0 +1,22 @@
+{
+  "formatVersion": "vos-resolved-contract-v1",
+  "identityManifestVersion": "vos-identity-manifest-v0",
+  "schemaFingerprint": "8522ec25e34e757433c8b48aa47e92c1a9a13533b90e9d8e67714a1947a655e1",
+  "types": [
+    {
+      "typeId": 1,
+      "canonicalPath": ["T"],
+      "kind": "class",
+      "fields": [
+        {
+          "fieldId": 2,
+          "virtualFieldIndex": 0,
+          "canonicalName": "id",
+          "canonicalType": {"builtin": ["uuid"]},
+          "attributes": [],
+          "defaultValue": null
+        }
+      ]
+    }
+  ]
+}

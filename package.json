@@ -15,6 +15,7 @@
         "check:homepage": "pnpm --filter @game-gpt/vos-homepage check",
         "sync-grammar": "pnpm --filter @game-gpt/vos-textmate sync-vscode",
         "test:rs": "cargo test --workspace",
+        "conformance:contracts": "cargo test -p vos-contract",
         "check:rs": "cargo check --workspace --all-targets",
         "verify": "pnpm run fmt:check && pnpm run check:rs && pnpm run test:rs",
         "placeholder": "node scripts/ci/publish-placeholder.mjs",
