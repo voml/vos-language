@@ -3,7 +3,7 @@ use vos_contract::{
     compare_identity, evolve_identity, bind_identity, resolve_contract,
     resolved_schema_fingerprint, schema_fingerprint,
     ContractDiagnostic,
-    FieldIdentity, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
+    FieldIdentity, IdentityBoundProjection, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
     ResolvedCanonicalType, ResolvedContract, TypeContractKind, TypeIdentity, resolve_identity_types,
     resolve_identity_units,
     IDENTITY_MANIFEST_VERSION, parse_oak,
@@ -686,6 +686,45 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     .unwrap();
     let diagnostics = evolve_identity(&evolved, reused).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "ID016"));
+}
+
+#[test]
+fn identity_history_tombstones_all_fields_when_type_is_removed() {
+    let previous = bind_identity(
+        &parse_oak("class A { id: uuid, label: utf8 }").unwrap().project_schema().unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity { canonical_name: "id".to_owned(), field_id: 2, virtual_field_index: 0 },
+                    FieldIdentity { canonical_name: "label".to_owned(), field_id: 3, virtual_field_index: 1 },
+                ],
+            }],
+        },
+    )
+    .unwrap();
+    let history = IdentityHistory {
+        format_version: vos_contract::IDENTITY_HISTORY_FORMAT_VERSION.to_owned(),
+        manifest_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        revision: 0,
+        layout_epoch: 0,
+        snapshot: previous,
+        retired_types: Vec::new(),
+        retired_fields: Vec::new(),
+    };
+    let current = IdentityBoundProjection {
+        manifest_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: Vec::new(),
+    };
+    let evolved = evolve_identity(&history, current).unwrap();
+    assert_eq!(evolved.retired_types.len(), 1);
+    assert_eq!(
+        evolved.retired_fields.iter().map(|field| field.field_id).collect::<Vec<_>>(),
+        vec![2, 3]
+    );
 }
 
 #[test]
