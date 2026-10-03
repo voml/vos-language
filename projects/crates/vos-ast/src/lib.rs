@@ -17,6 +17,8 @@ pub mod catalog;
 pub mod codes;
 /// Expression / program AST (`let`, projections, …).
 pub mod expr;
+/// Canonical schema fingerprint for drift detection.
+pub mod fingerprint;
 /// Lazy query plan + execution IR.
 pub mod op;
 
@@ -25,6 +27,7 @@ pub use catalog::{
     Revisions, TypeEntry, TypeId, TypeKind, VirtualFieldIndex, catalog_from_document,
     evolve_catalog,
 };
+pub use fingerprint::{schema_fingerprint, schema_fingerprint_from_document};
 pub use expr::{
     BinaryOp, Expr, FieldInit, FnDecl, FnKind, FnParam, Lambda, Let, PathSep, Program, ProjItem,
     Stmt, UnaryOp, projection_result_names,
