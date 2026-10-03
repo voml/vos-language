@@ -10,7 +10,8 @@ compatibility surface while downstream semantic migration is in progress.
 
 New integrations should begin with `vos::parse_oak`, which invokes Oak and returns
 `vos::contract::ContractInput`. VOS semantic consumers must operate on that Oak output and must not add another
-parser or reparse the source.
+parser or reparse the source. After an explicit identity manifest is available, call `vos::resolve_contract` and pass
+the resulting `vos::ResolvedContract` to database or ORM adapters.
 
 ## Parse a schema
 
@@ -37,7 +38,8 @@ let program = vos::parse_program(
 
 ## Public modules
 
-- `vos::parse_oak` is the new Oak-owned parser entry for contract consumers.
+- `vos::parse_oak` is the Oak-owned frontend entry for contract consumers.
+- `vos::resolve_contract` is the resolved semantic contract entry for downstream hosts.
 - `vos::parser` is a legacy compatibility surface and must not gain new syntax features.
 - `vos::ast` contains typed schema, expression, operation, catalog, span, and diagnostic structures.
 - `vos::inspect` runs optional policy checks after baseline parsing succeeds.
