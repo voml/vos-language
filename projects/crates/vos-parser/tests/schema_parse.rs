@@ -104,3 +104,87 @@ fn parses_class_enums_flags_and_obsolete() {
     assert!(doc.items.iter().any(|i| matches!(i, Item::Flags(_))));
     assert!(doc.items.iter().any(|i| matches!(i, Item::Obsolete(_))));
 }
+
+#[test]
+fn parses_durable_macro_item() {
+    let doc = parse_document(
+        r#"
+            table User {
+                @@user_id: uuid,
+                user_name: utf8,
+            }
+
+            macro public_name(value: utf8) -> utf8 {
+                value
+            }
+            "#,
+    )
+    .unwrap();
+    let macro_item = doc
+        .items
+        .iter()
+        .find_map(|item| match item {
+            Item::Macro(macro_def) => Some(macro_def),
+            _ => None,
+        })
+        .expect("macro item");
+    assert_eq!(macro_item.name, "public_name");
+    assert_eq!(macro_item.params.len(), 1);
+    assert_eq!(macro_item.params[0].name, "value");
+}
+
+#[test]
+fn parses_seed_blog_macro_with_inserts() {
+    let doc = parse_document(
+        r#"
+            table User {
+                @@user_id: uuid,
+                user_name: utf8,
+                active: bool,
+            }
+
+            table Post {
+                @@post_id: uuid,
+                author: &User,
+                title: utf8,
+                published: bool,
+            }
+
+            macro seed_blog() -> unit {
+                User {
+                    user_id: "550e8400-e29b-41d4-a716-446655440000",
+                    user_name: "ada",
+                    active: true,
+                }.insert()
+                User {
+                    user_id: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+                    user_name: "linus",
+                    active: true,
+                }.insert()
+                Post {
+                    post_id: "11111111-1111-4111-8111-111111111101",
+                    author: "550e8400-e29b-41d4-a716-446655440000",
+                    title: "Ada post",
+                    published: true,
+                }.insert()
+                Post {
+                    post_id: "22222222-2222-4222-8222-222222222202",
+                    author: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+                    title: "Linus post",
+                    published: true,
+                }.insert()
+            }
+            "#,
+    )
+    .unwrap();
+    let macro_item = doc
+        .items
+        .iter()
+        .find_map(|item| match item {
+            Item::Macro(macro_def) => Some(macro_def),
+            _ => None,
+        })
+        .expect("seed_blog macro");
+    assert_eq!(macro_item.name, "seed_blog");
+    assert!(macro_item.return_ty.is_some());
+}

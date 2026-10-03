@@ -18,6 +18,7 @@ mod program;
 
 pub use error::{RelatedDiagnostic, VosError, report_diagnostic, report_diagnostics};
 pub use program::parse_program;
+use program::parse_macro_decl;
 
 use oak_vos::{VosDeclarationKind, VosRoot};
 use vos_ast::{
@@ -368,8 +369,13 @@ impl<'a> Parser<'a> {
                 items.push(Item::Obsolete(self.parse_obsolete()?));
                 continue;
             }
+            if self.peek_ident_is("macro") {
+                let macro_def = parse_macro_decl(self.src, &mut self.i)?;
+                items.push(Item::Macro(macro_def));
+                continue;
+            }
             return Err(Diagnostic::new(
-                "expected `namespace`, `using`, `table`, `class`, `enums`, `flags`, or `obsolete`",
+                "expected `namespace`, `using`, `table`, `class`, `enums`, `flags`, `obsolete`, or `macro`",
                 Span::empty(self.i),
                 Some("service / union arrive in a later parser slice"),
             ));

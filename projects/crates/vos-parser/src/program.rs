@@ -9,6 +9,15 @@ use vos_ast::expr::{
 };
 use vos_ast::{BuiltinType, Diagnostic, Diagnostics, Literal, Span, TypeExpr};
 
+/// Parse a durable `macro` item at `offset` (document parser delegate).
+pub(crate) fn parse_macro_decl(src: &str, offset: &mut usize) -> Result<FnDecl, Diagnostic> {
+    let mut parser = ProgramParser::new(src);
+    parser.i = *offset;
+    let decl = parser.parse_fn_decl(FnKind::Macro)?;
+    *offset = parser.i;
+    Ok(decl)
+}
+
 /// Parse a VOS expression program (`let` + optional trailing expression).
 pub fn parse_program(source: &str) -> Result<Program, Diagnostics> {
     let source = normalize_source(source);
