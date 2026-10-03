@@ -156,6 +156,102 @@ pub struct ContractDiagnostic {
     pub span: Option<Range<usize>>,
 }
 
+/// Operation-like declaration projected from Oak without expression lowering.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct OperationProjection {
+    /// Operation declaration kind.
+    pub kind: OperationKind,
+    /// Operation name.
+    pub name: String,
+    /// Parameters projected from Oak's signature.
+    pub parameters: Vec<OperationParameter>,
+    /// Return type when the declaration has an arrow return type.
+    pub return_type: Option<CanonicalType>,
+    /// Exact signature source slice.
+    pub signature: Option<SyntaxSliceContract>,
+    /// Exact body source slice.
+    pub body: Option<SyntaxSliceContract>,
+    /// Full declaration span.
+    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    pub span: Range<usize>,
+}
+
+/// Supported operation-like declaration kinds in the syntax projection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum OperationKind {
+    /// Query declaration.
+    Query,
+    /// Durable UDF declaration.
+    Udf,
+    /// Session-local micro declaration.
+    Micro,
+}
+
+/// One operation parameter projected from Oak.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct OperationParameter {
+    /// Parameter name.
+    pub name: String,
+    /// Canonical parameter type.
+    pub type_expr: CanonicalType,
+    /// Full parameter span.
+    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    pub span: Range<usize>,
+}
+
+/// Exact source text and byte span retained by a syntax projection.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct SyntaxSliceContract {
+    /// Exact source text.
+    pub text: String,
+    /// Source byte span.
+    #[serde(serialize_with = "serialize_span", deserialize_with = "deserialize_span")]
+    pub span: Range<usize>,
+}
+
+/// Projects Oak operation declarations without parsing their bodies.
+pub fn project_operations(root: &VosRoot) -> Result<Vec<OperationProjection>, Vec<ContractDiagnostic>> {
+    let mut operations = Vec::new();
+    let mut diagnostics = Vec::new();
+    for declaration in &root.declarations {
+        let kind = match declaration.kind {
+            VosDeclarationKind::Query => OperationKind::Query,
+            VosDeclarationKind::Udf => OperationKind::Udf,
+            VosDeclarationKind::Micro => OperationKind::Micro,
+            _ => continue,
+        };
+        let Some(name) = declaration.name.clone() else {
+            diagnostics.push(diagnostic("OPR001", "operation declaration is missing a name", Some(declaration.span.clone())));
+            continue;
+        };
+        operations.push(OperationProjection {
+            kind,
+            name,
+            parameters: declaration.parameters.iter().map(|parameter| OperationParameter {
+                name: parameter.name.clone(),
+                type_expr: canonical_type(&parameter.type_expr),
+                span: parameter.span.clone(),
+            }).collect(),
+            return_type: declaration.return_type_expr.as_ref().map(canonical_type),
+            signature: declaration.signature.as_ref().map(slice_contract),
+            body: declaration.body.as_ref().map(slice_contract),
+            span: declaration.span.clone(),
+        });
+    }
+    if diagnostics.is_empty() { Ok(operations) } else { Err(diagnostics) }
+}
+
+fn slice_contract(slice: &oak_vos::VosSyntaxSlice) -> SyntaxSliceContract {
+    SyntaxSliceContract { text: slice.text.clone(), span: slice.span.clone() }
+}
+
 /// Projects the supported Oak syntax without claiming symbol resolution.
 pub fn project_schema(root: &VosRoot) -> Result<SchemaProjection, Vec<ContractDiagnostic>> {
     let mut namespace = Vec::new();
