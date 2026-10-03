@@ -1,9 +1,10 @@
 //! Canonical [`schema_fingerprint`] for VOS catalogs.
 //!
 //! Fingerprints hash a stable semantic wire derived from durable catalog
-//! identities (`TypeId`, `FieldId`) and field metadata. They intentionally
-//! exclude publish counters (`Revisions`), tombstones, and virtual slot indices
-//! so reorder-only evolution with preserved identities keeps the same fingerprint.
+//! identities (`TypeId`, `FieldId`, `MacroId`) and type / macro metadata. They
+//! intentionally exclude publish counters (`Revisions`), tombstones, and virtual
+//! slot indices so reorder-only evolution with preserved identities keeps the
+//! same fingerprint.
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -34,12 +35,19 @@ fn canonical_catalog_json(catalog: &CatalogSnapshot) -> Vec<u8> {
         .map(CanonicalType::from)
         .collect::<Vec<_>>();
     types.sort_by_key(|entry| entry.id);
-    serde_json::to_vec(&CanonicalCatalog { types }).expect("canonical catalog serializes")
+    let mut macros = catalog
+        .macros
+        .iter()
+        .map(CanonicalMacro::from)
+        .collect::<Vec<_>>();
+    macros.sort_by_key(|entry| entry.id);
+    serde_json::to_vec(&CanonicalCatalog { types, macros }).expect("canonical catalog serializes")
 }
 
 #[derive(Serialize)]
 struct CanonicalCatalog {
     types: Vec<CanonicalType>,
+    macros: Vec<CanonicalMacro>,
 }
 
 #[derive(Serialize)]
@@ -78,6 +86,40 @@ impl CanonicalField {
             name: slot.current_name.clone(),
             ty: slot.ty.clone(),
             attrs: slot.attrs.clone(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct CanonicalMacro {
+    id: u64,
+    name: String,
+    params: Vec<CanonicalMacroParam>,
+    return_ty: Option<TypeExpr>,
+}
+
+#[derive(Serialize)]
+struct CanonicalMacroParam {
+    name: String,
+    ty: TypeExpr,
+}
+
+impl CanonicalMacro {
+    fn from(entry: &crate::catalog::MacroEntry) -> Self {
+        let mut params = entry
+            .params
+            .iter()
+            .map(|slot| CanonicalMacroParam {
+                name: slot.name.clone(),
+                ty: slot.ty.clone(),
+            })
+            .collect::<Vec<_>>();
+        params.sort_by(|left, right| left.name.cmp(&right.name));
+        Self {
+            id: entry.macro_id.0,
+            name: entry.name.clone(),
+            params,
+            return_ty: entry.return_ty.clone(),
         }
     }
 }
