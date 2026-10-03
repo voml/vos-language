@@ -322,10 +322,10 @@ fn validate_resolved_type(
             }
         }
         ResolvedCanonicalType::Builtin(path) => {
-            if path.is_empty() {
+            if path.len() != 1 || !is_canonical_builtin(path[0].as_str()) {
                 return Err(ArtifactError {
                     code: "RES016".to_owned(),
-                    message: "resolved builtin type path must not be empty".to_owned(),
+                    message: "resolved builtin type path is invalid".to_owned(),
                 });
             }
         }
@@ -939,6 +939,15 @@ fn is_builtin(name: &str) -> bool {
         "i8" | "i16" | "i32" | "i64" | "u8" | "u16" | "u32" | "u64"
             | "f32" | "f64" | "bool" | "utf8" | "utf16" | "uuid" | "decimal"
             | "d128" | "date" | "time" | "datetime" | "bytes"
+    )
+}
+
+fn is_canonical_builtin(name: &str) -> bool {
+    matches!(
+        name,
+        "i8" | "i16" | "i32" | "i64" | "u8" | "u16" | "u32" | "u64"
+            | "f32" | "f64" | "bool" | "utf8" | "utf16" | "uuid" | "decimal"
+            | "date" | "time" | "datetime" | "bytes"
     )
 }
 
