@@ -84,3 +84,16 @@ fn attribute_groups_and_arguments_require_oak_structure() {
         assert_eq!(&source[diagnostics[0].span.clone().unwrap()], attribute);
     }
 }
+
+#[test]
+fn feature_matrix_keeps_projection_separate_from_resolution_and_consumption() {
+    let matrix: Value = serde_json::from_str(include_str!("../../../../specifications/fixtures/contracts/feature-matrix.json")).unwrap();
+    assert_eq!(matrix["formatVersion"], "vos-feature-matrix-v0");
+    let features = matrix["features"].as_array().unwrap();
+    let identity = features.iter().find(|feature| feature["id"] == "durable-identity.fingerprint").unwrap();
+    assert_eq!(identity["projected"], false);
+    assert_eq!(identity["downstream-consumed"], false);
+    let fields = features.iter().find(|feature| feature["id"] == "table-class.fields").unwrap();
+    assert_eq!(fields["projected"], true);
+    assert_eq!(fields["resolved"], "partial");
+}

@@ -80,6 +80,13 @@ Schema cases may include `*.catalog.json` snapshots. These capture durable `Type
 and revision state. They complement the source-facing AST: a field's stable identity is not merely its current name or
 position.
 
+### Contract projection matrix
+
+`contracts/feature-matrix.json` records each feature across documented,
+parsed, projected, resolved, conformance, and downstream-consumed stages. A
+true `parsed` or `projected` value is not evidence that durable identity or a
+production contract exists.
+
 ## Run conformance
 
 From the repo root (`cargo` workspace):
