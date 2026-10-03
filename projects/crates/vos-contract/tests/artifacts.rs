@@ -915,6 +915,11 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
     assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES011");
     invalid["schemaFingerprint"] = json!("0".repeat(64));
     assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES014");
+    let mut invalid_generic: Value = serde_json::from_str(&json).unwrap();
+    invalid_generic["types"][0]["fields"][0]["canonicalType"] = json!({
+        "generic": { "path": [], "arguments": [] }
+    });
+    assert_eq!(ResolvedContract::from_json(&invalid_generic.to_string()).unwrap_err().code, "RES016");
     let mut unknown: Value = serde_json::from_str(&json).unwrap();
     unknown["unexpected"] = json!(true);
     assert_eq!(ResolvedContract::from_json(&unknown.to_string()).unwrap_err().code, "RES010");
