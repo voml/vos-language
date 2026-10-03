@@ -378,3 +378,14 @@ fn identity_manifest_fixture_binds_and_produces_fingerprint() {
         "14492965ddbf52183c30f003be100bab77160559be8d47cbef55b76e08a19b5f"
     );
 }
+
+#[test]
+fn identity_manifest_reader_rejects_unknown_fields() {
+    let mut value: Value = serde_json::from_str(include_str!(
+        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
+    ))
+    .unwrap();
+    value["unexpected"] = Value::Bool(true);
+    let error = IdentityManifest::from_json(&serde_json::to_string(&value).unwrap()).unwrap_err();
+    assert_eq!(error.code, "ID011");
+}
