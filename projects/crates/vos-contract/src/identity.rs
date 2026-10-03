@@ -697,6 +697,11 @@ pub fn compare_identity(
         }
         for previous_field in &previous_type.fields {
             if let Some(current_type) = current.types.iter().find(|item| item.type_id == previous_type.type_id) {
+                if let Some(current_field) = current_type.fields.iter().find(|item| item.field_id == previous_field.field_id) {
+                    if current_field.virtual_field_index != previous_field.virtual_field_index {
+                        diagnostics.push(diagnostic("ID027", "assigned virtual field index cannot change"));
+                    }
+                }
                 if let Some(current_field) = current_type.fields.iter().find(|item| item.canonical_name == previous_field.canonical_name) {
                     if current_field.field_id != previous_field.field_id {
                         diagnostics.push(diagnostic("ID013", "field name changed durable ID"));
