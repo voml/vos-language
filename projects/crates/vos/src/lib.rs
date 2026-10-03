@@ -18,6 +18,8 @@ pub use vos_parser as parser;
 
 /// Field-identity catalog APIs from a parsed document.
 pub use vos_ast::{catalog_from_document, evolve_catalog, schema_fingerprint, schema_fingerprint_from_document};
+/// Parse source through Oak and return the parser-free VOS contract input.
+pub use vos_contract::parse_oak;
 /// Normalize source bytes before parse / conformance (`*.normalized.vos`).
 pub use vos_parser::normalize_source;
 /// Parse a VOS expression / operation program (see `docs/operations.md`).
