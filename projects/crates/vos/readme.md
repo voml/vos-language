@@ -3,8 +3,7 @@
 The stable Rust facade for Virtual Object Schema.
 
 Use this crate when building a database host, compiler, generator, CLI, or developer tool that needs to understand
-`.vos` source. Oak owns lexing and parsing. This facade exposes Oak-backed contract input together with the legacy
-compatibility surface while downstream semantic migration is in progress.
+`.vos` source. Oak owns lexing and parsing. This facade exposes Oak-backed contract input and VOS semantic contracts.
 
 ## Oak-backed contract input
 
@@ -24,8 +23,9 @@ table Article {
 }
 "#;
 
-let document = vos::parser::parse_document(source) ?;
-# Ok::<(), vos::ast::Diagnostics>(())
+let input = vos::parse_oak(source) ?;
+let projection = input.project_schema() ?;
+# Ok::<(), String>(())
 ```
 
 For expression and operation programs, use `vos::parse_program`:
@@ -40,8 +40,8 @@ let program = vos::parse_program(
 
 - `vos::parse_oak` is the Oak-owned frontend entry for contract consumers.
 - `vos::resolve_contract` is the resolved semantic contract entry for downstream hosts.
-- `vos::parser` is a legacy compatibility surface and must not gain new syntax features.
-- `vos::ast` contains typed schema, expression, operation, catalog, span, and diagnostic structures.
+- Oak owns the parser, CST, Builder AST, spans, and recovery. The old `vos-ast` / `vos-parser` crates are internal
+  removal debt and are not supported integration surfaces.
 - `vos::inspect` runs optional policy checks after baseline parsing succeeds.
 - `vos::generator` renders artifacts through Dejavu templates.
 
@@ -52,8 +52,8 @@ diagnostic reporters.
 
 ## Integration rule
 
-Applications should depend on this facade rather than `vos-ast`, `vos-parser`, `vos-inspect`, or `vos-generator`
-directly. That keeps host code on the supported surface while internal crate boundaries evolve.
+Applications should depend on this facade rather than internal syntax crates. Hosts must consume Oak-backed VOS
+contracts and must not parse or traverse a private VOS AST.
 
 See the [Rust workspace guide](../README.md) for architecture, conformance, and development commands, or the
 root [VOS overview](../../../readme.md) for the language story.
