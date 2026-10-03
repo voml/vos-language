@@ -2,7 +2,7 @@
 
 #![warn(missing_docs)]
 
-use oak_vos::{VosDeclaration, VosRoot, VosSyntaxNode};
+use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
 pub fn parse_oak(source: &str) -> Result<ContractInput, String> {
@@ -36,6 +36,11 @@ impl ContractInput {
         &self.root.declarations
     }
 
+    /// Returns Oak-projected fields without reparsing the source.
+    pub fn fields<'a>(&self, declaration: &'a VosDeclaration) -> &'a [VosField] {
+        &declaration.fields
+    }
+
     /// Consumes the wrapper and returns the Oak root.
     pub fn into_oak(self) -> VosRoot {
         self.root
@@ -49,11 +54,28 @@ mod tests {
 
     #[test]
     fn consumes_oak_root_without_reparsing() {
-        let input = parse_oak("table User { @@id: uuid, }").expect("Oak parses VOS");
+        let input = parse_oak("table User { @@id: uuid, email: utf8? = null, }").expect("Oak parses VOS");
 
         assert_eq!(input.declarations().len(), 1);
         assert_eq!(input.declarations()[0].kind, VosDeclarationKind::Table);
+        let fields = input.fields(&input.declarations()[0]);
+        assert_eq!(fields[0].name, "id");
+        assert_eq!(fields[0].attributes[0].text, "@@");
+        assert_eq!(fields[0].type_syntax.text, "uuid");
+        assert_eq!(fields[1].type_syntax.text, "utf8?");
+        assert_eq!(fields[1].default_value.as_ref().unwrap().text, "null");
         assert!(input.syntax().span.end > input.syntax().span.start);
+    }
+
+    #[test]
+    fn consumes_oak_field_spans_without_reparsing_source() {
+        let source = "class User { [primary] id: uuid, manager: &User?, }";
+        let input = parse_oak(source).expect("Oak parses VOS");
+        let fields = input.fields(&input.declarations()[0]);
+        assert_eq!(&source[fields[0].name_span.clone()], "id");
+        assert_eq!(&source[fields[0].type_syntax.span.clone()], "uuid");
+        assert_eq!(&source[fields[1].type_syntax.span.clone()], "&User?");
+        assert_eq!(&source[fields[0].attributes[0].span.clone()], "[primary]");
     }
 }
 
