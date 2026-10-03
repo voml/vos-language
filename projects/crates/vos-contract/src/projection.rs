@@ -11,6 +11,10 @@ pub const LANGUAGE_VERSION: &str = "vos-language-v0";
 pub const CANONICALIZATION_VERSION: &str = "vos-canonical-v0";
 /// Current bootstrap projection stage.
 pub const PROJECTION_STAGE: &str = "syntax-projection";
+/// Current operation contract projection format.
+pub const OPERATION_CONTRACT_FORMAT_VERSION: &str = "vos-operation-contract-v0";
+/// Operation projection stage before expression lowering and name resolution.
+pub const OPERATION_PROJECTION_STAGE: &str = "operation-syntax-projection";
 
 /// A source unit carried by a contract artifact.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -178,6 +182,17 @@ pub struct OperationProjection {
     pub span: Range<usize>,
 }
 
+/// A strict, versioned operation projection artifact emitted from Oak output.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct OperationProjectionArtifact {
+    /// Artifact envelope and source provenance.
+    pub envelope: ContractEnvelope,
+    /// Operation declarations in source order. Order is not an identity rule.
+    pub operations: Vec<OperationProjection>,
+}
+
 /// Supported operation-like declaration kinds in the syntax projection.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -246,6 +261,21 @@ pub fn project_operations(root: &VosRoot) -> Result<Vec<OperationProjection>, Ve
         });
     }
     if diagnostics.is_empty() { Ok(operations) } else { Err(diagnostics) }
+}
+
+/// Projects Oak operation declarations into a strict versioned artifact.
+pub fn project_operations_artifact(root: &VosRoot) -> Result<OperationProjectionArtifact, Vec<ContractDiagnostic>> {
+    Ok(OperationProjectionArtifact {
+        envelope: ContractEnvelope {
+            stage: OPERATION_PROJECTION_STAGE.to_owned(),
+            contract_format_version: OPERATION_CONTRACT_FORMAT_VERSION.to_owned(),
+            language_version: LANGUAGE_VERSION.to_owned(),
+            canonicalization_version: CANONICALIZATION_VERSION.to_owned(),
+            schema_fingerprint: None,
+            source_units: vec![SourceUnit { source_unit_id: 0, source: root.source.clone() }],
+        },
+        operations: project_operations(root)?,
+    })
 }
 
 fn slice_contract(slice: &oak_vos::VosSyntaxSlice) -> SyntaxSliceContract {
@@ -335,6 +365,50 @@ impl SchemaProjection {
                 validate_span(&field.span, source, "field span")?;
                 for attribute in &field.attributes {
                     validate_span(&attribute.span, source, "attribute span")?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl OperationProjectionArtifact {
+    /// Serializes this operation artifact using the stable field names.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    /// Reads and validates a strict operation projection artifact.
+    pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
+        let artifact: Self = serde_json::from_str(input).map_err(|error| ArtifactError { code: "OPR010".to_owned(), message: error.to_string() })?;
+        artifact.validate()?;
+        Ok(artifact)
+    }
+
+    fn validate(&self) -> Result<(), ArtifactError> {
+        if self.envelope.stage != OPERATION_PROJECTION_STAGE
+            || self.envelope.contract_format_version != OPERATION_CONTRACT_FORMAT_VERSION
+            || self.envelope.language_version != LANGUAGE_VERSION
+            || self.envelope.canonicalization_version != CANONICALIZATION_VERSION
+        {
+            return Err(ArtifactError { code: "OPR011".to_owned(), message: "unsupported operation projection version or stage".to_owned() });
+        }
+        if self.envelope.schema_fingerprint.is_some() || self.envelope.source_units.len() != 1 || self.envelope.source_units[0].source_unit_id != 0 {
+            return Err(ArtifactError { code: "OPR012".to_owned(), message: "invalid operation projection source unit or fingerprint state".to_owned() });
+        }
+        let source = &self.envelope.source_units[0].source;
+        for operation in &self.operations {
+            validate_span(&operation.span, source, "operation span")?;
+            if operation.name.is_empty() {
+                return Err(ArtifactError { code: "OPR013".to_owned(), message: "operation name cannot be empty".to_owned() });
+            }
+            for parameter in &operation.parameters {
+                validate_span(&parameter.span, source, "operation parameter span")?;
+            }
+            for slice in operation.signature.iter().chain(operation.body.iter()) {
+                validate_span(&slice.span, source, "operation syntax slice")?;
+                if source.get(slice.span.clone()) != Some(slice.text.as_str()) {
+                    return Err(ArtifactError { code: "OPR014".to_owned(), message: "operation syntax slice does not match source".to_owned() });
                 }
             }
         }
