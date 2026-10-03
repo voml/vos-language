@@ -6,7 +6,7 @@ use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 
 mod projection;
 
-pub use projection::{AttributeContract, CANONICALIZATION_VERSION, CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, CONTRACT_FORMAT_VERSION, FieldContract, LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract, TypeContractKind};
+pub use projection::{ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, CONTRACT_FORMAT_VERSION, FieldContract, LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract, TypeContractKind};
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
 pub fn parse_oak(source: &str) -> Result<ContractInput, String> {
