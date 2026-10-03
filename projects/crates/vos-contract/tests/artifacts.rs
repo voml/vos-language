@@ -1,6 +1,7 @@
 use serde_json::{Value, json};
 use vos_contract::{
-    compare_identity, evolve_identity, bind_identity, resolve_contract, schema_fingerprint,
+    compare_identity, evolve_identity, bind_identity, resolve_contract,
+    resolved_schema_fingerprint, schema_fingerprint,
     ContractDiagnostic,
     FieldIdentity, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
     ResolvedCanonicalType, ResolvedContract, TypeContractKind, TypeIdentity, resolve_identity_types,
@@ -941,4 +942,41 @@ fn builtin_aliases_resolve_to_one_canonical_spelling() {
     assert_eq!(resolved.types[0].fields[0].canonical_type, ResolvedCanonicalType::Builtin(vec!["decimal".to_owned()]));
     assert_eq!(resolved.types[0].fields[1].canonical_type, ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()]));
     assert_eq!(resolved.types[0].fields[2].canonical_type, ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()]));
+}
+
+#[test]
+fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["T".to_owned()],
+            type_id: 1,
+            kind: TypeContractKind::Class,
+            fields: vec![FieldIdentity {
+                canonical_name: "amount".to_owned(),
+                field_id: 2,
+                virtual_field_index: 0,
+            }],
+        }],
+    };
+    let decimal = resolve_contract(
+        &parse_oak("class T { amount: decimal }").unwrap().project_schema().unwrap(),
+        &manifest,
+    )
+    .unwrap();
+    let alias = resolve_contract(
+        &parse_oak("class T { amount: d128 }").unwrap().project_schema().unwrap(),
+        &manifest,
+    )
+    .unwrap();
+    assert_eq!(decimal.schema_fingerprint, alias.schema_fingerprint);
+    let resolved = resolve_identity_types(
+        &bind_identity(
+            &parse_oak("class T { amount: decimal }").unwrap().project_schema().unwrap(),
+            &manifest,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(decimal.schema_fingerprint, resolved_schema_fingerprint(&resolved));
 }

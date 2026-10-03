@@ -8,7 +8,8 @@ mod identity;
 mod projection;
 
 pub use identity::{
-    bind_identity, compare_identity, schema_fingerprint, BoundFieldContract, BoundTypeContract,
+    bind_identity, compare_identity, resolved_schema_fingerprint, schema_fingerprint,
+    BoundFieldContract, BoundTypeContract,
     evolve_identity, FieldIdentity, IdentityBoundProjection, IdentityChange, IdentityEvolution,
     IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
     resolve_contract, ResolvedContract, ResolvedFieldContract, ResolvedIdentityProjection,
