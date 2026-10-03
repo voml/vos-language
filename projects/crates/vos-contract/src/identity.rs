@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::{
     AttributeContract, CanonicalType, ContractDiagnostic, SchemaProjection, TypeContractKind,
@@ -8,6 +9,8 @@ use crate::{
 
 /// Version of the explicit durable identity manifest.
 pub const IDENTITY_MANIFEST_VERSION: &str = "vos-identity-manifest-v0";
+/// Version of the canonical semantic identity fingerprint.
+pub const IDENTITY_FINGERPRINT_VERSION: &str = "vos-identity-fingerprint-v0";
 
 /// A reviewable identity assignment for one schema projection.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -207,6 +210,83 @@ pub fn bind_identity(
         })
     } else {
         Err(diagnostics)
+    }
+}
+
+/// Computes a stable fingerprint from the identity-bound semantic model.
+pub fn schema_fingerprint(bound: &IdentityBoundProjection) -> String {
+    let mut types = bound
+        .types
+        .iter()
+        .map(CanonicalTypeContract::from)
+        .collect::<Vec<_>>();
+    types.sort_by_key(|item| item.type_id);
+    let wire = serde_json::to_vec(&CanonicalIdentityModel {
+        fingerprint_version: IDENTITY_FINGERPRINT_VERSION,
+        types,
+    })
+    .expect("canonical identity model serializes");
+    Sha256::digest(wire)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+#[derive(Serialize)]
+struct CanonicalIdentityModel<'a> {
+    fingerprint_version: &'a str,
+    types: Vec<CanonicalTypeContract>,
+}
+
+#[derive(Serialize)]
+struct CanonicalTypeContract {
+    type_id: u64,
+    canonical_path: Vec<String>,
+    kind: TypeContractKind,
+    fields: Vec<CanonicalFieldContract>,
+}
+
+impl From<&BoundTypeContract> for CanonicalTypeContract {
+    fn from(contract: &BoundTypeContract) -> Self {
+        let mut fields = contract
+            .fields
+            .iter()
+            .map(CanonicalFieldContract::from)
+            .collect::<Vec<_>>();
+        fields.sort_by_key(|item| item.field_id);
+        Self {
+            type_id: contract.type_id,
+            canonical_path: contract.canonical_path.clone(),
+            kind: contract.kind,
+            fields,
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct CanonicalFieldContract {
+    field_id: u64,
+    canonical_name: String,
+    canonical_type: CanonicalType,
+    attributes: Vec<AttributeContract>,
+    default_value: Option<String>,
+}
+
+impl From<&BoundFieldContract> for CanonicalFieldContract {
+    fn from(field: &BoundFieldContract) -> Self {
+        let mut attributes = field.attributes.clone();
+        attributes.sort_by(|left, right| {
+            left.name
+                .cmp(&right.name)
+                .then_with(|| left.syntax.cmp(&right.syntax))
+        });
+        Self {
+            field_id: field.field_id,
+            canonical_name: field.canonical_name.clone(),
+            canonical_type: field.canonical_type.clone(),
+            attributes,
+            default_value: field.default_value.clone(),
+        }
     }
 }
 

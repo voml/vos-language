@@ -8,8 +8,9 @@ mod identity;
 mod projection;
 
 pub use identity::{
-    BoundFieldContract, BoundTypeContract, FieldIdentity, IDENTITY_MANIFEST_VERSION,
-    IdentityBoundProjection, IdentityManifest, TypeIdentity, bind_identity,
+    bind_identity, schema_fingerprint, BoundFieldContract, BoundTypeContract, FieldIdentity,
+    IdentityBoundProjection, IdentityManifest, TypeIdentity, IDENTITY_FINGERPRINT_VERSION,
+    IDENTITY_MANIFEST_VERSION,
 };
 pub use projection::{
     ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
