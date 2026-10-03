@@ -65,7 +65,8 @@ pub struct FieldIdentity {
 }
 
 /// A projection with externally assigned durable identities.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct IdentityBoundProjection {
     /// Identity manifest version.
     pub manifest_version: String,
@@ -74,7 +75,8 @@ pub struct IdentityBoundProjection {
 }
 
 /// A projected type with a durable type ID.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BoundTypeContract {
     /// Durable type identity.
     pub type_id: u64,
@@ -87,7 +89,8 @@ pub struct BoundTypeContract {
 }
 
 /// A projected field with durable field and virtual-slot identities.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BoundFieldContract {
     /// Durable field identity.
     pub field_id: u64,
@@ -142,6 +145,52 @@ pub struct IdentityEvolution {
     pub to_fingerprint: String,
     /// Deterministically ordered changes.
     pub changes: Vec<IdentityChange>,
+}
+
+/// Durable history for one identity-bound schema catalog.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IdentityHistory {
+    /// Identity manifest version used by the active snapshot.
+    pub manifest_version: String,
+    /// Monotonic catalog revision.
+    pub revision: u64,
+    /// Layout revision for slot-affecting changes.
+    pub layout_epoch: u64,
+    /// Current identity-bound snapshot.
+    pub snapshot: IdentityBoundProjection,
+    /// Retired type identities that can never be reused.
+    pub retired_types: Vec<RetiredTypeIdentity>,
+    /// Retired field identities that can never be reused.
+    pub retired_fields: Vec<RetiredFieldIdentity>,
+}
+
+/// A durable tombstone for a removed type identity.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RetiredTypeIdentity {
+    /// Retired durable type ID.
+    pub type_id: u64,
+    /// Last canonical path associated with the ID.
+    pub canonical_path: Vec<String>,
+    /// Revision at which the identity was retired.
+    pub retired_at_revision: u64,
+}
+
+/// A durable tombstone for a removed field identity.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RetiredFieldIdentity {
+    /// Retired durable field ID.
+    pub field_id: u64,
+    /// Type identity that owned the field.
+    pub type_id: u64,
+    /// Last canonical name associated with the ID.
+    pub canonical_name: String,
+    /// Last virtual slot associated with the ID.
+    pub virtual_field_index: u32,
+    /// Revision at which the identity was retired.
+    pub retired_at_revision: u64,
 }
 
 /// Binds a reviewable identity manifest to a schema projection.
@@ -365,6 +414,112 @@ pub fn compare_identity(
         from_fingerprint: schema_fingerprint(previous),
         to_fingerprint: schema_fingerprint(current),
         changes,
+    })
+}
+
+/// Applies an explicitly bound snapshot to durable identity history.
+pub fn evolve_identity(
+    previous: &IdentityHistory,
+    current: IdentityBoundProjection,
+) -> Result<IdentityHistory, Vec<ContractDiagnostic>> {
+    let mut diagnostics = Vec::new();
+    if previous.manifest_version != current.manifest_version {
+        diagnostics.push(diagnostic("ID017", "identity manifest version changed"));
+    }
+    let evolution = match compare_identity(&previous.snapshot, &current) {
+        Ok(evolution) => evolution,
+        Err(mut errors) => {
+            diagnostics.append(&mut errors);
+            return Err(diagnostics);
+        }
+    };
+    let retired_type_ids = previous
+        .retired_types
+        .iter()
+        .map(|item| item.type_id)
+        .collect::<BTreeSet<_>>();
+    let retired_field_ids = previous
+        .retired_fields
+        .iter()
+        .map(|item| item.field_id)
+        .collect::<BTreeSet<_>>();
+    if current
+        .types
+        .iter()
+        .any(|item| retired_type_ids.contains(&item.type_id))
+    {
+        diagnostics.push(diagnostic("ID015", "retired type ID cannot be reused"));
+    }
+    if current.types.iter().flat_map(|item| item.fields.iter()).any(|item| retired_field_ids.contains(&item.field_id)) {
+        diagnostics.push(diagnostic("ID016", "retired field ID cannot be reused"));
+    }
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+
+    let changed = evolution.from_fingerprint != evolution.to_fingerprint;
+    let revision = if changed {
+        previous
+            .revision
+            .checked_add(1)
+            .ok_or_else(|| vec![diagnostic("ID018", "identity revision exhausted")])?
+    } else {
+        previous.revision
+    };
+    let layout_changed = evolution.changes.iter().any(|change| {
+        matches!(
+            change,
+            IdentityChange::TypeAdded { .. }
+                | IdentityChange::TypeRemoved { .. }
+                | IdentityChange::FieldAdded { .. }
+                | IdentityChange::FieldRemoved { .. }
+                | IdentityChange::FieldReordered { .. }
+        )
+    });
+    let layout_epoch = if layout_changed {
+        previous
+            .layout_epoch
+            .checked_add(1)
+            .ok_or_else(|| vec![diagnostic("ID019", "identity layout epoch exhausted")])?
+    } else {
+        previous.layout_epoch
+    };
+    let mut retired_types = previous.retired_types.clone();
+    let mut retired_fields = previous.retired_fields.clone();
+    for change in &evolution.changes {
+        match change {
+            IdentityChange::TypeRemoved {
+                type_id,
+                canonical_path,
+            } => retired_types.push(RetiredTypeIdentity {
+                type_id: *type_id,
+                canonical_path: canonical_path.clone(),
+                retired_at_revision: revision,
+            }),
+            IdentityChange::FieldRemoved {
+                type_id,
+                field_id,
+                canonical_name,
+                virtual_field_index,
+            } => retired_fields.push(RetiredFieldIdentity {
+                field_id: *field_id,
+                type_id: *type_id,
+                canonical_name: canonical_name.clone(),
+                virtual_field_index: *virtual_field_index,
+                retired_at_revision: revision,
+            }),
+            _ => {}
+        }
+    }
+    retired_types.sort_by_key(|item| item.type_id);
+    retired_fields.sort_by_key(|item| item.field_id);
+    Ok(IdentityHistory {
+        manifest_version: current.manifest_version.clone(),
+        revision,
+        layout_epoch,
+        snapshot: current,
+        retired_types,
+        retired_fields,
     })
 }
 

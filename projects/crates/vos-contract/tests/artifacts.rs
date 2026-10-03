@@ -1,8 +1,8 @@
 use serde_json::{Value, json};
 use vos_contract::{
-    compare_identity, bind_identity, schema_fingerprint, ContractDiagnostic, FieldIdentity,
-    IdentityChange, IdentityManifest, SchemaProjection, TypeContractKind, TypeIdentity,
-    IDENTITY_MANIFEST_VERSION, parse_oak,
+    compare_identity, evolve_identity, bind_identity, schema_fingerprint, ContractDiagnostic,
+    FieldIdentity, IdentityChange, IdentityHistory, IdentityManifest, SchemaProjection,
+    TypeContractKind, TypeIdentity, IDENTITY_MANIFEST_VERSION, parse_oak,
 };
 
 #[test]
@@ -532,4 +532,98 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
     .unwrap();
     let diagnostics = compare_identity(&previous, &current_field_rebound).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "ID013"));
+}
+
+#[test]
+fn identity_history_records_tombstones_and_rejects_reuse() {
+    let previous = bind_identity(
+        &parse_oak("class A { id: uuid, old: utf8 }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity {
+                        canonical_name: "id".to_owned(),
+                        field_id: 2,
+                        virtual_field_index: 0,
+                    },
+                    FieldIdentity {
+                        canonical_name: "old".to_owned(),
+                        field_id: 3,
+                        virtual_field_index: 1,
+                    },
+                ],
+            }],
+        },
+    )
+    .unwrap();
+    let initial = IdentityHistory {
+        manifest_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        revision: 0,
+        layout_epoch: 0,
+        snapshot: previous,
+        retired_types: Vec::new(),
+        retired_fields: Vec::new(),
+    };
+    let current = bind_identity(
+        &parse_oak("class A { id: uuid }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 0,
+                }],
+            }],
+        },
+    )
+    .unwrap();
+    let evolved = evolve_identity(&initial, current.clone()).unwrap();
+    assert_eq!(evolved.revision, 1);
+    assert_eq!(evolved.layout_epoch, 1);
+    assert_eq!(evolved.retired_fields.len(), 1);
+    assert_eq!(evolved.retired_fields[0].field_id, 3);
+
+    let reused = bind_identity(
+        &parse_oak("class A { id: uuid, replacement: bool }")
+            .unwrap()
+            .project_schema()
+            .unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity {
+                        canonical_name: "id".to_owned(),
+                        field_id: 2,
+                        virtual_field_index: 0,
+                    },
+                    FieldIdentity {
+                        canonical_name: "replacement".to_owned(),
+                        field_id: 3,
+                        virtual_field_index: 1,
+                    },
+                ],
+            }],
+        },
+    )
+    .unwrap();
+    let diagnostics = evolve_identity(&evolved, reused).unwrap_err();
+    assert!(diagnostics.iter().any(|item| item.code == "ID016"));
 }
