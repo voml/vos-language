@@ -1,6 +1,7 @@
 use core::range::Range;
 
 use oak_vos::{VosDeclarationKind, VosField, VosFieldAttribute, VosRoot, VosTypeArgument, VosTypeSyntax};
+use serde::Serialize;
 
 /// Current artifact format version for the first resolved contract envelope.
 pub const CONTRACT_FORMAT_VERSION: &str = "vos-contract-v0";
@@ -10,7 +11,8 @@ pub const LANGUAGE_VERSION: &str = "vos-language-v0";
 pub const CANONICALIZATION_VERSION: &str = "vos-canonical-v0";
 
 /// A source unit carried by a contract artifact.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SourceUnit {
     /// Stable position within this artifact.
     pub source_unit_id: u32,
@@ -19,7 +21,8 @@ pub struct SourceUnit {
 }
 
 /// Version and provenance envelope for a resolved contract artifact.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ContractEnvelope {
     /// Contract artifact format version.
     pub contract_format_version: String,
@@ -34,7 +37,8 @@ pub struct ContractEnvelope {
 }
 
 /// A resolved schema contract for the currently supported declarations.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ResolvedContract {
     /// Artifact envelope.
     pub envelope: ContractEnvelope,
@@ -43,7 +47,8 @@ pub struct ResolvedContract {
 }
 
 /// A resolved table or class contract.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TypeContract {
     /// Canonical namespace-qualified type path.
     pub canonical_path: Vec<String>,
@@ -52,11 +57,13 @@ pub struct TypeContract {
     /// Fields in source order. Order is not identity.
     pub fields: Vec<FieldContract>,
     /// Source span of the declaration.
+    #[serde(serialize_with = "serialize_span")]
     pub span: Range<usize>,
 }
 
 /// Supported resolved type declaration kinds.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum TypeContractKind {
     /// Persistent object schema.
     Table,
@@ -65,7 +72,8 @@ pub enum TypeContractKind {
 }
 
 /// A resolved field contract.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FieldContract {
     /// Field name in canonical spelling.
     pub canonical_name: String,
@@ -76,11 +84,13 @@ pub struct FieldContract {
     /// Exact default syntax when present.
     pub default_value: Option<String>,
     /// Source span of the field.
+    #[serde(serialize_with = "serialize_span")]
     pub span: Range<usize>,
 }
 
 /// A canonical type algebra before symbol resolution.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case", rename_all_fields = "camelCase")]
 pub enum CanonicalType {
     /// Named builtin or user type path.
     Named(Vec<String>),
@@ -100,7 +110,8 @@ pub enum CanonicalType {
 }
 
 /// A canonical generic argument.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum CanonicalTypeArgument {
     /// Nested type argument.
     Type(CanonicalType),
@@ -109,24 +120,28 @@ pub enum CanonicalTypeArgument {
 }
 
 /// An attribute resolved by VOS rather than Oak.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AttributeContract {
     /// Canonical attribute name when known.
     pub name: String,
     /// Original attribute syntax.
     pub syntax: String,
     /// Source span of the attribute.
+    #[serde(serialize_with = "serialize_span")]
     pub span: Range<usize>,
 }
 
 /// A structured semantic diagnostic from contract resolution.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ContractDiagnostic {
     /// Stable diagnostic code within this contract version.
     pub code: String,
     /// Human-readable diagnostic message.
     pub message: String,
     /// Source span when available.
+    #[serde(serialize_with = "serialize_optional_span")]
     pub span: Option<Range<usize>>,
 }
 
@@ -149,6 +164,12 @@ pub fn resolve(root: &VosRoot) -> Result<ResolvedContract, Vec<ContractDiagnosti
                     diagnostics.push(diagnostic("VOS002", "duplicate type declaration", Some(declaration.span.clone())));
                     continue;
                 }
+                let mut field_names = std::collections::BTreeSet::new();
+                for field in &declaration.fields {
+                    if !field_names.insert(&field.name) {
+                        diagnostics.push(diagnostic("VOS003", "duplicate field declaration", Some(field.name_span.clone())));
+                    }
+                }
                 let fields = declaration.fields.iter().map(resolve_field).collect::<Result<Vec<_>, _>>();
                 match fields {
                     Ok(fields) => types.push(TypeContract {
@@ -160,7 +181,7 @@ pub fn resolve(root: &VosRoot) -> Result<ResolvedContract, Vec<ContractDiagnosti
                     Err(error) => diagnostics.push(error),
                 }
             }
-            _ => {}
+            _ => diagnostics.push(diagnostic("VOS004", "declaration is not supported by this contract projection", Some(declaration.span.clone()))),
         }
     }
     if diagnostics.is_empty() {
@@ -179,25 +200,46 @@ pub fn resolve(root: &VosRoot) -> Result<ResolvedContract, Vec<ContractDiagnosti
     }
 }
 
+impl ResolvedContract {
+    /// Serializes this contract using the stable artifact field names.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+}
+
 fn resolve_field(field: &VosField) -> Result<FieldContract, ContractDiagnostic> {
     Ok(FieldContract {
         canonical_name: field.name.clone(),
         canonical_type: canonical_type(&field.type_expr),
-        attributes: field.attributes.iter().map(resolve_attribute).collect(),
+        attributes: field.attributes.iter().map(resolve_attribute).collect::<Result<Vec<_>, _>>()?,
         default_value: field.default_value.as_ref().map(|value| value.text.clone()),
         span: field.span.clone(),
     })
 }
 
-fn resolve_attribute(attribute: &VosFieldAttribute) -> AttributeContract {
+fn resolve_attribute(attribute: &VosFieldAttribute) -> Result<AttributeContract, ContractDiagnostic> {
     let name = if attribute.text == "@@" {
         "primary".to_owned()
     } else if attribute.text == "@" {
         "unique".to_owned()
     } else {
-        attribute.name.clone().unwrap_or_else(|| "unknown".to_owned())
+        let Some(name) = &attribute.name else {
+            return Err(diagnostic("VOS005", "attribute has no structured name", Some(attribute.span.clone())));
+        };
+        if attribute.text != format!("[{name}]") {
+            return Err(diagnostic("VOS005", "attribute group or arguments require structured Oak attribute output", Some(attribute.span.clone())));
+        }
+        name.clone()
     };
-    AttributeContract { name, syntax: attribute.text.clone(), span: attribute.span.clone() }
+    Ok(AttributeContract { name, syntax: attribute.text.clone(), span: attribute.span.clone() })
+}
+
+fn serialize_span<S: serde::Serializer>(span: &Range<usize>, serializer: S) -> Result<S::Ok, S::Error> {
+    (span.start..span.end).serialize(serializer)
+}
+
+fn serialize_optional_span<S: serde::Serializer>(span: &Option<Range<usize>>, serializer: S) -> Result<S::Ok, S::Error> {
+    span.as_ref().map(|span| span.start..span.end).serialize(serializer)
 }
 
 fn canonical_type(value: &VosTypeSyntax) -> CanonicalType {
