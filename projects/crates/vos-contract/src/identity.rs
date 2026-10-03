@@ -14,6 +14,8 @@ pub const IDENTITY_MANIFEST_VERSION: &str = "vos-identity-manifest-v0";
 pub const IDENTITY_FINGERPRINT_VERSION: &str = "vos-identity-fingerprint-v0";
 /// Version of the durable identity history artifact.
 pub const IDENTITY_HISTORY_FORMAT_VERSION: &str = "vos-identity-history-v0";
+/// Version of the resolved contract artifact.
+pub const RESOLVED_CONTRACT_FORMAT_VERSION: &str = "vos-resolved-contract-v1";
 
 /// A reviewable identity assignment for one schema projection.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -109,7 +111,7 @@ pub struct BoundFieldContract {
 }
 
 /// A canonical type after user-defined names are bound to durable identities.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", rename_all_fields = "camelCase")]
 pub enum ResolvedCanonicalType {
     /// Builtin scalar or standard VOS type name.
@@ -137,7 +139,7 @@ pub enum ResolvedCanonicalType {
 }
 
 /// A resolved generic type argument.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ResolvedCanonicalTypeArgument {
     /// Nested resolved type.
@@ -147,7 +149,7 @@ pub enum ResolvedCanonicalTypeArgument {
 }
 
 /// A resolved field with a durable field identity.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedFieldContract {
     /// Durable field identity.
@@ -165,7 +167,7 @@ pub struct ResolvedFieldContract {
 }
 
 /// A resolved type with durable type and field identities.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedTypeContract {
     /// Durable type identity.
@@ -179,13 +181,87 @@ pub struct ResolvedTypeContract {
 }
 
 /// An identity-bound projection with all user-defined field types resolved.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedIdentityProjection {
     /// Identity manifest version.
     pub manifest_version: String,
     /// Resolved types in projection order.
     pub types: Vec<ResolvedTypeContract>,
+}
+
+/// Versioned semantic contract consumed by database and ORM adapters.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ResolvedContract {
+    /// Artifact format version.
+    pub format_version: String,
+    /// Identity manifest version used to bind this contract.
+    pub identity_manifest_version: String,
+    /// Canonical semantic fingerprint.
+    pub schema_fingerprint: String,
+    /// Resolved entities in deterministic source-unit order.
+    pub types: Vec<ResolvedTypeContract>,
+}
+
+impl ResolvedContract {
+    /// Serializes this resolved contract using stable field names.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    /// Reads and validates a strict resolved contract artifact.
+    pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
+        let contract: Self = serde_json::from_str(input).map_err(|error| ArtifactError {
+            code: "RES010".to_owned(),
+            message: error.to_string(),
+        })?;
+        contract.validate()?;
+        Ok(contract)
+    }
+
+    fn validate(&self) -> Result<(), ArtifactError> {
+        if self.format_version != RESOLVED_CONTRACT_FORMAT_VERSION
+            || self.identity_manifest_version != IDENTITY_MANIFEST_VERSION
+            || self.schema_fingerprint.len() != 64
+            || !self.schema_fingerprint.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(ArtifactError {
+                code: "RES011".to_owned(),
+                message: "invalid resolved contract version or fingerprint".to_owned(),
+            });
+        }
+        let mut type_ids = BTreeSet::new();
+        let mut paths = BTreeSet::new();
+        let mut field_ids = BTreeSet::new();
+        for item in &self.types {
+            if item.type_id == 0 || !type_ids.insert(item.type_id)
+                || item.canonical_path.is_empty()
+                || item.canonical_path.iter().any(String::is_empty)
+                || !paths.insert(&item.canonical_path)
+            {
+                return Err(ArtifactError {
+                    code: "RES012".to_owned(),
+                    message: "invalid resolved type identity".to_owned(),
+                });
+            }
+            let mut names = BTreeSet::new();
+            let mut slots = BTreeSet::new();
+            for field in &item.fields {
+                if field.field_id == 0 || !field_ids.insert(field.field_id)
+                    || field.canonical_name.is_empty()
+                    || !names.insert(&field.canonical_name)
+                    || !slots.insert(field.virtual_field_index)
+                {
+                    return Err(ArtifactError {
+                        code: "RES013".to_owned(),
+                        message: "invalid resolved field identity".to_owned(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 /// A deterministic identity evolution event between two bound snapshots.
@@ -674,6 +750,21 @@ pub fn resolve_identity_units(
     } else {
         Err(diagnostics)
     }
+}
+
+/// Builds the first strict resolved contract from one bound projection.
+pub fn resolve_contract(
+    projection: &SchemaProjection,
+    manifest: &IdentityManifest,
+) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
+    let bound = bind_identity(projection, manifest)?;
+    let resolved = resolve_identity_types(&bound)?;
+    Ok(ResolvedContract {
+        format_version: RESOLVED_CONTRACT_FORMAT_VERSION.to_owned(),
+        identity_manifest_version: resolved.manifest_version,
+        schema_fingerprint: schema_fingerprint(&bound),
+        types: resolved.types,
+    })
 }
 
 fn resolve_type(

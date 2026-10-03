@@ -11,10 +11,12 @@ pub use identity::{
     bind_identity, compare_identity, schema_fingerprint, BoundFieldContract, BoundTypeContract,
     evolve_identity, FieldIdentity, IdentityBoundProjection, IdentityChange, IdentityEvolution,
     IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
-    ResolvedFieldContract, ResolvedIdentityProjection, ResolvedTypeContract,
+    resolve_contract, ResolvedContract, ResolvedFieldContract, ResolvedIdentityProjection,
+    ResolvedTypeContract,
     resolve_identity_types, resolve_identity_units, RetiredFieldIdentity, RetiredTypeIdentity,
     TypeIdentity,
     IDENTITY_FINGERPRINT_VERSION, IDENTITY_HISTORY_FORMAT_VERSION, IDENTITY_MANIFEST_VERSION,
+    RESOLVED_CONTRACT_FORMAT_VERSION,
 };
 pub use projection::{
     ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
