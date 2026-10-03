@@ -12,7 +12,8 @@ pub use identity::{
     evolve_identity, FieldIdentity, IdentityBoundProjection, IdentityChange, IdentityEvolution,
     IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
     ResolvedFieldContract, ResolvedIdentityProjection, ResolvedTypeContract,
-    RetiredFieldIdentity, RetiredTypeIdentity, TypeIdentity, resolve_identity_types,
+    resolve_identity_types, resolve_identity_units, RetiredFieldIdentity, RetiredTypeIdentity,
+    TypeIdentity,
     IDENTITY_FINGERPRINT_VERSION, IDENTITY_HISTORY_FORMAT_VERSION, IDENTITY_MANIFEST_VERSION,
 };
 pub use projection::{
