@@ -740,3 +740,34 @@ fn identity_type_resolution_rejects_unknown_user_types() {
     let diagnostics = resolve_identity_types(&bound).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "RES001"));
 }
+
+#[test]
+fn relative_and_qualified_types_resolve_to_the_same_namespace_identity() {
+    let source = "namespace demo\nclass Address { city: utf8 }\nclass User { local: Address?, qualified: demo::Address }";
+    let projection = parse_oak(source).unwrap().project_schema().unwrap();
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![
+            TypeIdentity {
+                canonical_path: vec!["demo".to_owned(), "Address".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity { canonical_name: "city".to_owned(), field_id: 1, virtual_field_index: 0 }],
+            },
+            TypeIdentity {
+                canonical_path: vec!["demo".to_owned(), "User".to_owned()],
+                type_id: 2,
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    FieldIdentity { canonical_name: "local".to_owned(), field_id: 2, virtual_field_index: 0 },
+                    FieldIdentity { canonical_name: "qualified".to_owned(), field_id: 3, virtual_field_index: 1 },
+                ],
+            },
+        ],
+    };
+    let bound = bind_identity(&projection, &manifest).unwrap();
+    let resolved = resolve_identity_types(&bound).unwrap();
+    let expected = ResolvedCanonicalType::User { path: vec!["demo".to_owned(), "Address".to_owned()], type_id: 1 };
+    assert_eq!(resolved.types[1].fields[0].canonical_type, ResolvedCanonicalType::Optional(Box::new(expected.clone())));
+    assert_eq!(resolved.types[1].fields[1].canonical_type, expected);
+}
