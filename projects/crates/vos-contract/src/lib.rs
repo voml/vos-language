@@ -13,7 +13,7 @@ pub use identity::{
     IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
     ResolvedFieldContract, ResolvedIdentityProjection, ResolvedTypeContract,
     RetiredFieldIdentity, RetiredTypeIdentity, TypeIdentity, resolve_identity_types,
-    IDENTITY_FINGERPRINT_VERSION, IDENTITY_MANIFEST_VERSION,
+    IDENTITY_FINGERPRINT_VERSION, IDENTITY_HISTORY_FORMAT_VERSION, IDENTITY_MANIFEST_VERSION,
 };
 pub use projection::{
     ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
