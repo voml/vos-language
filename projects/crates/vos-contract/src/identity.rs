@@ -296,29 +296,49 @@ impl IdentityHistory {
     fn validate(&self) -> Result<(), ArtifactError> {
         if self.format_version != IDENTITY_HISTORY_FORMAT_VERSION
             || self.manifest_version != IDENTITY_MANIFEST_VERSION
+            || self.snapshot.manifest_version != self.manifest_version
         {
             return Err(ArtifactError {
                 code: "ID021".to_owned(),
                 message: "unsupported identity history version".to_owned(),
             });
         }
-        let active_type_ids = self
-            .snapshot
-            .types
-            .iter()
-            .map(|item| item.type_id)
-            .collect::<BTreeSet<_>>();
-        let active_field_ids = self
-            .snapshot
-            .types
-            .iter()
-            .flat_map(|item| item.fields.iter().map(|field| field.field_id))
-            .collect::<BTreeSet<_>>();
+        let mut active_type_ids = BTreeSet::new();
+        let mut active_paths = BTreeSet::new();
+        let mut active_field_ids = BTreeSet::new();
+        for item in &self.snapshot.types {
+            if item.type_id == 0 || !active_type_ids.insert(item.type_id)
+                || item.canonical_path.is_empty()
+                || item.canonical_path.iter().any(String::is_empty)
+                || !active_paths.insert(&item.canonical_path)
+            {
+                return Err(ArtifactError {
+                    code: "ID024".to_owned(),
+                    message: "invalid active type identity".to_owned(),
+                });
+            }
+            let mut names = BTreeSet::new();
+            let mut slots = BTreeSet::new();
+            for field in &item.fields {
+                if field.field_id == 0 || !active_field_ids.insert(field.field_id)
+                    || field.canonical_name.is_empty() || !names.insert(&field.canonical_name)
+                    || !slots.insert(field.virtual_field_index)
+                {
+                    return Err(ArtifactError {
+                        code: "ID025".to_owned(),
+                        message: "invalid active field identity".to_owned(),
+                    });
+                }
+            }
+        }
         let mut retired_type_ids = BTreeSet::new();
         for item in &self.retired_types {
             if item.type_id == 0
                 || !retired_type_ids.insert(item.type_id)
                 || active_type_ids.contains(&item.type_id)
+                || item.canonical_path.is_empty()
+                || item.canonical_path.iter().any(String::is_empty)
+                || item.retired_at_revision > self.revision
             {
                 return Err(ArtifactError {
                     code: "ID022".to_owned(),
@@ -332,6 +352,9 @@ impl IdentityHistory {
                 || item.type_id == 0
                 || !retired_field_ids.insert(item.field_id)
                 || active_field_ids.contains(&item.field_id)
+                || item.canonical_name.is_empty()
+                || item.retired_at_revision > self.revision
+                || (!active_type_ids.contains(&item.type_id) && !retired_type_ids.contains(&item.type_id))
             {
                 return Err(ArtifactError {
                     code: "ID023".to_owned(),

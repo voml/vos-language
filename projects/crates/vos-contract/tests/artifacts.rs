@@ -634,6 +634,25 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     let mut unknown: Value = serde_json::from_str(&serialized).unwrap();
     unknown["unexpected"] = json!(true);
     assert_eq!(IdentityHistory::from_json(&unknown.to_string()).unwrap_err().code, "ID020");
+    for (pointer, value, code) in [
+        ("/snapshot/manifestVersion", json!("unsupported"), "ID021"),
+        ("/snapshot/types/0/typeId", json!(0), "ID024"),
+        ("/snapshot/types/0/canonicalPath", json!([""]), "ID024"),
+        ("/snapshot/types/0/fields/0/fieldId", json!(0), "ID025"),
+        ("/snapshot/types/0/fields/0/canonicalName", json!(""), "ID025"),
+        ("/retiredFields/0/retiredAtRevision", json!(2), "ID023"),
+        ("/retiredFields/0/typeId", json!(99), "ID023"),
+    ] {
+        let mut invalid: Value = serde_json::from_str(&serialized).unwrap();
+        *invalid.pointer_mut(pointer).unwrap() = value;
+        assert_eq!(IdentityHistory::from_json(&invalid.to_string()).unwrap_err().code, code, "{pointer}");
+    }
+    for (pointer, code) in [("/snapshot/types", "ID024"), ("/snapshot/types/0/fields", "ID025")] {
+        let mut invalid: Value = serde_json::from_str(&serialized).unwrap();
+        let entries = invalid.pointer_mut(pointer).unwrap().as_array_mut().unwrap();
+        entries.push(entries[0].clone());
+        assert_eq!(IdentityHistory::from_json(&invalid.to_string()).unwrap_err().code, code, "{pointer}");
+    }
 
     let reused = bind_identity(
         &parse_oak("class A { id: uuid, replacement: bool }")
