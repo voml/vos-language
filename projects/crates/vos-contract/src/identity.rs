@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    ArtifactError, AttributeContract, CanonicalType, ContractDiagnostic, SchemaProjection,
-    TypeContractKind,
+    ArtifactError, AttributeContract, CanonicalType, CanonicalTypeArgument, ContractDiagnostic,
+    SchemaProjection, TypeContractKind,
 };
 
 /// Version of the explicit durable identity manifest.
@@ -104,6 +104,86 @@ pub struct BoundFieldContract {
     pub attributes: Vec<AttributeContract>,
     /// Default syntax.
     pub default_value: Option<String>,
+}
+
+/// A canonical type after user-defined names are bound to durable identities.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case", rename_all_fields = "camelCase")]
+pub enum ResolvedCanonicalType {
+    /// Builtin scalar or standard VOS type name.
+    Builtin(Vec<String>),
+    /// User-defined type with its durable identity.
+    User {
+        /// Canonical type path.
+        path: Vec<String>,
+        /// Durable type identity.
+        type_id: u64,
+    },
+    /// Reference wrapper.
+    Reference(Box<ResolvedCanonicalType>),
+    /// Optional wrapper.
+    Optional(Box<ResolvedCanonicalType>),
+    /// List wrapper.
+    List(Box<ResolvedCanonicalType>),
+    /// Generic type with resolved type arguments.
+    Generic {
+        /// Generic path.
+        path: Vec<String>,
+        /// Generic arguments.
+        arguments: Vec<ResolvedCanonicalTypeArgument>,
+    },
+}
+
+/// A resolved generic type argument.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ResolvedCanonicalTypeArgument {
+    /// Nested resolved type.
+    Type(ResolvedCanonicalType),
+    /// Literal generic argument.
+    Literal(String),
+}
+
+/// A resolved field with a durable field identity.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedFieldContract {
+    /// Durable field identity.
+    pub field_id: u64,
+    /// Durable virtual slot.
+    pub virtual_field_index: u32,
+    /// Current canonical name.
+    pub canonical_name: String,
+    /// Resolved canonical type.
+    pub canonical_type: ResolvedCanonicalType,
+    /// VOS-owned attributes.
+    pub attributes: Vec<AttributeContract>,
+    /// Default syntax.
+    pub default_value: Option<String>,
+}
+
+/// A resolved type with durable type and field identities.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedTypeContract {
+    /// Durable type identity.
+    pub type_id: u64,
+    /// Canonical type path.
+    pub canonical_path: Vec<String>,
+    /// Type kind.
+    pub kind: TypeContractKind,
+    /// Resolved fields.
+    pub fields: Vec<ResolvedFieldContract>,
+}
+
+/// An identity-bound projection with all user-defined field types resolved.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedIdentityProjection {
+    /// Identity manifest version.
+    pub manifest_version: String,
+    /// Resolved types in projection order.
+    pub types: Vec<ResolvedTypeContract>,
 }
 
 /// A deterministic identity evolution event between two bound snapshots.
@@ -415,6 +495,101 @@ pub fn compare_identity(
         to_fingerprint: schema_fingerprint(current),
         changes,
     })
+}
+
+/// Resolves all user-defined names in an identity-bound projection.
+pub fn resolve_identity_types(
+    bound: &IdentityBoundProjection,
+) -> Result<ResolvedIdentityProjection, Vec<ContractDiagnostic>> {
+    let type_ids = bound
+        .types
+        .iter()
+        .map(|item| (item.canonical_path.clone(), item.type_id))
+        .collect::<BTreeMap<_, _>>();
+    let mut diagnostics = Vec::new();
+    let types = bound
+        .types
+        .iter()
+        .map(|item| {
+            let fields = item
+                .fields
+                .iter()
+                .map(|field| {
+                    let canonical_type = resolve_type(
+                        &field.canonical_type,
+                        &type_ids,
+                        &mut diagnostics,
+                    );
+                    ResolvedFieldContract {
+                        field_id: field.field_id,
+                        virtual_field_index: field.virtual_field_index,
+                        canonical_name: field.canonical_name.clone(),
+                        canonical_type,
+                        attributes: field.attributes.clone(),
+                        default_value: field.default_value.clone(),
+                    }
+                })
+                .collect();
+            ResolvedTypeContract {
+                type_id: item.type_id,
+                canonical_path: item.canonical_path.clone(),
+                kind: item.kind,
+                fields,
+            }
+        })
+        .collect();
+    if diagnostics.is_empty() {
+        Ok(ResolvedIdentityProjection {
+            manifest_version: bound.manifest_version.clone(),
+            types,
+        })
+    } else {
+        Err(diagnostics)
+    }
+}
+
+fn resolve_type(
+    ty: &CanonicalType,
+    type_ids: &BTreeMap<Vec<String>, u64>,
+    diagnostics: &mut Vec<ContractDiagnostic>,
+) -> ResolvedCanonicalType {
+    match ty {
+        CanonicalType::Named(path) => {
+            if let Some(type_id) = type_ids.get(path) {
+                ResolvedCanonicalType::User {
+                    path: path.clone(),
+                    type_id: *type_id,
+                }
+            } else if path.len() == 1 && is_builtin(path[0].as_str()) {
+                ResolvedCanonicalType::Builtin(path.clone())
+            } else {
+                diagnostics.push(diagnostic("RES001", &format!("unknown type {}", path.join("::"))));
+                ResolvedCanonicalType::Builtin(path.clone())
+            }
+        }
+        CanonicalType::Reference(inner) => ResolvedCanonicalType::Reference(Box::new(resolve_type(inner, type_ids, diagnostics))),
+        CanonicalType::Optional(inner) => ResolvedCanonicalType::Optional(Box::new(resolve_type(inner, type_ids, diagnostics))),
+        CanonicalType::List(inner) => ResolvedCanonicalType::List(Box::new(resolve_type(inner, type_ids, diagnostics))),
+        CanonicalType::Generic { path, arguments } => ResolvedCanonicalType::Generic {
+            path: path.clone(),
+            arguments: arguments
+                .iter()
+                .map(|argument| match argument {
+                    CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(resolve_type(ty, type_ids, diagnostics)),
+                    CanonicalTypeArgument::Literal(value) => ResolvedCanonicalTypeArgument::Literal(value.clone()),
+                })
+                .collect(),
+        },
+    }
+}
+
+fn is_builtin(name: &str) -> bool {
+    matches!(
+        name,
+        "i8" | "i16" | "i32" | "i64" | "u8" | "u16" | "u32" | "u64"
+            | "f32" | "f64" | "bool" | "utf8" | "utf16" | "uuid" | "decimal"
+            | "d128" | "date" | "time" | "datetime" | "bytes"
+    )
 }
 
 /// Applies an explicitly bound snapshot to durable identity history.

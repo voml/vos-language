@@ -10,7 +10,9 @@ mod projection;
 pub use identity::{
     bind_identity, compare_identity, schema_fingerprint, BoundFieldContract, BoundTypeContract,
     evolve_identity, FieldIdentity, IdentityBoundProjection, IdentityChange, IdentityEvolution,
-    IdentityHistory, IdentityManifest, RetiredFieldIdentity, RetiredTypeIdentity, TypeIdentity,
+    IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedCanonicalTypeArgument,
+    ResolvedFieldContract, ResolvedIdentityProjection, ResolvedTypeContract,
+    RetiredFieldIdentity, RetiredTypeIdentity, TypeIdentity, resolve_identity_types,
     IDENTITY_FINGERPRINT_VERSION, IDENTITY_MANIFEST_VERSION,
 };
 pub use projection::{
