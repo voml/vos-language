@@ -16,6 +16,7 @@
         "sync-grammar": "pnpm --filter @game-gpt/vos-textmate sync-vscode",
         "test:rs": "cargo test --workspace",
         "check:rs": "cargo check --workspace --all-targets",
+        "verify": "pnpm run fmt:check && pnpm run check:rs && pnpm run test:rs",
         "placeholder": "node scripts/ci/publish-placeholder.mjs",
         "placeholder:publish": "node scripts/ci/publish-placeholder.mjs publish",
         "placeholder:trust": "node scripts/ci/publish-placeholder.mjs trust"
