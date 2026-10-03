@@ -5,7 +5,8 @@ trees. It does not lex, parse, recover syntax, or define a second AST parser.
 Callers obtain `oak-vos::VosRoot` from Oak and pass it to
 `ContractInput::from_oak`.
 
-`ContractInput::resolve` is the current V0 semantic entry. It produces a
-versioned `ContractEnvelope`, canonical namespace-qualified table/class paths,
-field attributes, and canonical type wrappers. It does not assign durable IDs
-or a schema fingerprint yet.
+`ContractInput::project_schema` produces the draft `SchemaProjection` artifact
+with a `syntax-projection` envelope stage. It preserves table/class paths,
+field attributes, type wrappers and provenance. Named types remain unresolved,
+and no durable IDs or schema fingerprint are assigned. This artifact is for
+conformance and tooling, not production database or ORM lowering.
