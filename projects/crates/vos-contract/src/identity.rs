@@ -451,6 +451,7 @@ impl IdentityHistory {
         let mut active_type_ids = BTreeSet::new();
         let mut active_paths = BTreeSet::new();
         let mut active_field_ids = BTreeSet::new();
+        let mut active_slots = BTreeSet::new();
         for item in &self.snapshot.types {
             if item.type_id == 0 || !active_type_ids.insert(item.type_id)
                 || item.canonical_path.is_empty()
@@ -468,6 +469,7 @@ impl IdentityHistory {
                 if field.field_id == 0 || !active_field_ids.insert(field.field_id)
                     || field.canonical_name.is_empty() || !names.insert(&field.canonical_name)
                     || !slots.insert(field.virtual_field_index)
+                    || !active_slots.insert((item.type_id, field.virtual_field_index))
                 {
                     return Err(ArtifactError {
                         code: "ID025".to_owned(),
@@ -492,6 +494,7 @@ impl IdentityHistory {
             }
         }
         let mut retired_field_ids = BTreeSet::new();
+        let mut retired_slots = BTreeSet::new();
         for item in &self.retired_fields {
             if item.field_id == 0
                 || item.type_id == 0
@@ -500,6 +503,8 @@ impl IdentityHistory {
                 || item.canonical_name.is_empty()
                 || item.retired_at_revision > self.revision
                 || (!active_type_ids.contains(&item.type_id) && !retired_type_ids.contains(&item.type_id))
+                || active_slots.contains(&(item.type_id, item.virtual_field_index))
+                || !retired_slots.insert((item.type_id, item.virtual_field_index))
             {
                 return Err(ArtifactError {
                     code: "ID023".to_owned(),
@@ -983,6 +988,19 @@ pub fn evolve_identity(
     }
     if current.types.iter().flat_map(|item| item.fields.iter()).any(|item| retired_field_ids.contains(&item.field_id)) {
         diagnostics.push(diagnostic("ID016", "retired field ID cannot be reused"));
+    }
+    let retired_slots = previous
+        .retired_fields
+        .iter()
+        .map(|item| (item.type_id, item.virtual_field_index))
+        .collect::<BTreeSet<_>>();
+    if current
+        .types
+        .iter()
+        .flat_map(|item| item.fields.iter().map(move |field| (item.type_id, field.virtual_field_index)))
+        .any(|slot| retired_slots.contains(&slot))
+    {
+        diagnostics.push(diagnostic("ID026", "retired virtual field slot cannot be reused"));
     }
     if !diagnostics.is_empty() {
         return Err(diagnostics);
