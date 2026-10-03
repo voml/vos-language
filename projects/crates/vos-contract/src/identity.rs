@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    AttributeContract, CanonicalType, ContractDiagnostic, SchemaProjection, TypeContractKind,
+    ArtifactError, AttributeContract, CanonicalType, ContractDiagnostic, SchemaProjection,
+    TypeContractKind,
 };
 
 /// Version of the explicit durable identity manifest.
@@ -20,6 +21,21 @@ pub struct IdentityManifest {
     pub format_version: String,
     /// Type identities. Array order is not semantic.
     pub types: Vec<TypeIdentity>,
+}
+
+impl IdentityManifest {
+    /// Serializes the explicit identity manifest using stable field names.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    /// Reads a strict identity manifest without applying it to a projection.
+    pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
+        serde_json::from_str(input).map_err(|error| ArtifactError {
+            code: "ID011".to_owned(),
+            message: error.to_string(),
+        })
+    }
 }
 
 /// Durable identity assigned to a named type.
