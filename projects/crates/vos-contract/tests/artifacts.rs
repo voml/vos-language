@@ -913,9 +913,51 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
     let mut invalid: Value = serde_json::from_str(&json).unwrap();
     invalid["schemaFingerprint"] = json!("not-a-fingerprint");
     assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES011");
+    invalid["schemaFingerprint"] = json!("0".repeat(64));
+    assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES014");
     let mut unknown: Value = serde_json::from_str(&json).unwrap();
     unknown["unexpected"] = json!(true);
     assert_eq!(ResolvedContract::from_json(&unknown.to_string()).unwrap_err().code, "RES010");
+}
+
+#[test]
+fn resolved_contract_rejects_dangling_user_type_references() {
+    let projection = parse_oak("class A { target: B }\nclass B { id: uuid }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![
+            TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "target".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 0,
+                }],
+            },
+            TypeIdentity {
+                canonical_path: vec!["B".to_owned()],
+                type_id: 3,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 4,
+                    virtual_field_index: 0,
+                }],
+            },
+        ],
+    };
+    let contract = resolve_contract(&projection, &manifest).unwrap();
+    let mut invalid: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
+    invalid["types"][0]["fields"][0]["canonicalType"] = json!({
+        "user": { "path": ["Missing"], "typeId": 99 }
+    });
+    invalid["schemaFingerprint"] = json!("0".repeat(64));
+    assert_eq!(ResolvedContract::from_json(&invalid.to_string()).unwrap_err().code, "RES015");
 }
 
 #[test]
