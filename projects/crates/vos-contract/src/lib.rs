@@ -56,3 +56,48 @@ mod tests {
         assert!(input.syntax().span.end > input.syntax().span.start);
     }
 }
+
+#[cfg(test)]
+mod fixture_tests {
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
+    use oak_vos::parse;
+
+    fn fixtures_root() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../specifications/fixtures")
+    }
+
+    fn source_files(dir: &Path) -> Vec<PathBuf> {
+        let mut files = fs::read_dir(dir)
+            .expect("fixture directory")
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.extension().and_then(|extension| extension.to_str()) == Some("vos")
+                    && !path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .is_some_and(|name| name.ends_with(".normalized.vos"))
+            })
+            .collect::<Vec<_>>();
+        files.sort();
+        files
+    }
+
+    #[test]
+    fn oak_accepts_schema_and_operation_fixtures() {
+        let root = fixtures_root();
+        let mut count = 0usize;
+        for category in ["schema", "operations"] {
+            for path in source_files(&root.join(category)) {
+                let source = fs::read_to_string(&path).expect("fixture source");
+                parse(&source).unwrap_or_else(|error| {
+                    panic!("Oak rejected {}: {error}", path.display())
+                });
+                count += 1;
+            }
+        }
+        assert!(count > 0, "Oak fixture set is empty");
+    }
+}
