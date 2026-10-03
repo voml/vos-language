@@ -1,8 +1,8 @@
 use serde_json::{Value, json};
 use vos_contract::{
-    ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityManifest,
-    SchemaProjection, TypeContractKind, TypeIdentity, bind_identity, parse_oak,
-    schema_fingerprint,
+    compare_identity, bind_identity, schema_fingerprint, ContractDiagnostic, FieldIdentity,
+    IdentityChange, IdentityManifest, SchemaProjection, TypeContractKind, TypeIdentity,
+    IDENTITY_MANIFEST_VERSION, parse_oak,
 };
 
 #[test]
@@ -388,4 +388,148 @@ fn identity_manifest_reader_rejects_unknown_fields() {
     value["unexpected"] = Value::Bool(true);
     let error = IdentityManifest::from_json(&serde_json::to_string(&value).unwrap()).unwrap_err();
     assert_eq!(error.code, "ID011");
+}
+
+#[test]
+fn identity_evolution_reports_explicit_changes_and_tombstones() {
+    let previous_projection = parse_oak("class A { id: uuid, old: utf8 }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let previous_manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["A".to_owned()],
+            type_id: 1,
+            kind: TypeContractKind::Class,
+            fields: vec![
+                FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 0,
+                },
+                FieldIdentity {
+                    canonical_name: "old".to_owned(),
+                    field_id: 3,
+                    virtual_field_index: 1,
+                },
+            ],
+        }],
+    };
+    let current_projection = parse_oak("class Renamed { new_id: uuid, extra: bool }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let current_manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["Renamed".to_owned()],
+            type_id: 1,
+            kind: TypeContractKind::Class,
+            fields: vec![
+                FieldIdentity {
+                    canonical_name: "new_id".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 1,
+                },
+                FieldIdentity {
+                    canonical_name: "extra".to_owned(),
+                    field_id: 4,
+                    virtual_field_index: 2,
+                },
+            ],
+        }],
+    };
+    let previous = bind_identity(&previous_projection, &previous_manifest).unwrap();
+    let current = bind_identity(&current_projection, &current_manifest).unwrap();
+    let evolution = compare_identity(&previous, &current).unwrap();
+    assert!(evolution.changes.contains(&IdentityChange::TypeRenamed {
+        type_id: 1,
+        from: vec!["A".to_owned()],
+        to: vec!["Renamed".to_owned()],
+    }));
+    assert!(evolution.changes.contains(&IdentityChange::FieldRenamed {
+        type_id: 1,
+        field_id: 2,
+        from: "id".to_owned(),
+        to: "new_id".to_owned(),
+    }));
+    assert!(evolution.changes.contains(&IdentityChange::FieldReordered {
+        type_id: 1,
+        field_id: 2,
+        from: 0,
+        to: 1,
+    }));
+    assert!(evolution.changes.contains(&IdentityChange::FieldRemoved {
+        type_id: 1,
+        field_id: 3,
+        canonical_name: "old".to_owned(),
+        virtual_field_index: 1,
+    }));
+    assert!(evolution.changes.contains(&IdentityChange::FieldAdded {
+        type_id: 1,
+        field_id: 4,
+        canonical_name: "extra".to_owned(),
+        virtual_field_index: 2,
+    }));
+}
+
+#[test]
+fn identity_evolution_rejects_implicit_id_rebinding() {
+    let previous = bind_identity(
+        &parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 2,
+                    virtual_field_index: 0,
+                }],
+            }],
+        },
+    )
+    .unwrap();
+    let current_type_rebound = bind_identity(
+        &parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 9,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 8,
+                    virtual_field_index: 0,
+                }],
+            }],
+        },
+    )
+    .unwrap();
+    let diagnostics = compare_identity(&previous, &current_type_rebound).unwrap_err();
+    assert!(diagnostics.iter().any(|item| item.code == "ID012"));
+
+    let current_field_rebound = bind_identity(
+        &parse_oak("class A { id: uuid }").unwrap().project_schema().unwrap(),
+        &IdentityManifest {
+            format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+            types: vec![TypeIdentity {
+                canonical_path: vec!["A".to_owned()],
+                type_id: 1,
+                kind: TypeContractKind::Class,
+                fields: vec![FieldIdentity {
+                    canonical_name: "id".to_owned(),
+                    field_id: 8,
+                    virtual_field_index: 0,
+                }],
+            }],
+        },
+    )
+    .unwrap();
+    let diagnostics = compare_identity(&previous, &current_field_rebound).unwrap_err();
+    assert!(diagnostics.iter().any(|item| item.code == "ID013"));
 }
