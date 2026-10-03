@@ -4,9 +4,19 @@
 
 use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 
+mod identity;
 mod projection;
 
-pub use projection::{ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, CONTRACT_FORMAT_VERSION, FieldContract, LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract, TypeContractKind};
+pub use identity::{
+    BoundFieldContract, BoundTypeContract, FieldIdentity, IDENTITY_MANIFEST_VERSION,
+    IdentityBoundProjection, IdentityManifest, TypeIdentity, bind_identity,
+};
+pub use projection::{
+    ArtifactError, AttributeContract, CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION,
+    CanonicalType, CanonicalTypeArgument, ContractDiagnostic, ContractEnvelope, FieldContract,
+    LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit, TypeContract,
+    TypeContractKind,
+};
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
 pub fn parse_oak(source: &str) -> Result<ContractInput, String> {
@@ -59,12 +69,16 @@ impl ContractInput {
 #[cfg(test)]
 mod tests {
     use super::parse_oak;
-    use super::{CANONICALIZATION_VERSION, CanonicalType, CONTRACT_FORMAT_VERSION, LANGUAGE_VERSION, PROJECTION_STAGE};
+    use super::{
+        CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION, CanonicalType, LANGUAGE_VERSION,
+        PROJECTION_STAGE,
+    };
     use oak_vos::VosDeclarationKind;
 
     #[test]
     fn consumes_oak_root_without_reparsing() {
-        let input = parse_oak("table User { @@id: uuid, email: utf8? = null, }").expect("Oak parses VOS");
+        let input =
+            parse_oak("table User { @@id: uuid, email: utf8? = null, }").expect("Oak parses VOS");
 
         assert_eq!(input.declarations().len(), 1);
         assert_eq!(input.declarations()[0].kind, VosDeclarationKind::Table);
@@ -93,27 +107,48 @@ mod tests {
         let input = parse_oak("namespace demo::identity\ntable User { @@id: uuid, manager: &User?, tags: [utf8]? = null, }").expect("Oak parses VOS");
         let contract = input.project_schema().expect("VOS projects Oak output");
 
-        assert_eq!(contract.envelope.contract_format_version, CONTRACT_FORMAT_VERSION);
+        assert_eq!(
+            contract.envelope.contract_format_version,
+            CONTRACT_FORMAT_VERSION
+        );
         assert_eq!(contract.envelope.stage, PROJECTION_STAGE);
         assert_eq!(contract.envelope.language_version, LANGUAGE_VERSION);
-        assert_eq!(contract.envelope.canonicalization_version, CANONICALIZATION_VERSION);
+        assert_eq!(
+            contract.envelope.canonicalization_version,
+            CANONICALIZATION_VERSION
+        );
         assert_eq!(contract.envelope.schema_fingerprint, None);
         assert_eq!(contract.envelope.source_units.len(), 1);
-        assert_eq!(contract.types[0].canonical_path, ["demo", "identity", "User"]);
+        assert_eq!(
+            contract.types[0].canonical_path,
+            ["demo", "identity", "User"]
+        );
         assert_eq!(contract.types[0].fields[0].attributes[0].name, "primary");
-        assert!(matches!(&contract.types[0].fields[1].canonical_type, CanonicalType::Optional(inner) if matches!(inner.as_ref(), CanonicalType::Reference(_))));
-        assert!(matches!(&contract.types[0].fields[2].canonical_type, CanonicalType::Optional(inner) if matches!(inner.as_ref(), CanonicalType::List(_))));
-        assert_eq!(contract.types[0].fields[2].default_value.as_deref(), Some("null"));
+        assert!(
+            matches!(&contract.types[0].fields[1].canonical_type, CanonicalType::Optional(inner) if matches!(inner.as_ref(), CanonicalType::Reference(_)))
+        );
+        assert!(
+            matches!(&contract.types[0].fields[2].canonical_type, CanonicalType::Optional(inner) if matches!(inner.as_ref(), CanonicalType::List(_)))
+        );
+        assert_eq!(
+            contract.types[0].fields[2].default_value.as_deref(),
+            Some("null")
+        );
     }
 
     #[test]
     fn projection_reports_duplicate_canonical_types() {
         let source = "namespace demo\ntable User { id: uuid, }\ntable User { id: uuid, }";
         let input = parse_oak(source).expect("Oak parses duplicate declarations");
-        let diagnostics = input.project_schema().expect_err("duplicate type must be diagnosed");
+        let diagnostics = input
+            .project_schema()
+            .expect_err("duplicate type must be diagnosed");
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].code, "VOS002");
-        assert_eq!(diagnostics[0].span.as_ref().unwrap().start, source.rfind("table User").unwrap());
+        assert_eq!(
+            diagnostics[0].span.as_ref().unwrap().start,
+            source.rfind("table User").unwrap()
+        );
     }
 }
 
@@ -152,9 +187,8 @@ mod fixture_tests {
         for category in ["schema", "operations"] {
             for path in source_files(&root.join(category)) {
                 let source = fs::read_to_string(&path).expect("fixture source");
-                parse(&source).unwrap_or_else(|error| {
-                    panic!("Oak rejected {}: {error}", path.display())
-                });
+                parse(&source)
+                    .unwrap_or_else(|error| panic!("Oak rejected {}: {error}", path.display()));
                 count += 1;
             }
         }
