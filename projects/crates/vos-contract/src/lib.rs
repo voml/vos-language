@@ -92,7 +92,7 @@ mod tests {
     use super::{
         CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION, CanonicalType, LANGUAGE_VERSION,
         OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE, OperationProjectionArtifact,
-        PROJECTION_STAGE,
+        OperationKind, PROJECTION_STAGE,
     };
     use oak_vos::VosDeclarationKind;
 
@@ -148,6 +148,16 @@ mod tests {
         let mut invalid = serde_json::from_str::<serde_json::Value>(&json).unwrap();
         invalid["operations"][0]["body"]["text"] = serde_json::Value::String("{ altered }".to_owned());
         assert_eq!(OperationProjectionArtifact::from_json(&invalid.to_string()).unwrap_err().code, "OPR014");
+    }
+
+    #[test]
+    fn projects_durable_macro_without_reparsing() {
+        let input = parse_oak("macro public_name(value: utf8) -> utf8 { value.trim() }").unwrap();
+        let operations = input.project_operations().unwrap();
+        assert_eq!(operations.len(), 1);
+        assert_eq!(operations[0].kind, OperationKind::Macro);
+        assert_eq!(operations[0].name, "public_name");
+        assert_eq!(operations[0].parameters[0].name, "value");
     }
 
     #[test]
