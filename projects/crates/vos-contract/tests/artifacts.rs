@@ -916,3 +916,29 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
     unknown["unexpected"] = json!(true);
     assert_eq!(ResolvedContract::from_json(&unknown.to_string()).unwrap_err().code, "RES010");
 }
+
+#[test]
+fn builtin_aliases_resolve_to_one_canonical_spelling() {
+    let projection = parse_oak("class T { amount: d128, created: DateTime<UTC>, updated: datetime }")
+        .unwrap()
+        .project_schema()
+        .unwrap();
+    let manifest = IdentityManifest {
+        format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
+        types: vec![TypeIdentity {
+            canonical_path: vec!["T".to_owned()],
+            type_id: 1,
+            kind: TypeContractKind::Class,
+            fields: vec![
+                FieldIdentity { canonical_name: "amount".to_owned(), field_id: 2, virtual_field_index: 0 },
+                FieldIdentity { canonical_name: "created".to_owned(), field_id: 3, virtual_field_index: 1 },
+                FieldIdentity { canonical_name: "updated".to_owned(), field_id: 4, virtual_field_index: 2 },
+            ],
+        }],
+    };
+    let bound = bind_identity(&projection, &manifest).unwrap();
+    let resolved = resolve_identity_types(&bound).unwrap();
+    assert_eq!(resolved.types[0].fields[0].canonical_type, ResolvedCanonicalType::Builtin(vec!["decimal".to_owned()]));
+    assert_eq!(resolved.types[0].fields[1].canonical_type, ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()]));
+    assert_eq!(resolved.types[0].fields[2].canonical_type, ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()]));
+}
