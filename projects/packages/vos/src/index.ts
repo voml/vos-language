@@ -4,13 +4,16 @@
  * `import { v } from "@voml/vos"` builds VOS type descriptors. Descriptors
  * are author-side data: they must be compiled into a canonical VOS artifact
  * before a host consumes them. This package does not render them as VOS source
- * text and never parses VOS source itself.
+ * text and never parses VOS source itself — except that `toSource()` below
+ * is the author-side bridge that serializes a descriptor tree back into the
+ * `.vos` source document the Rust engine's `ensure_schema` expects.
  *
  * The canonical VOS parser, resolver, catalog and semantic diagnostics live in
  * the Oak backed `oak-vos` pipeline exposed by the `vos` Rust facade.
  */
 
 export { v, type VBuiltinName, type VItemName, type VWrapperName } from "./builtins.js";
+export { toSource } from "./serialize.js";
 export {
     type AnyTypeDescriptor,
     type Attribute,
