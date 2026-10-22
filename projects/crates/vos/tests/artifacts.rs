@@ -10,9 +10,8 @@ use vos::{
 #[test]
 fn projection_artifact_matches_reviewed_golden() {
     let source = include_str!("../../../../documentation/fixtures/contracts/projection_basic.vos");
-    let golden = include_str!(
-        "../../../../documentation/fixtures/contracts/projection_basic.contract.json"
-    );
+    let golden =
+        include_str!("../../../../documentation/fixtures/contracts/projection_basic.contract.json");
     let input = parse_oak(source).expect("Oak parses fixture");
     let contract = input
         .project_schema()
@@ -26,9 +25,8 @@ fn projection_artifact_matches_reviewed_golden() {
 
 #[test]
 fn strict_reader_rejects_unknown_fields_versions_and_invalid_spans() {
-    let golden = include_str!(
-        "../../../../documentation/fixtures/contracts/projection_basic.contract.json"
-    );
+    let golden =
+        include_str!("../../../../documentation/fixtures/contracts/projection_basic.contract.json");
 
     let mut unknown: Value = serde_json::from_str(golden).unwrap();
     unknown["envelope"]["unexpected"] = json!(true);
