@@ -148,7 +148,7 @@ change the language contract. The invariant is simple: **formal VOS, YYDB, and Y
 | Work on the TypeScript packages or homepage  | [`projects/packages`](./projects/packages)                   |
 | Add `.vos` highlighting to VS Code or Cursor | [`vos-on-vscode`](./projects/packages/vos-on-vscode)       |
 | Use the shared grammar with Shiki            | [`@game-gpt/vos-textmate`](projects/packages/vos-textmate) |
-| Validate another implementation              | [`specifications/fixtures`](./specifications/fixtures)   |
+| Validate another implementation              | [`documentation`](documentation/fixtures)   |
 
 The Rust facade is the most complete parser and language implementation today. The TypeScript side splits into
 `@voml/vos` (declaration and type modelling) and `@voml/vos-language` (a lightweight source check); both are
@@ -182,7 +182,7 @@ cd projects/crates
 cargo test -p vos-types -p vos --offline
 ```
 
-See the [fixture guide](./specifications/fixtures/README.md) before adding or updating goldens.
+See the [fixture guide](documentation/fixtures/README.md) before adding or updating goldens.
 
 ## Contributing
 

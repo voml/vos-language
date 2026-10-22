@@ -9,9 +9,9 @@ use vos::{
 
 #[test]
 fn projection_artifact_matches_reviewed_golden() {
-    let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
+    let source = include_str!("../../../../documentation/fixtures/contracts/projection_basic.vos");
     let golden = include_str!(
-        "../../../../specifications/fixtures/contracts/projection_basic.contract.json"
+        "../../../../documentation/fixtures/contracts/projection_basic.contract.json"
     );
     let input = parse_oak(source).expect("Oak parses fixture");
     let contract = input
@@ -27,7 +27,7 @@ fn projection_artifact_matches_reviewed_golden() {
 #[test]
 fn strict_reader_rejects_unknown_fields_versions_and_invalid_spans() {
     let golden = include_str!(
-        "../../../../specifications/fixtures/contracts/projection_basic.contract.json"
+        "../../../../documentation/fixtures/contracts/projection_basic.contract.json"
     );
 
     let mut unknown: Value = serde_json::from_str(golden).unwrap();
@@ -112,7 +112,7 @@ fn attribute_groups_and_arguments_require_oak_structure() {
 #[test]
 fn feature_matrix_keeps_projection_separate_from_resolution_and_consumption() {
     let matrix: Value = serde_json::from_str(include_str!(
-        "../../../../specifications/fixtures/contracts/feature-matrix.json"
+        "../../../../documentation/fixtures/contracts/feature-matrix.json"
     ))
     .unwrap();
     assert_eq!(matrix["formatVersion"], "vos-feature-matrix-v0");
@@ -395,9 +395,9 @@ fn identity_fingerprint_ignores_provenance_spans_and_attribute_syntax_spacing() 
 
 #[test]
 fn identity_manifest_fixture_binds_and_produces_fingerprint() {
-    let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
+    let source = include_str!("../../../../documentation/fixtures/contracts/projection_basic.vos");
     let manifest_json =
-        include_str!("../../../../specifications/fixtures/contracts/identity_basic.manifest.json");
+        include_str!("../../../../documentation/fixtures/contracts/identity_basic.manifest.json");
     let projection = parse_oak(source).unwrap().project_schema().unwrap();
     let manifest = IdentityManifest::from_json(manifest_json).unwrap();
     let bound = bind_identity(&projection, &manifest).unwrap();
@@ -411,7 +411,7 @@ fn identity_manifest_fixture_binds_and_produces_fingerprint() {
 #[test]
 fn identity_manifest_reader_rejects_unknown_fields() {
     let mut value: Value = serde_json::from_str(include_str!(
-        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
+        "../../../../documentation/fixtures/contracts/identity_basic.manifest.json"
     ))
     .unwrap();
     value["unexpected"] = Value::Bool(true);
@@ -1059,7 +1059,7 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
         .project_schema()
         .unwrap();
     let manifest = IdentityManifest::from_json(include_str!(
-        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
+        "../../../../documentation/fixtures/contracts/identity_basic.manifest.json"
     ))
     .unwrap();
     let contract = resolve_contract(&projection, &manifest).unwrap();
@@ -1113,16 +1113,16 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
 
 #[test]
 fn resolved_contract_fixture_matches_reviewed_golden() {
-    let source = include_str!("../../../../specifications/fixtures/contracts/projection_basic.vos");
+    let source = include_str!("../../../../documentation/fixtures/contracts/projection_basic.vos");
     let manifest = IdentityManifest::from_json(include_str!(
-        "../../../../specifications/fixtures/contracts/identity_basic.manifest.json"
+        "../../../../documentation/fixtures/contracts/identity_basic.manifest.json"
     ))
     .unwrap();
     let projection = parse_oak(source).unwrap().project_schema().unwrap();
     let contract = resolve_contract(&projection, &manifest).unwrap();
     let actual: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
     let expected: Value = serde_json::from_str(include_str!(
-        "../../../../specifications/fixtures/contracts/identity_basic.resolved.json"
+        "../../../../documentation/fixtures/contracts/identity_basic.resolved.json"
     ))
     .unwrap();
     assert_eq!(actual, expected);
