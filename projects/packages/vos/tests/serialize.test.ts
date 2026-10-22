@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { v } from "../src/builtins.js";
-import { toSource } from "../src/serialize.js";
+import { emitSource, toSource } from "../src/serialize.js";
 
 describe("serialize", () => {
     it("renders a basic table matching the bracket_primary fixture", () => {
@@ -9,18 +9,21 @@ describe("serialize", () => {
             name: v.utf8().attribute("default", '""'),
         });
         const out = toSource(Account);
+        // Single `primary` attr → `@@` sugar; `default("")` is not primary/unique
+        // → bracket prefix. Every field gets a trailing comma (same as the
+        // fixtures the Rust engine validates against).
         expect(out).toBe(
             [
                 "table Account {",
-                '    [primary] id: utf8,',
-                '    [default("")] name: utf8',
+                "    @@id: utf8,",
+                '    [default("")] name: utf8,',
                 "}",
                 "",
             ].join("\n"),
         );
     });
 
-    it("renders optional + reference + list", () => {
+    it("renders optional + reference + list + DateTime<UTC> spelling", () => {
         const User = v.table("User", {
             id: v.uuid().primary(),
             manager: v.ref({ kind: "table", name: "User" }).optional(),
@@ -28,12 +31,12 @@ describe("serialize", () => {
             login_at: v.datetimeUtc(),
         });
         const out = toSource(User);
-        // Smoke-check shape without being strict about whitespace yet.
+        // Smoke-check shape against canonical VOS spellings:
         expect(out).toContain("table User {");
-        expect(out).toContain("[primary] id: uuid");
-        expect(out).toContain("manager: &User?");
-        expect(out).toContain("tags: [utf8]");
-        expect(out).toContain("login_at: datetimeUtc");
+        expect(out).toContain("@@id: uuid,");
+        expect(out).toContain("manager: &User?,");
+        expect(out).toContain("tags: [utf8],");
+        expect(out).toContain("login_at: DateTime<UTC>,");
     });
 
     it("handles class declarations and multiple items in one document", () => {
@@ -47,7 +50,18 @@ describe("serialize", () => {
         });
         const out = toSource(User, LoginRequest);
         expect(out).toContain("table User {");
+        expect(out).toContain("@@id: uuid,");
+        expect(out).toContain("@name: utf8,");
         expect(out).toContain("class LoginRequest {");
+    });
+
+    it("emitSource accepts single item or array and throws on empty", () => {
+        const T = v.table("T", { id: v.uuid().primary() });
+        expect(emitSource(T)).toContain("table T {");
+        expect(emitSource([T])).toContain("table T {");
+        expect(() => emitSource([])).toThrow(/at least one declaration/);
+        // toSource is variadic, silently drops empty input.
+        expect(toSource()).toBe("");
     });
 
     it("rejects ref without target", () => {
