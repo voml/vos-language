@@ -13,7 +13,7 @@
  */
 
 export { v, type VBuiltinName, type VItemName, type VWrapperName } from "./builtins.js";
-export { toSource } from "./serialize.js";
+export { emitSource, toSource, type EmittableItem } from "./serialize.js";
 export {
     type AnyTypeDescriptor,
     type Attribute,

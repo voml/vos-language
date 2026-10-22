@@ -1,123 +1,200 @@
 /**
  * Serialize VOS descriptors back into a `.vos` source document.
  *
- * This is the reverse bridge of the `v` type builder: callers author
- * descriptors with `v.table()`, feed a list of them through `toSource()`
- * and get the canonical `.vos` text that the Rust engine's
- * `ensure_schema(document: &str)` expects.
+ * Two public entry points that share the same renderer:
+ *
+ *   - `emitSource(input)` — accepts a single declaration or an array of them,
+ *     throws on empty input. Mirrors the published npm 0.0.1 API surface so
+ *     `import { emitSource, v } from "@voml/vos"` works everywhere the crate
+ *     is consumed (yydb, light-db, vos-language e2e tests, user code).
+ *
+ *   - `toSource(...items)` — variadic alias, drops empty input silently.
+ *     Convenient in the `emitSource(User, Account, LoginRequest)` call style.
+ *
+ * Formatting follows the Oak-backed `oak-vos` parser's canonical spellings:
+ *
+ *   - `@@field` / `@field` sugar for fields whose attrs are exactly `primary`
+ *     or `unique` (single attribute). Any other attribute set falls back to
+ *     bracket form: `[primary, tag(1)] field`.
+ *   - `DateTime<UTC>` spellings for builtin scalars that have distinct VOS
+ *     surface forms (the descriptor kind is `datetimeUtc`, the source spelling
+ *     is `DateTime<UTC>`).
+ *   - Trailing commas on every field line (same as the fixtures the Rust
+ *     engine validates against).
+ *   - `table` / `class` only — anonymous `object` descriptors are rejected
+ *     at the top level because they never belong in a database schema.
  *
  * Coverage per descriptor feature:
- *   - builtin scalar kinds (i8…datetimeUtc + bytes/file/vector)
+ *   - builtin scalar kinds (i8…datetimeUtc + bytes/file)
  *   - wrapper kinds (optional T?, list [T], ref &T)
- *   - bracket attributes ([primary] [unique] [tag(x)] …) — rendered as prefix
- *   - named declarations (table / class) + anonymous object
- *   - field ordering is preserved from the original descriptor object keys
+ *   - `vector<N>` fixed-dimension scalar
+ *   - single-attribute `primary` / `unique` → `@@` / `@` sugar
+ *   - multi-attribute / other attribute names → bracket prefix
  *
- * The serializer deliberately does **not** emit `namespace`, `enums`, `flags`,
- * `obsolete`, or trailing micro declarations — the descriptor surface
- * (`@voml/vos`) simply doesn't model them. If any of these are needed, build
- * the `.vos` text by hand and pass it through `ensureSchema` directly.
+ * Deliberately not modeled by the descriptor surface and therefore not
+ * emitted: `namespace`, `enum`, `flags`, `obsolete`, default value `= expr`,
+ * trailing micro declarations. Callers build those by hand and concatenate.
  */
 
 import {
     type AnyTypeDescriptor,
+    type Attribute,
     type FieldDescriptor,
     type RefDescriptor,
-    type ScalarKind,
 } from "./descriptor.js";
 import {
-    type TableDescriptor,
     type ClassDescriptor,
-    type ObjectDescriptor,
+    type FieldMap,
     type NamedItemDescriptor,
+    type NamedItemKind,
+    type TableDescriptor,
 } from "./items.js";
 
 /**
- * Serialize one or more named declarations (table / class) into a `.vos`
- * source document. Anonymous `object` descriptors are skipped at the top
- * level — they don't belong in a database schema file.
- *
- * The output is pure VOS source text. Pass it directly to
- * `@yydb/yydb`'s `Database.ensureSchema` or the Rust engine.
+ * Input accepted by `emitSource`: any named declaration. Alias for
+ * `NamedItemDescriptor<NamedItemKind, string, FieldMap>`.
  */
-export function toSource(
-    ...items: readonly (TableDescriptor | ClassDescriptor)[]
-): string {
-    const out: string[] = [];
-    for (const item of items) {
-        out.push(renderDeclaration(item));
+export type EmittableItem = NamedItemDescriptor<NamedItemKind, string, FieldMap>;
+
+/**
+ * Builtin kind → VOS source spelling map. Scalar kinds that have exactly
+ * one matching spelling (i8, u8, utf8, uuid, bytes, file …) just use their
+ * own name as the source form. The special-case entries below are the ones
+ * where the descriptor kind differs from the VOS surface form.
+ */
+const BUILTIN_SPELLING: Readonly<Record<string, string>> = {
+    i8: "i8",
+    i16: "i16",
+    i32: "i32",
+    i64: "i64",
+    u8: "u8",
+    u16: "u16",
+    u32: "u32",
+    u64: "u64",
+    f32: "f32",
+    f64: "f64",
+    bool: "bool",
+    utf8: "utf8",
+    utf16: "utf16",
+    uuid: "uuid",
+    decimal: "decimal",
+    date: "date",
+    time: "time",
+    datetimeUtc: "DateTime<UTC>",
+    bytes: "bytes",
+    file: "file",
+    vector: "vector",
+};
+
+// ---------------------------------------------------------------------------
+// Public entry points
+// ---------------------------------------------------------------------------
+
+/**
+ * Render one declaration or an array of declarations into a canonical VOS
+ * source document. Accepts single-value or array (mirrors the published API).
+ * Throws if `items` is empty.
+ */
+export function emitSource(input: EmittableItem | readonly EmittableItem[]): string {
+    const items = Array.isArray(input) ? input : [input];
+    if (items.length === 0) {
+        throw new Error("emitSource: at least one declaration is required");
     }
-    // Ensure exactly one trailing newline.
-    while (out.length > 0 && out[out.length - 1] === "") {
-        out.pop();
-    }
-    return out.join("\n\n") + "\n";
+    return `${items.map(renderItem).join("\n\n")}\n`;
 }
 
-/** Serialize a single item descriptor. */
-function renderDeclaration(item: TableDescriptor | ClassDescriptor): string {
-    const lines: string[] = [];
-    lines.push(`${item.kind} ${item.name} {`);
-    const entries = Object.values(item.fields);
-    for (const [idx, field] of entries.entries()) {
-        let line = renderField(field as FieldDescriptor);
-        if (idx < entries.length - 1) {
-            line += ",";
-        }
-        lines.push(`    ${line}`);
-    }
-    lines.push("}");
-    return lines.join("\n");
+/**
+ * Variadic convenience form of `emitSource`. Drops empty input silently
+ * (returns ""), never throws.
+ *
+ * ```ts
+ * // same
+ * emitSource([User, Account]);
+ * toSource(User, Account);
+ * ```
+ */
+export function toSource(...items: readonly EmittableItem[]): string {
+    if (items.length === 0) return "";
+    return emitSource(items);
 }
 
-/** Serialize one named field: `[attrs] name: type_expr [= default]`. */
+// ---------------------------------------------------------------------------
+// Internal rendering
+// ---------------------------------------------------------------------------
+
+/** Render one named declaration (`table` / `class`). */
+function renderItem(item: EmittableItem): string {
+    if (item.kind !== "table" && item.kind !== "class") {
+        throw new Error(
+            `emitSource: \`${item.kind}\` is not a schema declaration — use \`v.class\` for a named non-persistent declaration`,
+        );
+    }
+    const lines = Object.values(item.fields).map(renderField);
+    return `${item.kind} ${item.name} {\n${lines.map((l) => `    ${l}`).join("\n")}\n}`;
+}
+
+/** Render one field line including attributes and a trailing comma. */
 function renderField(field: FieldDescriptor): string {
-    const attrs = renderAttrPrefix(field.attrs);
-    return `${attrs}${field.name}: ${renderType(field)}`;
+    const attrPrefix = renderAttributes(field.attrs);
+    return `${attrPrefix}${field.name}: ${renderType(field)},`;
 }
 
-/** Render bracket attributes as a prefix, e.g. `[primary] ` or `[tag(1)] `. */
-function renderAttrPrefix(attrs: readonly { readonly name: string; readonly args: readonly string[] }[]): string {
+/**
+ * Render field attributes as a prefix.
+ *
+ *   - No attributes: empty string.
+ *   - Single `primary` → `@@`.
+ *   - Single `unique`  → `@`.
+ *   - Any other single attribute or multiple attributes → bracket form.
+ */
+function renderAttributes(attrs: readonly Attribute[]): string {
     if (attrs.length === 0) return "";
-    return attrs.map((a) => {
-        if (a.args.length === 0) return `[${a.name}]`;
-        return `[${a.name}(${a.args.join(",")})]`;
-    }).join(" ") + " ";
+    if (attrs.length === 1) {
+        if (attrs[0]!.name === "primary") return "@@";
+        if (attrs[0]!.name === "unique") return "@";
+    }
+    return `[${attrs.map(renderAttribute).join(", ")}] `;
 }
 
-/** Render a scalar or wrapper descriptor to its VOS type expression. */
+/** Render one attribute: bare name when no args, else `name(arg1, arg2)`. */
+function renderAttribute(attr: Attribute): string {
+    return attr.args.length === 0 ? attr.name : `${attr.name}(${attr.args.join(", ")})`;
+}
+
+/** Render a type descriptor to its VOS source expression. */
 function renderType(descriptor: AnyTypeDescriptor): string {
-    switch (descriptor.kind as ScalarKind) {
-        case "optional": {
-            const inner = descriptor.inner;
-            if (!inner) {
-                throw new Error("optional descriptor missing .inner");
-            }
-            return `${renderType(inner)}?`;
-        }
-        case "list": {
-            const inner = descriptor.inner;
-            if (!inner) {
-                throw new Error("list descriptor missing .inner");
-            }
-            return `[${renderType(inner)}]`;
-        }
+    switch (descriptor.kind) {
+        case "optional":
+            return `${renderWrapped(descriptor)}?`;
+        case "list":
+            return `[${renderWrapped(descriptor)}]`;
         case "ref": {
             const target = (descriptor as RefDescriptor).target;
             if (!target) {
-                throw new Error("ref descriptor missing .target");
+                throw new Error("emitSource: a `ref` descriptor is missing its target declaration");
             }
             return `&${target.name}`;
         }
         case "vector": {
             const dim = (descriptor as { readonly dim?: number }).dim;
             if (dim === undefined) {
-                throw new Error("vector descriptor missing .dim");
+                throw new Error("emitSource: a `vector` descriptor is missing its dimension");
             }
             return `vector<${dim}>`;
         }
         default:
-            // Plain builtin scalar kind (i8 / utf8 / uuid / bytes / file …)
-            return descriptor.kind;
+            // Plain builtin scalar kind — map through BUILTIN_SPELLING to pick
+            // up the `datetimeUtc → DateTime<UTC>` spelling and any future
+            // special cases we add to Oak's surface.
+            return BUILTIN_SPELLING[descriptor.kind] ?? descriptor.kind;
     }
+}
+
+/** Render an `optional` or `list`'s inner type. */
+function renderWrapped(descriptor: AnyTypeDescriptor): string {
+    const inner = (descriptor as { readonly inner?: AnyTypeDescriptor }).inner;
+    if (!inner) {
+        throw new Error(`emitSource: a \`${descriptor.kind}\` descriptor is missing its inner type`);
+    }
+    return renderType(inner);
 }
