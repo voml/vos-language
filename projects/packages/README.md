@@ -93,6 +93,6 @@ pnpm -r build
 ```
 
 Some packages may not define every script; pnpm runs the scripts that exist. For language-level compatibility, refer to
-the shared [conformance fixtures](../../specifications/fixtures/README.md).
+the shared [conformance fixtures](../../documentation/fixtures/README.md).
 
 See the repository [README](../../readme.md) for the language story, Rust implementation, and contribution expectations.

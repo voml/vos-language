@@ -6,13 +6,13 @@ on:
     branches: [master, dev]
     paths:
       - "projects/crates/**"
-      - "specifications/fixtures/**"
+      - "../../documentation/fixtures/**"
       - ".github/workflows/check-rust.yml"
   pull_request:
     branches: [master, dev]
     paths:
       - "projects/crates/**"
-      - "specifications/fixtures/**"
+      - "../../documentation/fixtures/**"
       - ".github/workflows/check-rust.yml"
 
 # Path filters: pushes that only touch homepage/ do not run this

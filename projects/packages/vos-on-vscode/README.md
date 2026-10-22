@@ -43,7 +43,7 @@ is highlighted consistently in the editor and in Shiki-powered documentation.
 ## Test a grammar change
 
 Use examples that cover declarations, field attributes, references, operation chains, projections, and comments. The
-shared [conformance fixtures](../../../specifications/fixtures/README.md) are a useful source of realistic syntax, but
+shared [conformance fixtures](../../../documentation/fixtures/README.md) are a useful source of realistic syntax, but
 highlighting must remain tolerant of partially written code.
 
 See the [TypeScript workspace README](../README.md) for the complete tooling map.

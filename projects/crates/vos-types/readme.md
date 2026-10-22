@@ -10,5 +10,5 @@ provided by `vos`. Applications use that facade and access models through
 identifiers independently of Rust crate names.
 
 Run `pnpm conformance:contracts` for the model and semantic-processing gates.
-Reviewed fixtures live in `specifications/fixtures/contracts/`. These gates do
+Reviewed fixtures live in `../../../documentation`. These gates do
 not establish complete operation/service or downstream execution support.

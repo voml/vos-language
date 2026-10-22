@@ -25,7 +25,7 @@ reporters were removed with the `vos-ast`, `vos-parser` and `vos-inspect` crates
 covers expression, operation, `micro` and `macro` grammar and the consumer layer is rebuilt on that output.
 
 - `vos::uuid()` generates **UUID v7 only** (VOS builtin `uuid()`). Do not use v4 for PK columns — see
-  [`specifications/uuid-v7.md`](../../../specifications/uuid-v7.md) (page-split rationale).
+  [`../../../documentation`](../../../documentation/uuid-v7.md) (page-split rationale).
 
 ## Integration rule
 
