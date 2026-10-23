@@ -1,6 +1,6 @@
 {
     "name": "@voml/vos-language",
-    "version": "0.0.3",
+    "version": "0.0.6",
     "description": "VOS language tooling — source checks, catalog projection and formatting backed by the Rust WebAssembly core",
     "homepage": "https://vos-language.pages.dev/",
     "repository": {

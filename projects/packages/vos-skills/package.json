@@ -1,6 +1,6 @@
 {
     "name": "@voml/vos-skills",
-    "version": "0.0.3",
+    "version": "0.0.6",
     "description": "Agent Skills for users authoring VOS (.vos) schema — install via npx; guides TypeScript, Rust, Iris, and other stacks",
     "type": "module",
     "license": "MPL-2.0",
