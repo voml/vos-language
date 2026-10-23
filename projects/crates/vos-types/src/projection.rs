@@ -542,13 +542,13 @@ fn validate_fingerprint_if_present(
     fingerprint: &Option<String>,
     code: &str,
 ) -> Result<(), ArtifactError> {
-    if let Some(value) = fingerprint {
-        if value.len() != 64 || !value.chars().all(|c| c.is_ascii_hexdigit()) {
-            return Err(ArtifactError {
-                code: code.to_owned(),
-                message: "schema fingerprint must be 64 ascii-hex chars".to_owned(),
-            });
-        }
+    if let Some(value) = fingerprint
+        && (value.len() != 64 || !value.chars().all(|c| c.is_ascii_hexdigit()))
+    {
+        return Err(ArtifactError {
+            code: code.to_owned(),
+            message: "schema fingerprint must be 64 ascii-hex chars".to_owned(),
+        });
     }
     Ok(())
 }
