@@ -83,10 +83,6 @@ fn unsupported_declarations_never_disappear_from_a_successful_contract() {
         "flags Scope { Read = 1 }",
         "obsolete table Old;",
         "const NAME: utf8 = \"value\";",
-        "service Api {}",
-        "query users() {}",
-        "udf value() {}",
-        "micro value() {}",
     ] {
         let source = format!("class T {{ id: uuid }}\n{declaration}");
         let input = parse_oak(&source).unwrap();

@@ -92,12 +92,12 @@
     {
       "id": "operation-service.contract",
       "documented": true,
-      "parsed": false,
-      "projected": false,
+      "parsed": true,
+      "projected": true,
       "resolved": false,
       "conformance": false,
       "downstream-consumed": false,
-      "note": "No YYDB, YYDS, Iris or VOS RPC consumer may interpret parser-private structures"
+      "note": "Oak parses service and operation declarations. VOS projects them into separate artifacts but does not resolve or consume them downstream yet"
     }
   ]
 }
