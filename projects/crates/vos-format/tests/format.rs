@@ -6,8 +6,7 @@ use std::path::{Path, PathBuf};
 use vos_format::{Mode, format, format_canonical, format_preserving};
 
 fn schema_fixtures() -> Vec<PathBuf> {
-    let root =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../documentation/fixtures/schema");
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../documentation/fixtures/schema");
     let mut files: Vec<PathBuf> = fs::read_dir(&root)
         .unwrap_or_else(|error| panic!("read schema fixtures at {}: {error}", root.display()))
         .flatten()

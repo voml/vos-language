@@ -27,11 +27,11 @@ pub fn project_operations(
             continue;
         };
         let identity_key = operation_identity_key(
-                kind,
-                declaration.name.as_deref().unwrap_or_default(),
-                &declaration.parameters,
-                declaration.return_type_expr.as_ref(),
-            );
+            kind,
+            declaration.name.as_deref().unwrap_or_default(),
+            &declaration.parameters,
+            declaration.return_type_expr.as_ref(),
+        );
         operations.push(OperationProjection {
             kind,
             name,
@@ -123,9 +123,7 @@ pub fn project_operations_artifact(
 }
 
 /// Projects Oak service declarations without lowering their bodies.
-pub fn project_services(
-    root: &VosRoot,
-) -> Result<Vec<ServiceProjection>, Vec<ContractDiagnostic>> {
+pub fn project_services(root: &VosRoot) -> Result<Vec<ServiceProjection>, Vec<ContractDiagnostic>> {
     let mut namespace = Vec::new();
     let mut services = Vec::new();
     let mut diagnostics = Vec::new();
@@ -159,7 +157,10 @@ pub fn project_services(
                 services.push(ServiceProjection {
                     name: declaration.name.clone().unwrap_or_default(),
                     canonical_path: canonical_path.clone(),
-                    service_id: vos_types::compute_service_id(&canonical_path, declaration.name.as_deref().unwrap_or_default()),
+                    service_id: vos_types::compute_service_id(
+                        &canonical_path,
+                        declaration.name.as_deref().unwrap_or_default(),
+                    ),
                     body: declaration.body.as_ref().map(slice_contract),
                     span: declaration.span,
                 });
