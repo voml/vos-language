@@ -10,7 +10,9 @@
  * public surface must not offer a wide `string()` / `number()` / `json()`.
  */
 
+import type { SafeParseResult, ValidationIssue } from "./validate.js";
 import type { ReferenceKey } from "./values.js";
+import { safeParse as validateSafeParse, parse as validateParse } from "./validate.js";
 
 /** Phantom carrier of the author-side value type. Never present at runtime. */
 export declare const PHANTOM: unique symbol;
@@ -80,6 +82,10 @@ export interface TypeDescriptor<K extends ScalarKind = ScalarKind, V = unknown> 
     unique(): TypeDescriptor<K, V>;
     /** Append an arbitrary bracket attribute, preserving it losslessly. */
     attribute(name: string, ...args: readonly (string | number)[]): TypeDescriptor<K, V>;
+    /** Validate a runtime value; throws VosValidationError on failure. */
+    parse(value: unknown): V;
+    /** Validate a runtime value without throwing. */
+    safeParse(value: unknown): SafeParseResult<V>;
 }
 
 /** A named field: a scalar descriptor plus its VOS field name. */
@@ -121,6 +127,14 @@ const DESCRIPTOR_PROTO = {
     },
     attribute(this: AnyTypeDescriptor, name: string, ...args: readonly (string | number)[]) {
         return withAttribute(this, name, ...args.map(String));
+    },
+    /** Validate a runtime value against this scalar descriptor; throws on failure. */
+    parse<V>(this: TypeDescriptor<ScalarKind, V>, value: unknown): V {
+        return validateParse(this as AnyTypeDescriptor, value) as V;
+    },
+    /** Validate a runtime value against this scalar descriptor without throwing. */
+    safeParse<V>(this: TypeDescriptor<ScalarKind, V>, value: unknown): SafeParseResult<V> {
+        return validateSafeParse<V>(this as AnyTypeDescriptor, value);
     },
 };
 
