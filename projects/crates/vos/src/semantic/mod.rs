@@ -6,6 +6,7 @@ use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 
 mod identity;
 mod projection;
+pub mod resolve;
 
 pub use identity::{
     bind_identity, compare_identity, evolve_identity, resolve_contract,
