@@ -115,7 +115,8 @@ fn feature_matrix_keeps_projection_separate_from_resolution_and_consumption() {
         .iter()
         .find(|feature| feature["id"] == "durable-identity.fingerprint")
         .unwrap();
-    assert_eq!(identity["projected"], false);
+    assert_eq!(identity["parsed"], true);
+    assert_eq!(identity["projected"], true);
     assert_eq!(identity["downstream-consumed"], false);
     let fields = features
         .iter()
