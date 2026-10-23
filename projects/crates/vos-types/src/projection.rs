@@ -1,6 +1,7 @@
 use core::range::Range;
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 /// Current artifact format version for the first resolved contract envelope.
 pub const CONTRACT_FORMAT_VERSION: &str = "vos-contract-v0";
@@ -14,6 +15,10 @@ pub const PROJECTION_STAGE: &str = "syntax-projection";
 pub const OPERATION_CONTRACT_FORMAT_VERSION: &str = "vos-operation-contract-v0";
 /// Operation projection stage before expression lowering and name resolution.
 pub const OPERATION_PROJECTION_STAGE: &str = "operation-syntax-projection";
+/// Current service contract projection format.
+pub const SERVICE_CONTRACT_FORMAT_VERSION: &str = "vos-service-contract-v0";
+/// Service projection stage before body lowering and name resolution.
+pub const SERVICE_PROJECTION_STAGE: &str = "service-syntax-projection";
 
 /// A source unit carried by a contract artifact.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,6 +188,11 @@ pub struct OperationProjection {
     /// Canonical signature key used as input to durable identity assignment.
     /// This is not itself a durable operation ID.
     pub identity_key: String,
+    /// Opaque stable operation identity derived from `identity_key`. Machine
+    /// consumers (Iris, Hermes) use this field to locate an operation without
+    /// re-parsing its signature string. Human readers should still prefer
+    /// `identity_key`.
+    pub operation_id: String,
     /// Parameters projected from Oak's signature.
     pub parameters: Vec<OperationParameter>,
     /// Return type when the declaration has an arrow return type.
@@ -374,6 +384,95 @@ impl OperationProjectionArtifact {
     }
 }
 
+/// Service declaration projected from Oak without body lowering.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct ServiceProjection {
+    /// Service name.
+    pub name: String,
+    /// Canonical namespace-qualified path.
+    pub canonical_path: Vec<String>,
+    /// Exact body source slice.
+    pub body: Option<SyntaxSliceContract>,
+    /// Full declaration span.
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
+    pub span: Range<usize>,
+}
+
+/// A strict, versioned service projection artifact emitted from Oak output.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct ServiceProjectionArtifact {
+    /// Artifact envelope and source provenance.
+    pub envelope: ContractEnvelope,
+    /// Service declarations in source order. Order is not an identity rule.
+    pub services: Vec<ServiceProjection>,
+}
+
+impl ServiceProjectionArtifact {
+    /// Serializes this service artifact using the stable field names.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    /// Reads and validates a strict service projection artifact.
+    pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
+        let artifact: Self = serde_json::from_str(input).map_err(|error| ArtifactError {
+            code: "SRV010".to_owned(),
+            message: error.to_string(),
+        })?;
+        artifact.validate()?;
+        Ok(artifact)
+    }
+
+    fn validate(&self) -> Result<(), ArtifactError> {
+        if self.envelope.stage != SERVICE_PROJECTION_STAGE
+            || self.envelope.contract_format_version != SERVICE_CONTRACT_FORMAT_VERSION
+            || self.envelope.language_version != LANGUAGE_VERSION
+            || self.envelope.canonicalization_version != CANONICALIZATION_VERSION
+        {
+            return Err(ArtifactError {
+                code: "SRV011".to_owned(),
+                message: "unsupported service projection version or stage".to_owned(),
+            });
+        }
+        if self.envelope.schema_fingerprint.is_some()
+            || self.envelope.source_units.len() != 1
+            || self.envelope.source_units[0].source_unit_id != 0
+        {
+            return Err(ArtifactError {
+                code: "SRV012".to_owned(),
+                message: "invalid service projection source unit or fingerprint state".to_owned(),
+            });
+        }
+        let source = &self.envelope.source_units[0].source;
+        for service in &self.services {
+            validate_span(&service.span, source, "service span")?;
+            if service.name.is_empty() {
+                return Err(ArtifactError {
+                    code: "SRV013".to_owned(),
+                    message: "service name cannot be empty".to_owned(),
+                });
+            }
+            for slice in service.body.iter() {
+                validate_span(&slice.span, source, "service body syntax slice")?;
+                if source.get(slice.span) != Some(slice.text.as_str()) {
+                    return Err(ArtifactError {
+                        code: "SRV014".to_owned(),
+                        message: "service body syntax slice does not match source".to_owned(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 /// A strict artifact decoding failure.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArtifactError {
@@ -442,4 +541,59 @@ fn serialize_optional_span<S: serde::Serializer>(
     span.as_ref()
         .map(|span| span.start..span.end)
         .serialize(serializer)
+}
+
+/// Prefix shared by every generated opaque operation identity.
+pub const OPERATION_ID_PREFIX: &str = "op_";
+
+/// Generates a deterministic opaque operation identity from a canonical
+/// `identity_key`. The result is stable across source formatting, whitespace
+/// variations, and parameter-order differences that have already been
+/// eliminated by the canonical key.
+///
+/// The output is `op_<sha256(identity_key).first_16_hex_chars>`. It is short
+/// enough for human debugging while still being opaque and collision-resistant
+/// across practical operation counts.
+pub fn compute_operation_id(identity_key: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(identity_key.as_bytes());
+    let digest = hasher.finalize();
+    let mut hex = String::with_capacity(OPERATION_ID_PREFIX.len() + 16);
+    hex.push_str(OPERATION_ID_PREFIX);
+    for byte in digest.iter().take(8) {
+        use std::fmt::Write;
+        let _ = write!(hex, "{byte:02x}");
+    }
+    hex
+}
+
+#[cfg(test)]
+mod operation_id_tests {
+    use super::*;
+
+    #[test]
+    fn operation_id_is_prefix_plus_16_hex_chars() {
+        let id = compute_operation_id("macro:public_name(utf8)->utf8");
+        assert!(id.starts_with(OPERATION_ID_PREFIX));
+        assert_eq!(id.len(), OPERATION_ID_PREFIX.len() + 16);
+        assert!(id[OPERATION_ID_PREFIX.len()..]
+            .chars()
+            .all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn same_identity_key_produces_same_operation_id() {
+        let a = compute_operation_id("macro:public_name(utf8)->utf8");
+        let b = compute_operation_id("macro:public_name(utf8)->utf8");
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn different_identity_keys_produce_different_operation_ids() {
+        let a = compute_operation_id("macro:public_name(utf8)->utf8");
+        let b = compute_operation_id("query:public_name(utf8)->utf8");
+        assert_ne!(a, b);
+        let c = compute_operation_id("macro:public_name(uuid)->utf8");
+        assert_ne!(a, c);
+    }
 }

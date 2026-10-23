@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use vos::syntax::{VosExpr, VosStmt};
 
 fn operations_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../specifications/fixtures/operations")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../documentation/fixtures/operations")
 }
 
 fn operation_sources(dir: &Path) -> Vec<PathBuf> {
