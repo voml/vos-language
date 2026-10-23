@@ -1,16 +1,24 @@
-//! Multi-file `using` resolution — **collect pass**.
+//! Multi-file `using` resolution.
 //!
-//! This module walks an Oak-built AST root, extracts `using` paths in both
-//! supported surface forms (namespace-style and string-literal), and collects
-//! every top-level declaration into a [`SourceDecls`] bundle. The resulting
-//! bundles live in a [`SymbolTable`] keyed by source path; a subsequent pass
-//! (not included here) feeds `using` paths through a [`Vfs`] and links
-//! dependent sources together.
+//! Two cooperating passes live here:
+//!
+//! * **Collect pass** ([`collect_decls`]) walks an Oak-built AST root,
+//!   extracts `using` paths in both supported surface forms (namespace-style
+//!   and string-literal), and bundles every top-level declaration into a
+//!   [`SourceDecls`].
+//! * **Resolve pass** ([`resolve_using_tree`]) feeds each collected `using`
+//!   path through a [`Vfs`], loads the target source, collects its
+//!   declarations, and recurses — with explicit cycle detection.
+//!
+//! The end result is a fully-populated [`SymbolTable`] keyed by absolute
+//! source path.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use oak_vos::{VosDeclaration, VosDeclarationKind, VosSyntaxElement};
+
+use crate::vfs::{Vfs, VfsError};
 
 /// Identifier for a single loaded source unit.
 pub type SourceId = PathBuf;
@@ -92,6 +100,7 @@ impl SymbolTable {
 /// examine what is already in memory.
 pub fn collect_decls(root: &oak_vos::VosRoot) -> SourceDecls {
     let mut decls = SourceDecls::default();
+    let literals = collect_string_literals(root);
 
     for declaration in &root.declarations {
         match declaration.kind {
@@ -135,9 +144,7 @@ pub fn collect_decls(root: &oak_vos::VosRoot) -> SourceDecls {
                 }
             }
             VosDeclarationKind::Using => {
-                if let Some(path) =
-                    extract_using_path_with_literals(declaration, &collect_string_literals(root))
-                {
+                if let Some(path) = extract_using_path_with_literals(declaration, &literals) {
                     decls.using_paths.push(path);
                 }
             }
@@ -204,9 +211,104 @@ pub fn extract_using_path_with_literals(
         .map(|(_, _, text)| text.clone())
 }
 
+/// Resolves all `using` declarations transitively.
+///
+/// Starts from `entry_path`, reads each source through [`Vfs`], collects
+/// declarations, and recurses into every `using` path it finds. A simple
+/// `Vec<PathBuf>` visitor stack detects import cycles before they loop.
+///
+/// On success returns the fully-populated [`SymbolTable`]. If any I/O or
+/// cycle error was encountered, the partial table is returned together with
+/// the collected [`VfsError`] list — callers can decide whether to abort or
+/// continue with the best-effort result.
+pub fn resolve_using_tree<V: Vfs>(
+    entry_path: &Path,
+    vfs: &V,
+) -> Result<SymbolTable, (SymbolTable, Vec<VfsError>)> {
+    let mut table = SymbolTable::new();
+    let mut diagnostics = Vec::new();
+    let mut visited: Vec<PathBuf> = Vec::new();
+
+    resolve_recursive(entry_path, vfs, &mut table, &mut visited, &mut diagnostics);
+
+    if diagnostics.is_empty() {
+        Ok(table)
+    } else {
+        Err((table, diagnostics))
+    }
+}
+
+fn resolve_recursive<V: Vfs>(
+    current: &Path,
+    vfs: &V,
+    table: &mut SymbolTable,
+    visited: &mut Vec<PathBuf>,
+    diagnostics: &mut Vec<VfsError>,
+) {
+    // Canonicalize up-front so table keys and cycle checks are stable even
+    // when callers pass relative paths.
+    let canonical = current
+        .canonicalize()
+        .unwrap_or_else(|_| current.to_path_buf());
+
+    // Cycle detection: is `canonical` already on our import stack?
+    if let Some(pos) = visited.iter().position(|p| p == &canonical) {
+        let cycle: Vec<String> = visited[pos..]
+            .iter()
+            .map(|p| p.display().to_string())
+            .chain(std::iter::once(canonical.display().to_string()))
+            .collect();
+        diagnostics.push(VfsError::circular(cycle.join(" -> ")));
+        return;
+    }
+
+    // Memoized: already fully processed?
+    if table.contains(&canonical) {
+        return;
+    }
+
+    let source = match vfs.read_file(&canonical) {
+        Ok(s) => s,
+        Err(e) => {
+            diagnostics.push(e);
+            return;
+        }
+    };
+
+    let root = match oak_vos::parse(&source) {
+        Ok(r) => r,
+        Err(e) => {
+            diagnostics.push(VfsError::new(
+                crate::vfs::VfsErrorKind::Io,
+                format!("parse error in {}: {e}", canonical.display()),
+            ));
+            return;
+        }
+    };
+
+    let decls = collect_decls(&root);
+    let using_paths = decls.using_paths.clone();
+    table.insert(canonical.clone(), decls);
+
+    visited.push(canonical.clone());
+    for import in using_paths {
+        let resolved = match vfs.resolve(&canonical, &import) {
+            Ok(p) => p,
+            Err(e) => {
+                diagnostics.push(e);
+                continue;
+            }
+        };
+        resolve_recursive(&resolved, vfs, table, visited, diagnostics);
+    }
+    visited.pop();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::vfs::FsVfs;
+    use std::fs;
 
     #[test]
     fn collects_namespace_style_using() {
@@ -257,5 +359,117 @@ mod tests {
         table.insert(id.clone(), decls.clone());
         assert!(table.contains(&id));
         assert_eq!(table.sources.get(&id).unwrap(), &decls);
+    }
+
+    // — Resolve pass tests (require actual filesystem) —
+
+    #[test]
+    fn resolves_single_using() {
+        let dir = tempfile_dir();
+        let main = dir.join("main.vos");
+        let shared = dir.join("shared.vos");
+        fs::write(
+            &main,
+            "using \"./shared.vos\"\n\ntable Main { @@id: uuid, }",
+        )
+        .unwrap();
+        fs::write(&shared, "table Shared { @@id: uuid, }").unwrap();
+
+        let vfs = FsVfs::new();
+        let table = resolve_using_tree(&main, &vfs).expect("no errors");
+
+        assert_eq!(table.sources.len(), 2);
+        let main_key = main.canonicalize().unwrap();
+        let shared_key = shared.canonicalize().unwrap();
+        assert!(table.sources.contains_key(&main_key));
+        assert!(table.sources.contains_key(&shared_key));
+        assert_eq!(
+            table.sources.get(&main_key).unwrap().using_paths,
+            vec!["./shared.vos".to_owned()]
+        );
+    }
+
+    #[test]
+    fn resolves_transitive_using() {
+        let dir = tempfile_dir();
+        let a = dir.join("a.vos");
+        let b = dir.join("b.vos");
+        let c = dir.join("c.vos");
+        fs::write(&a, "using \"./b.vos\"\ntable A { @@id: uuid, }").unwrap();
+        fs::write(&b, "using \"./c.vos\"\ntable B { @@id: uuid, }").unwrap();
+        fs::write(&c, "table C { @@id: uuid, }").unwrap();
+
+        let vfs = FsVfs::new();
+        let table = resolve_using_tree(&a, &vfs).expect("no errors");
+        assert_eq!(table.sources.len(), 3);
+    }
+
+    #[test]
+    fn circular_using_is_detected() {
+        let dir = tempfile_dir();
+        let a = dir.join("a.vos");
+        let b = dir.join("b.vos");
+        fs::write(&a, "using \"./b.vos\"").unwrap();
+        fs::write(&b, "using \"./a.vos\"").unwrap();
+
+        let vfs = FsVfs::new();
+        let err = resolve_using_tree(&a, &vfs).expect_err("circular must report");
+        let (_partial, diagnostics) = err;
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.kind == crate::vfs::VfsErrorKind::Circular)
+        );
+    }
+
+    #[test]
+    fn self_using_is_detected_as_circular() {
+        let dir = tempfile_dir();
+        let a = dir.join("a.vos");
+        fs::write(&a, "using \"./a.vos\"").unwrap();
+
+        let vfs = FsVfs::new();
+        let err = resolve_using_tree(&a, &vfs).expect_err("self-import must report");
+        let (_partial, diagnostics) = err;
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.kind == crate::vfs::VfsErrorKind::Circular)
+        );
+    }
+
+    #[test]
+    fn missing_import_is_reported() {
+        let dir = tempfile_dir();
+        let a = dir.join("a.vos");
+        fs::write(&a, "using \"./does-not-exist.vos\"").unwrap();
+
+        let vfs = FsVfs::new();
+        let err = resolve_using_tree(&a, &vfs).expect_err("missing import must report");
+        let (_partial, diagnostics) = err;
+        assert!(
+            diagnostics
+                .iter()
+                .any(|d| d.kind == crate::vfs::VfsErrorKind::NotFound)
+        );
+    }
+
+    fn tempfile_dir() -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "vos-resolve-tests-{}-{}",
+            std::process::id(),
+            rand_suffix()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn rand_suffix() -> String {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            .to_string()
     }
 }
