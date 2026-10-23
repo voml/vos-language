@@ -44,7 +44,9 @@ pub struct ContractEnvelope {
     pub language_version: String,
     /// Canonicalization rules version.
     pub canonicalization_version: String,
-    /// Fingerprint is absent until the durable identity gate is closed.
+    /// Optional SHA-256 fingerprint of the resolved schema (64 hex chars).
+    /// Projected envelopes leave this `None`; resolved contracts populate it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub schema_fingerprint: Option<String>,
     /// Source units represented by this artifact.
     pub source_units: Vec<SourceUnit>,
@@ -293,15 +295,15 @@ impl SchemaProjection {
                 message: "unsupported schema projection version or stage".to_owned(),
             });
         }
-        if self.envelope.schema_fingerprint.is_some()
-            || self.envelope.source_units.len() != 1
+        if self.envelope.source_units.len() != 1
             || self.envelope.source_units[0].source_unit_id != 0
         {
             return Err(ArtifactError {
                 code: "ART003".to_owned(),
-                message: "invalid V0 source unit or fingerprint state".to_owned(),
+                message: "invalid V0 source unit".to_owned(),
             });
         }
+        validate_fingerprint_if_present(&self.envelope.schema_fingerprint, "ART005")?;
         let source = &self.envelope.source_units[0].source;
         for type_contract in &self.types {
             validate_span(&type_contract.span, source, "type span")?;
@@ -343,15 +345,15 @@ impl OperationProjectionArtifact {
                 message: "unsupported operation projection version or stage".to_owned(),
             });
         }
-        if self.envelope.schema_fingerprint.is_some()
-            || self.envelope.source_units.len() != 1
+        if self.envelope.source_units.len() != 1
             || self.envelope.source_units[0].source_unit_id != 0
         {
             return Err(ArtifactError {
                 code: "OPR012".to_owned(),
-                message: "invalid operation projection source unit or fingerprint state".to_owned(),
+                message: "invalid operation projection source unit".to_owned(),
             });
         }
+        validate_fingerprint_if_present(&self.envelope.schema_fingerprint, "OPR018")?;
         let source = &self.envelope.source_units[0].source;
         for operation in &self.operations {
             validate_span(&operation.span, source, "operation span")?;
@@ -462,15 +464,15 @@ impl ServiceProjectionArtifact {
                 message: "unsupported service projection version or stage".to_owned(),
             });
         }
-        if self.envelope.schema_fingerprint.is_some()
-            || self.envelope.source_units.len() != 1
+        if self.envelope.source_units.len() != 1
             || self.envelope.source_units[0].source_unit_id != 0
         {
             return Err(ArtifactError {
                 code: "SRV012".to_owned(),
-                message: "invalid service projection source unit or fingerprint state".to_owned(),
+                message: "invalid service projection source unit".to_owned(),
             });
         }
+        validate_fingerprint_if_present(&self.envelope.schema_fingerprint, "SRV017")?;
         let source = &self.envelope.source_units[0].source;
         for service in &self.services {
             validate_span(&service.span, source, "service span")?;
@@ -532,6 +534,21 @@ fn validate_span(span: &Range<usize>, source: &str, label: &str) -> Result<(), A
             code: "ART004".to_owned(),
             message: format!("invalid {label}"),
         });
+    }
+    Ok(())
+}
+
+fn validate_fingerprint_if_present(
+    fingerprint: &Option<String>,
+    code: &str,
+) -> Result<(), ArtifactError> {
+    if let Some(value) = fingerprint {
+        if value.len() != 64 || !value.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(ArtifactError {
+                code: code.to_owned(),
+                message: "schema fingerprint must be 64 ascii-hex chars".to_owned(),
+            });
+        }
     }
     Ok(())
 }
@@ -640,9 +657,11 @@ mod operation_id_tests {
         let id = compute_operation_id("macro:public_name(utf8)->utf8");
         assert!(id.starts_with(OPERATION_ID_PREFIX));
         assert_eq!(id.len(), OPERATION_ID_PREFIX.len() + 16);
-        assert!(id[OPERATION_ID_PREFIX.len()..]
-            .chars()
-            .all(|c| c.is_ascii_hexdigit()));
+        assert!(
+            id[OPERATION_ID_PREFIX.len()..]
+                .chars()
+                .all(|c| c.is_ascii_hexdigit())
+        );
     }
 
     #[test]
@@ -668,18 +687,28 @@ mod service_id_tests {
 
     #[test]
     fn service_id_is_prefix_plus_16_hex_chars() {
-        let path = vec!["demo".to_owned(), "auth".to_owned(), "IdentityService".to_owned()];
+        let path = vec![
+            "demo".to_owned(),
+            "auth".to_owned(),
+            "IdentityService".to_owned(),
+        ];
         let id = compute_service_id(&path, "IdentityService");
         assert!(id.starts_with(SERVICE_ID_PREFIX));
         assert_eq!(id.len(), SERVICE_ID_PREFIX.len() + 16);
-        assert!(id[SERVICE_ID_PREFIX.len()..]
-            .chars()
-            .all(|c| c.is_ascii_hexdigit()));
+        assert!(
+            id[SERVICE_ID_PREFIX.len()..]
+                .chars()
+                .all(|c| c.is_ascii_hexdigit())
+        );
     }
 
     #[test]
     fn same_path_and_name_produces_same_service_id() {
-        let path = vec!["demo".to_owned(), "auth".to_owned(), "IdentityService".to_owned()];
+        let path = vec![
+            "demo".to_owned(),
+            "auth".to_owned(),
+            "IdentityService".to_owned(),
+        ];
         let a = compute_service_id(&path, "IdentityService");
         let b = compute_service_id(&path, "IdentityService");
         assert_eq!(a, b);
@@ -687,8 +716,16 @@ mod service_id_tests {
 
     #[test]
     fn different_path_or_name_produces_different_service_ids() {
-        let path_a = vec!["demo".to_owned(), "auth".to_owned(), "IdentityService".to_owned()];
-        let path_b = vec!["demo".to_owned(), "auth".to_owned(), "SessionService".to_owned()];
+        let path_a = vec![
+            "demo".to_owned(),
+            "auth".to_owned(),
+            "IdentityService".to_owned(),
+        ];
+        let path_b = vec![
+            "demo".to_owned(),
+            "auth".to_owned(),
+            "SessionService".to_owned(),
+        ];
         let a = compute_service_id(&path_a, "IdentityService");
         let b = compute_service_id(&path_b, "SessionService");
         assert_ne!(a, b);
