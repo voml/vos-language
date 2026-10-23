@@ -241,7 +241,7 @@ mod fixture_tests {
     use oak_vos::parse;
 
     fn fixtures_root() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../specifications/fixtures")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../documentation/fixtures")
     }
 
     fn source_files(dir: &Path) -> Vec<PathBuf> {
