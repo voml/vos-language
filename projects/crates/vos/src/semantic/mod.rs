@@ -15,6 +15,10 @@ pub use identity::{
 pub use projection::{
     project_operations, project_operations_artifact, project_services, project_services_artifact,
 };
+pub use resolve::{
+    DeclKind, SourceDecls, SourceId, SymbolTable, collect_decls, extract_using_path_with_literals,
+    resolve_using_tree,
+};
 pub use vos_types::*;
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.

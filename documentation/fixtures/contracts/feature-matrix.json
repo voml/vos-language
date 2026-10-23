@@ -73,11 +73,11 @@
       "id": "using.multi-file-resolution",
       "documented": true,
       "parsed": true,
-      "projected": false,
+      "projected": true,
       "resolved": false,
       "conformance": true,
       "downstream-consumed": false,
-      "note": "No multi-file symbol table or import resolution"
+      "note": "VFS + collect pass + resolve pass + cycle detection. Symbol table populated but cross-source name resolution (imports, re-exports, visibility) is not yet implemented."
     },
     {
       "id": "durable-identity.fingerprint",
