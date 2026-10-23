@@ -26,15 +26,17 @@ pub fn project_operations(
             ));
             continue;
         };
-        operations.push(OperationProjection {
-            kind,
-            name,
-            identity_key: operation_identity_key(
+        let identity_key = operation_identity_key(
                 kind,
                 declaration.name.as_deref().unwrap_or_default(),
                 &declaration.parameters,
                 declaration.return_type_expr.as_ref(),
-            ),
+            );
+        operations.push(OperationProjection {
+            kind,
+            name,
+            identity_key: identity_key.clone(),
+            operation_id: vos_types::compute_operation_id(&identity_key),
             parameters: declaration
                 .parameters
                 .iter()
