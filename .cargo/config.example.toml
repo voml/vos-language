@@ -1,0 +1,5 @@
+# Copy to `config.toml` and replace `<your-path>` with your local absolute path.
+# CI resolves the Git dependency declared in `Cargo.toml`.
+
+[patch."https://github.com/yggdrasil-language/oaks.git"]
+oak-vos = { path = "<your-path>/oaks/examples/oak-vos" }
