@@ -197,7 +197,9 @@ pub fn extract_using_path_with_literals(
     declaration: &VosDeclaration,
     literals: &[(usize, usize, String)],
 ) -> Option<String> {
-    if let Some(path) = &declaration.path && !path.is_empty() {
+    if let Some(path) = &declaration.path
+        && !path.is_empty()
+    {
         return Some(path.join("/"));
     }
 
