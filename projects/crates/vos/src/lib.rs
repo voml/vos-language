@@ -18,6 +18,8 @@ pub use vos_types as types;
 /// Oak syntax surface consumed by VOS hosts.
 pub use oak_vos as syntax;
 
+pub mod vfs;
+
 mod semantic;
 pub use semantic::*;
 
