@@ -92,7 +92,8 @@ mod tests {
     use super::{
         CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION, CanonicalType, LANGUAGE_VERSION,
         OPERATION_CONTRACT_FORMAT_VERSION, OPERATION_PROJECTION_STAGE, OperationKind,
-        OperationProjectionArtifact, PROJECTION_STAGE,
+        OperationProjectionArtifact, PROJECTION_STAGE, SERVICE_CONTRACT_FORMAT_VERSION,
+        SERVICE_PROJECTION_STAGE, ServiceProjectionArtifact,
     };
     use oak_vos::VosDeclarationKind;
 
@@ -260,6 +261,66 @@ mod tests {
         json["operations"][0]["unexpectedField"] = serde_json::Value::Bool(true);
         let error = OperationProjectionArtifact::from_json(&json.to_string()).unwrap_err();
         assert_eq!(error.code, "OPR010");
+    }
+
+    #[test]
+    fn service_projection_artifact_is_roundtrip_under_strict_validation() {
+        let artifact = parse_oak(
+            "namespace demo::auth\nservice IdentityService { create(request: CreateRequest) -> Identity }",
+        )
+        .unwrap()
+        .project_services_artifact()
+        .unwrap();
+        assert_eq!(artifact.envelope.stage, SERVICE_PROJECTION_STAGE);
+        assert_eq!(
+            artifact.envelope.contract_format_version,
+            SERVICE_CONTRACT_FORMAT_VERSION
+        );
+        let json = artifact.to_json().unwrap();
+        let roundtrip = ServiceProjectionArtifact::from_json(&json).unwrap();
+        assert_eq!(roundtrip, artifact);
+    }
+
+    #[test]
+    fn strict_reader_rejects_empty_service_name() {
+        let artifact = parse_oak(
+            "service IdentityService { create(request: CreateRequest) -> Identity }",
+        )
+        .unwrap()
+        .project_services_artifact()
+        .unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(&artifact.to_json().unwrap()).unwrap();
+        json["services"][0]["name"] = serde_json::Value::String("".to_owned());
+        let error = ServiceProjectionArtifact::from_json(&json.to_string()).unwrap_err();
+        assert_eq!(error.code, "SRV013");
+    }
+
+    #[test]
+    fn strict_reader_rejects_unknown_fields_on_service_projection() {
+        let artifact = parse_oak(
+            "service IdentityService { create(request: CreateRequest) -> Identity }",
+        )
+        .unwrap()
+        .project_services_artifact()
+        .unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(&artifact.to_json().unwrap()).unwrap();
+        json["services"][0]["unexpectedField"] = serde_json::Value::Bool(true);
+        let error = ServiceProjectionArtifact::from_json(&json.to_string()).unwrap_err();
+        assert_eq!(error.code, "SRV010");
+    }
+
+    #[test]
+    fn strict_reader_rejects_service_span_mismatch() {
+        let artifact = parse_oak(
+            "service IdentityService { create(request: CreateRequest) -> Identity }",
+        )
+        .unwrap()
+        .project_services_artifact()
+        .unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(&artifact.to_json().unwrap()).unwrap();
+        json["services"][0]["span"]["end"] = serde_json::Value::Number(9999.into());
+        let error = ServiceProjectionArtifact::from_json(&json.to_string()).unwrap_err();
+        assert_eq!(error.code, "ART004");
     }
 
     #[test]
