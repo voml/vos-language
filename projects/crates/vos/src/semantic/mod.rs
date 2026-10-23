@@ -371,6 +371,25 @@ mod tests {
             source.rfind("table User").unwrap()
         );
     }
+
+    #[test]
+    fn service_artifact_fixture_matches_reviewed_golden() {
+        let source = include_str!("../../../../../documentation/fixtures/services/basic.vos");
+        let golden =
+            include_str!("../../../../../documentation/fixtures/services/basic.contract.json");
+        let input = parse_oak(source).expect("Oak parses service fixture");
+        let artifact = input
+            .project_services_artifact()
+            .expect("VOS projects supported service fixture");
+        let actual: serde_json::Value =
+            serde_json::from_str(&artifact.to_json().unwrap()).unwrap();
+        let expected: serde_json::Value = serde_json::from_str(golden).unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(
+            ServiceProjectionArtifact::from_json(golden).unwrap(),
+            artifact
+        );
+    }
 }
 
 #[cfg(test)]

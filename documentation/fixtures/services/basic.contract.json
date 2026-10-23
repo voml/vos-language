@@ -1,0 +1,36 @@
+{
+  "envelope": {
+    "stage": "service-syntax-projection",
+    "contractFormatVersion": "vos-service-contract-v0",
+    "languageVersion": "vos-language-v0",
+    "canonicalizationVersion": "vos-canonical-v0",
+    "schemaFingerprint": null,
+    "sourceUnits": [
+      {
+        "sourceUnitId": 0,
+        "source": "namespace demo::auth\r\n\r\nservice IdentityService {\r\n  create(request: CreateRequest) -> Identity\r\n  delete(request: DeleteRequest) -> bool\r\n}\r\n"
+      }
+    ]
+  },
+  "services": [
+    {
+      "name": "IdentityService",
+      "canonicalPath": [
+        "demo",
+        "auth",
+        "IdentityService"
+      ],
+      "body": {
+        "text": "{\r\n  create(request: CreateRequest) -> Identity\r\n  delete(request: DeleteRequest) -> bool\r\n}",
+        "span": {
+          "start": 48,
+          "end": 140
+        }
+      },
+      "span": {
+        "start": 24,
+        "end": 142
+      }
+    }
+  ]
+}
