@@ -1,6 +1,6 @@
 {
     "name": "@voml/vos",
-    "version": "0.0.3",
+    "version": "0.0.6",
     "description": "VOS (Virtual Object Schema) — public TypeScript API",
     "homepage": "https://vos-language.pages.dev/",
     "repository": {
