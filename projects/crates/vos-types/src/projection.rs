@@ -412,6 +412,8 @@ pub struct ServiceProjection {
     pub name: String,
     /// Canonical namespace-qualified path.
     pub canonical_path: Vec<String>,
+    /// Opaque stable service identity derived from `canonical_path` + `name`.
+    pub service_id: String,
     /// Exact body source slice.
     pub body: Option<SyntaxSliceContract>,
     /// Full declaration span.
@@ -476,6 +478,25 @@ impl ServiceProjectionArtifact {
                 return Err(ArtifactError {
                     code: "SRV013".to_owned(),
                     message: "service name cannot be empty".to_owned(),
+                });
+            }
+            if service.service_id.is_empty()
+                || !service.service_id.starts_with(SERVICE_ID_PREFIX)
+                || service.service_id.len() != SERVICE_ID_PREFIX.len() + 16
+                || !service.service_id[SERVICE_ID_PREFIX.len()..]
+                    .chars()
+                    .all(|c| c.is_ascii_hexdigit())
+            {
+                return Err(ArtifactError {
+                    code: "SRV015".to_owned(),
+                    message: "service id is malformed".to_owned(),
+                });
+            }
+            let expected = compute_service_id(&service.canonical_path, &service.name);
+            if service.service_id != expected {
+                return Err(ArtifactError {
+                    code: "SRV016".to_owned(),
+                    message: "service id does not match canonical path and name".to_owned(),
                 });
             }
             for slice in service.body.iter() {
@@ -565,6 +586,9 @@ fn serialize_optional_span<S: serde::Serializer>(
 /// Prefix shared by every generated opaque operation identity.
 pub const OPERATION_ID_PREFIX: &str = "op_";
 
+/// Prefix shared by every generated opaque service identity.
+pub const SERVICE_ID_PREFIX: &str = "svc_";
+
 /// Generates a deterministic opaque operation identity from a canonical
 /// `identity_key`. The result is stable across source formatting, whitespace
 /// variations, and parameter-order differences that have already been
@@ -579,6 +603,27 @@ pub fn compute_operation_id(identity_key: &str) -> String {
     let digest = hasher.finalize();
     let mut hex = String::with_capacity(OPERATION_ID_PREFIX.len() + 16);
     hex.push_str(OPERATION_ID_PREFIX);
+    for byte in digest.iter().take(8) {
+        use std::fmt::Write;
+        let _ = write!(hex, "{byte:02x}");
+    }
+    hex
+}
+
+/// Generates a deterministic opaque service identity from a canonical
+/// namespace path plus a service name. The path is joined with `/` so that
+/// distinct nesting produces distinct identities.
+///
+/// The output is `svc_<sha256(path/name).first_16_hex_chars>`.
+pub fn compute_service_id(canonical_path: &[String], name: &str) -> String {
+    let path_key = canonical_path.join("/");
+    let mut hasher = Sha256::new();
+    hasher.update(path_key.as_bytes());
+    hasher.update(b"/");
+    hasher.update(name.as_bytes());
+    let digest = hasher.finalize();
+    let mut hex = String::with_capacity(SERVICE_ID_PREFIX.len() + 16);
+    hex.push_str(SERVICE_ID_PREFIX);
     for byte in digest.iter().take(8) {
         use std::fmt::Write;
         let _ = write!(hex, "{byte:02x}");
@@ -613,6 +658,41 @@ mod operation_id_tests {
         let b = compute_operation_id("query:public_name(utf8)->utf8");
         assert_ne!(a, b);
         let c = compute_operation_id("macro:public_name(uuid)->utf8");
+        assert_ne!(a, c);
+    }
+}
+
+#[cfg(test)]
+mod service_id_tests {
+    use super::*;
+
+    #[test]
+    fn service_id_is_prefix_plus_16_hex_chars() {
+        let path = vec!["demo".to_owned(), "auth".to_owned(), "IdentityService".to_owned()];
+        let id = compute_service_id(&path, "IdentityService");
+        assert!(id.starts_with(SERVICE_ID_PREFIX));
+        assert_eq!(id.len(), SERVICE_ID_PREFIX.len() + 16);
+        assert!(id[SERVICE_ID_PREFIX.len()..]
+            .chars()
+            .all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn same_path_and_name_produces_same_service_id() {
+        let path = vec!["demo".to_owned(), "auth".to_owned(), "IdentityService".to_owned()];
+        let a = compute_service_id(&path, "IdentityService");
+        let b = compute_service_id(&path, "IdentityService");
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn different_path_or_name_produces_different_service_ids() {
+        let path_a = vec!["demo".to_owned(), "auth".to_owned(), "IdentityService".to_owned()];
+        let path_b = vec!["demo".to_owned(), "auth".to_owned(), "SessionService".to_owned()];
+        let a = compute_service_id(&path_a, "IdentityService");
+        let b = compute_service_id(&path_b, "SessionService");
+        assert_ne!(a, b);
+        let c = compute_service_id(&path_a, "SessionService");
         assert_ne!(a, c);
     }
 }
