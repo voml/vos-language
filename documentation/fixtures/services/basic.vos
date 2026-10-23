@@ -1,0 +1,6 @@
+namespace demo::auth
+
+service IdentityService {
+  create(request: CreateRequest) -> Identity
+  delete(request: DeleteRequest) -> bool
+}
