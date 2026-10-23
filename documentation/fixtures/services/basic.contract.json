@@ -20,6 +20,7 @@
         "auth",
         "IdentityService"
       ],
+      "serviceId": "svc_3c7addc7a558968f",
       "body": {
         "text": "{\r\n  create(request: CreateRequest) -> Identity\r\n  delete(request: DeleteRequest) -> bool\r\n}",
         "span": {

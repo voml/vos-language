@@ -158,7 +158,8 @@ pub fn project_services(
                 }
                 services.push(ServiceProjection {
                     name: declaration.name.clone().unwrap_or_default(),
-                    canonical_path,
+                    canonical_path: canonical_path.clone(),
+                    service_id: vos_types::compute_service_id(&canonical_path, declaration.name.as_deref().unwrap_or_default()),
                     body: declaration.body.as_ref().map(slice_contract),
                     span: declaration.span,
                 });
