@@ -11,7 +11,7 @@ pub use identity::{
     bind_identity, compare_identity, evolve_identity, resolve_contract,
     resolve_contract_from_bound, resolve_contract_from_units,
 };
-pub use projection::{project_operations, project_operations_artifact};
+pub use projection::{project_operations, project_operations_artifact, project_services, project_services_artifact};
 pub use vos_types::*;
 
 /// Parses VOS source through Oak and wraps the resulting root for semantic use.
@@ -71,6 +71,18 @@ impl ContractInput {
         &self,
     ) -> Result<OperationProjectionArtifact, Vec<ContractDiagnostic>> {
         projection::project_operations_artifact(&self.root)
+    }
+
+    /// Projects Oak service declarations without lowering their bodies.
+    pub fn project_services(&self) -> Result<Vec<ServiceProjection>, Vec<ContractDiagnostic>> {
+        projection::project_services(&self.root)
+    }
+
+    /// Projects Oak service declarations into a versioned syntax artifact.
+    pub fn project_services_artifact(
+        &self,
+    ) -> Result<ServiceProjectionArtifact, Vec<ContractDiagnostic>> {
+        projection::project_services_artifact(&self.root)
     }
 }
 
@@ -168,6 +180,8 @@ mod tests {
         assert_eq!(operations[0].name, "public_name");
         assert_eq!(operations[0].parameters[0].name, "value");
         assert_eq!(operations[0].identity_key, "macro:public_name(utf8)->utf8");
+        assert!(operations[0].operation_id.starts_with("op_"));
+        assert_eq!(operations[0].operation_id.len(), 19);
     }
 
     #[test]
@@ -181,6 +195,71 @@ mod tests {
             .project_operations()
             .unwrap();
         assert_eq!(first[0].identity_key, second[0].identity_key);
+        assert_eq!(first[0].operation_id, second[0].operation_id);
+        assert!(first[0].operation_id.starts_with("op_"));
+    }
+
+    #[test]
+    fn different_operations_get_different_operation_ids() {
+        let source = "macro public_name(value: utf8) -> utf8 { value.trim() }\n\
+                      macro private_name(value: utf8) -> utf8 { value.trim() }\n\
+                      query active(status: utf8) -> [User] { User }";
+        let operations = parse_oak(source).unwrap().project_operations().unwrap();
+        assert_eq!(operations.len(), 3);
+        let ids: Vec<&str> = operations.iter().map(|op| op.operation_id.as_str()).collect();
+        assert_eq!(ids.len(), 3);
+        assert_ne!(ids[0], ids[1]);
+        assert_ne!(ids[0], ids[2]);
+        assert_ne!(ids[1], ids[2]);
+    }
+
+    #[test]
+    fn operation_projection_artifact_is_roundtrip_under_strict_validation() {
+        let artifact = parse_oak(
+            "query active(status: utf8) -> [User] { User.filter(x => x.active) }",
+        )
+        .unwrap()
+        .project_operations_artifact()
+        .unwrap();
+        let json = artifact.to_json().unwrap();
+        let roundtrip = OperationProjectionArtifact::from_json(&json).unwrap();
+        assert_eq!(roundtrip, artifact);
+    }
+
+    #[test]
+    fn strict_reader_rejects_empty_or_mismatched_operation_id() {
+        let artifact = parse_oak(
+            "query active(status: utf8) -> [User] { User.filter(x => x.active) }",
+        )
+        .unwrap()
+        .project_operations_artifact()
+        .unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(&artifact.to_json().unwrap()).unwrap();
+
+        json["operations"][0]["operationId"] = serde_json::Value::String("".to_owned());
+        let error = OperationProjectionArtifact::from_json(&json.to_string()).unwrap_err();
+        assert_eq!(error.code, "OPR016");
+
+        json["operations"][0]["operationId"] =
+            serde_json::Value::String("op_deadbeefdeadbeef".to_owned());
+        json["operations"][0]["identityKey"] =
+            serde_json::Value::String("query:other(i64)->[User]".to_owned());
+        let error = OperationProjectionArtifact::from_json(&json.to_string()).unwrap_err();
+        assert_eq!(error.code, "OPR017");
+    }
+
+    #[test]
+    fn strict_reader_rejects_unknown_fields_on_operation_projection() {
+        let artifact = parse_oak(
+            "query active(status: utf8) -> [User] { User.filter(x => x.active) }",
+        )
+        .unwrap()
+        .project_operations_artifact()
+        .unwrap();
+        let mut json: serde_json::Value = serde_json::from_str(&artifact.to_json().unwrap()).unwrap();
+        json["operations"][0]["unexpectedField"] = serde_json::Value::Bool(true);
+        let error = OperationProjectionArtifact::from_json(&json.to_string()).unwrap_err();
+        assert_eq!(error.code, "OPR010");
     }
 
     #[test]
@@ -265,7 +344,7 @@ mod fixture_tests {
     fn oak_accepts_schema_and_operation_fixtures() {
         let root = fixtures_root();
         let mut count = 0usize;
-        for category in ["schema", "operations"] {
+        for category in ["schema", "operations", "services"] {
             for path in source_files(&root.join(category)) {
                 let source = fs::read_to_string(&path).expect("fixture source");
                 parse(&source)
