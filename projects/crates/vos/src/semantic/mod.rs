@@ -1,6 +1,6 @@
 //! Oak adapters and VOS semantic processing.
 
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 

@@ -6,7 +6,7 @@
 //! source on each render. See `docs/generator.md`.
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 use dejavu::{Dejavu, IrDocument};
 use once_cell::sync::OnceCell;

@@ -331,61 +331,91 @@ fn validate_resolved_type(
 /// A deterministic identity evolution event between two bound snapshots.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase", tag = "kind")]
-#[allow(missing_docs)]
 pub enum IdentityChange {
     /// A type was added with a new durable identity.
     TypeAdded {
+        /// Durable type identity.
         type_id: u64,
+        /// Canonical path of the new type.
         canonical_path: Vec<String>,
     },
     /// A type disappeared and must remain a tombstone in durable history.
     TypeRemoved {
+        /// Durable type identity of the removed type.
         type_id: u64,
+        /// Last canonical path associated with the identity.
         canonical_path: Vec<String>,
     },
     /// A type kept its identity while its canonical path changed.
     TypeRenamed {
+        /// Durable type identity.
         type_id: u64,
+        /// Previous canonical path.
         from: Vec<String>,
+        /// New canonical path.
         to: Vec<String>,
     },
     /// A type kept its identity while its declaration kind changed.
     TypeKindChanged {
+        /// Durable type identity.
         type_id: u64,
+        /// Previous declaration kind.
         from: TypeContractKind,
+        /// New declaration kind.
         to: TypeContractKind,
     },
     /// A field was added with a new durable identity.
     FieldAdded {
+        /// Durable type identity that owns the new field.
         type_id: u64,
+        /// Durable field identity.
         field_id: u64,
+        /// Canonical field name.
         canonical_name: String,
+        /// Durable virtual slot when the field is stored.
         virtual_field_index: Option<u32>,
     },
     /// A field disappeared and must remain a tombstone in durable history.
     FieldRemoved {
+        /// Durable type identity that owned the field.
         type_id: u64,
+        /// Durable field identity of the removed field.
         field_id: u64,
+        /// Last canonical name associated with the identity.
         canonical_name: String,
+        /// Last durable virtual slot, absent when storage never covered it.
         virtual_field_index: Option<u32>,
     },
     /// A field kept its identity while its canonical name changed.
     FieldRenamed {
+        /// Durable type identity.
         type_id: u64,
+        /// Durable field identity.
         field_id: u64,
+        /// Previous canonical name.
         from: String,
+        /// New canonical name.
         to: String,
     },
     /// A field kept its identity while its durable virtual slot changed, when it
     /// gained one or when it lost one.
     FieldReordered {
+        /// Durable type identity.
         type_id: u64,
+        /// Durable field identity.
         field_id: u64,
+        /// Previous virtual slot, absent when storage did not cover the field.
         from: Option<u32>,
+        /// New virtual slot, absent when storage no longer covers the field.
         to: Option<u32>,
     },
     /// A field identity kept its name but changed semantic content.
-    FieldChanged { type_id: u64, field_id: u64 },
+    FieldChanged {
+        /// Durable type identity.
+        type_id: u64,
+        /// Durable field identity.
+        field_id: u64,
+    },
 }
 
 /// The explicit, non-allocating evolution result for two identity snapshots.

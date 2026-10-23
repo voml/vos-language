@@ -1,6 +1,6 @@
 //! Foundational VOS semantic models and strict artifact encoding.
 
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 mod identity;
 mod projection;
