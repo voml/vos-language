@@ -367,6 +367,25 @@ impl OperationProjectionArtifact {
                     message: "operation identity key cannot be empty".to_owned(),
                 });
             }
+            if operation.operation_id.is_empty()
+                || !operation.operation_id.starts_with(OPERATION_ID_PREFIX)
+                || operation.operation_id.len() != OPERATION_ID_PREFIX.len() + 16
+                || !operation.operation_id[OPERATION_ID_PREFIX.len()..]
+                    .chars()
+                    .all(|c| c.is_ascii_hexdigit())
+            {
+                return Err(ArtifactError {
+                    code: "OPR016".to_owned(),
+                    message: "operation id is malformed".to_owned(),
+                });
+            }
+            let expected = compute_operation_id(&operation.identity_key);
+            if operation.operation_id != expected {
+                return Err(ArtifactError {
+                    code: "OPR017".to_owned(),
+                    message: "operation id does not match identity key".to_owned(),
+                });
+            }
             for parameter in &operation.parameters {
                 validate_span(&parameter.span, source, "operation parameter span")?;
             }

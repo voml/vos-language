@@ -122,6 +122,77 @@ pub fn project_operations_artifact(
     })
 }
 
+/// Projects Oak service declarations without lowering their bodies.
+pub fn project_services(
+    root: &VosRoot,
+) -> Result<Vec<ServiceProjection>, Vec<ContractDiagnostic>> {
+    let mut namespace = Vec::new();
+    let mut services = Vec::new();
+    let mut diagnostics = Vec::new();
+    for declaration in &root.declarations {
+        match declaration.kind {
+            VosDeclarationKind::Namespace => {
+                namespace = declaration.path.clone().unwrap_or_default()
+            }
+            VosDeclarationKind::Service => {
+                let Some(name) = declaration.name.clone() else {
+                    diagnostics.push(diagnostic(
+                        "SRV001",
+                        "service declaration is missing a name",
+                        Some(declaration.span),
+                    ));
+                    continue;
+                };
+                let mut canonical_path = namespace.clone();
+                canonical_path.push(name);
+                if services
+                    .iter()
+                    .any(|item: &ServiceProjection| item.canonical_path == canonical_path)
+                {
+                    diagnostics.push(diagnostic(
+                        "SRV002",
+                        "duplicate service declaration",
+                        Some(declaration.span),
+                    ));
+                    continue;
+                }
+                services.push(ServiceProjection {
+                    name: declaration.name.clone().unwrap_or_default(),
+                    canonical_path,
+                    body: declaration.body.as_ref().map(slice_contract),
+                    span: declaration.span,
+                });
+            }
+            _ => continue,
+        }
+    }
+    if diagnostics.is_empty() {
+        Ok(services)
+    } else {
+        Err(diagnostics)
+    }
+}
+
+/// Projects Oak service declarations into a strict versioned artifact.
+pub fn project_services_artifact(
+    root: &VosRoot,
+) -> Result<ServiceProjectionArtifact, Vec<ContractDiagnostic>> {
+    Ok(ServiceProjectionArtifact {
+        envelope: ContractEnvelope {
+            stage: SERVICE_PROJECTION_STAGE.to_owned(),
+            contract_format_version: SERVICE_CONTRACT_FORMAT_VERSION.to_owned(),
+            language_version: LANGUAGE_VERSION.to_owned(),
+            canonicalization_version: CANONICALIZATION_VERSION.to_owned(),
+            schema_fingerprint: None,
+            source_units: vec![SourceUnit {
+                source_unit_id: 0,
+                source: root.source.clone(),
+            }],
+        },
+        services: project_services(root)?,
+    })
+}
+
 fn slice_contract(slice: &oak_vos::VosSyntaxSlice) -> SyntaxSliceContract {
     SyntaxSliceContract {
         text: slice.text.clone(),
@@ -190,6 +261,13 @@ pub fn project_schema(root: &VosRoot) -> Result<SchemaProjection, Vec<ContractDi
                     Err(error) => diagnostics.push(error),
                 }
             }
+            // Service and operation-like declarations have their own projection
+            // functions and are intentionally skipped here.
+            VosDeclarationKind::Service
+            | VosDeclarationKind::Query
+            | VosDeclarationKind::Udf
+            | VosDeclarationKind::Micro
+            | VosDeclarationKind::Macro => continue,
             _ => diagnostics.push(diagnostic(
                 "VOS004",
                 "declaration is not supported by this contract projection",
