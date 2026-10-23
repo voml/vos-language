@@ -19,6 +19,8 @@ import {
     withName,
 } from "./descriptor.js";
 import type { ReferenceKey } from "./values.js";
+import type { SafeParseResult } from "./validate.js";
+import { parseItem as itemParse, safeParseItem as itemSafeParse } from "./validate.js";
 
 /** Field literal accepted by `v.table`, `v.class` and `v.object`. */
 export type FieldMap = Record<string, AnyTypeDescriptor>;
@@ -41,6 +43,10 @@ export interface NamedItemDescriptor<Kind extends NamedItemKind, N extends strin
     readonly name: N;
     readonly fields: NamedFieldMap<F>;
     readonly [PHANTOM]: RowOf<F>;
+    /** Validate a row against this item descriptor; throws VosValidationError on failure. */
+    parse(row: unknown): RowOf<F>;
+    /** Validate a row against this item descriptor without throwing. */
+    safeParse(row: unknown): SafeParseResult<RowOf<F>>;
 }
 
 /** Anonymous structural object descriptor, used for parameters and projections. */
@@ -48,6 +54,10 @@ export interface StructuralDescriptor<F extends FieldMap> {
     readonly kind: "object";
     readonly fields: NamedFieldMap<F>;
     readonly [PHANTOM]: RowOf<F>;
+    /** Validate a row against this item descriptor; throws VosValidationError on failure. */
+    parse(row: unknown): RowOf<F>;
+    /** Validate a row against this item descriptor without throwing. */
+    safeParse(row: unknown): SafeParseResult<RowOf<F>>;
 }
 
 /** Declaration metadata properties. A field with the same name stays reachable through `fields`. */
@@ -108,6 +118,24 @@ function makeItem(kind: ItemKind, name: string | undefined, fields: FieldMap): u
     }
 
     const descriptor: Record<string, unknown> = name === undefined ? { kind, fields: namedFields } : { name, kind, fields: namedFields };
+
+    // Bind parse/safeParse to this item descriptor (table/class/object).
+    Object.defineProperty(descriptor, "parse", {
+        value: function (this: Record<string, unknown>, row: unknown) {
+            return itemParse(this as never, row);
+        },
+        enumerable: false,
+        writable: false,
+        configurable: true,
+    });
+    Object.defineProperty(descriptor, "safeParse", {
+        value: function (this: Record<string, unknown>, row: unknown) {
+            return itemSafeParse(this as never, row);
+        },
+        enumerable: false,
+        writable: false,
+        configurable: true,
+    });
 
     for (const fieldName of fieldNames) {
         if (ITEM_METADATA_KEYS.includes(fieldName)) {

@@ -40,4 +40,15 @@ export {
     type StructuralDescriptor,
     type TableDescriptor,
 } from "./items.js";
+export {
+    parse,
+    parseItem,
+    safeParse,
+    safeParseItem,
+    VosValidationError,
+} from "./validate.js";
+export type {
+    SafeParseResult,
+    ValidationIssue,
+} from "./validate.js";
 export type { ReferenceKey, VosFileRef } from "./values.js";
