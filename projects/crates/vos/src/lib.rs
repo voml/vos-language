@@ -9,7 +9,7 @@
 //! resolved contract APIs below. This crate never owns a parser, an AST, a CST
 //! or a lexical layer of its own.
 
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 pub use vos_format as format;
 pub use vos_generator as generator;

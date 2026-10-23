@@ -15,7 +15,7 @@
 //!   `query`, `udf`) are passed through verbatim, so canonical mode never loses
 //!   source it does not understand.
 
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 mod canonical;
 mod preserve;

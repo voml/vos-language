@@ -8,7 +8,7 @@
 //! Syntax ownership stays with `oak-vos`; this crate only forwards the `vos`
 //! facade result and never owns a parser, a CST or an AST of its own.
 
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 use wasm_bindgen::prelude::*;
 
