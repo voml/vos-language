@@ -82,12 +82,12 @@
     {
       "id": "durable-identity.fingerprint",
       "documented": true,
-      "parsed": false,
-      "projected": false,
+      "parsed": true,
+      "projected": true,
       "resolved": "partial",
       "conformance": true,
       "downstream-consumed": false,
-      "note": "Identity-bound canonical SHA-256 has a fixture gate, but the V0 projection envelope and evolution history do not consume it yet"
+      "note": "SHA-256 operation_id 已在 OperationProjection 生成；source-unit fingerprint 字段待后续加入 ContractEnvelope"
     },
     {
       "id": "operation-service.contract",
