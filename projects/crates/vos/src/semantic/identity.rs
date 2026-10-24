@@ -385,7 +385,7 @@ fn resolved_contract(
     }
 }
 
-fn resolve_type(
+pub(crate) fn resolve_type(
     ty: &CanonicalType,
     namespace: &[String],
     type_ids: &BTreeMap<Vec<String>, u64>,

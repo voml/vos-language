@@ -254,13 +254,23 @@ impl core::fmt::Display for MethodId {
 }
 
 fn derive_identity<T: Serialize>(prefix: &str, key: &T) -> String {
-    let wire = serde_json::to_vec(key).expect("contract identity keys serialize");
     let mut identity = String::with_capacity(prefix.len() + ID_HEX_LEN);
     identity.push_str(prefix);
-    for byte in Sha256::digest(wire) {
-        identity.push_str(&format!("{byte:02x}"));
-    }
+    identity.push_str(&canonical_digest(key));
     identity
+}
+
+/// Canonical SHA-256 digest of a serialized contract model.
+///
+/// Callers are responsible for sorting collections and removing provenance
+/// before serializing, so the digest depends only on semantics.
+pub(crate) fn canonical_digest<T: Serialize>(value: &T) -> String {
+    let wire = serde_json::to_vec(value).expect("canonical contract models serialize");
+    let mut digest = String::with_capacity(ID_HEX_LEN);
+    for byte in Sha256::digest(wire) {
+        digest.push_str(&format!("{byte:02x}"));
+    }
+    digest
 }
 
 fn validate_identity(

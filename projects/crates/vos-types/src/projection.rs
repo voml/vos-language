@@ -560,7 +560,7 @@ fn validate_fingerprint_if_present(
     Ok(())
 }
 
-fn deserialize_span<'de, D: serde::Deserializer<'de>>(
+pub(crate) fn deserialize_span<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Range<usize>, D::Error> {
     let span = SpanWire::deserialize(deserializer)?;
@@ -568,6 +568,13 @@ fn deserialize_span<'de, D: serde::Deserializer<'de>>(
         return Err(serde::de::Error::custom("span start is after span end"));
     }
     Ok((span.start..span.end).into())
+}
+
+pub(crate) fn serialize_span<S: serde::Serializer>(
+    span: &Range<usize>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    (span.start..span.end).serialize(serializer)
 }
 
 fn deserialize_optional_span<'de, D: serde::Deserializer<'de>>(
@@ -589,13 +596,6 @@ fn deserialize_optional_span<'de, D: serde::Deserializer<'de>>(
 struct SpanWire {
     start: usize,
     end: usize,
-}
-
-fn serialize_span<S: serde::Serializer>(
-    span: &Range<usize>,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    (span.start..span.end).serialize(serializer)
 }
 
 fn serialize_optional_span<S: serde::Serializer>(
