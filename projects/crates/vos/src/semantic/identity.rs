@@ -330,21 +330,21 @@ pub fn resolve_contract_from_units(
             let fields = item
                 .fields
                 .iter()
-                .map(|field| {
+                .filter_map(|field| {
                     let canonical_type = resolve_type(
                         &field.canonical_type,
                         &item.canonical_path[..item.canonical_path.len().saturating_sub(1)],
                         &type_ids,
                         &mut diagnostics,
-                    );
-                    ResolvedFieldContract {
+                    )?;
+                    Some(ResolvedFieldContract {
                         field_id: field.field_id,
                         virtual_field_index: field.virtual_field_index,
                         canonical_name: field.canonical_name.clone(),
                         canonical_type,
                         attributes: field.attributes.clone(),
                         default_value: field.default_value.clone(),
-                    }
+                    })
                 })
                 .collect();
             ResolvedTypeContract {
@@ -390,7 +390,7 @@ fn resolve_type(
     namespace: &[String],
     type_ids: &BTreeMap<Vec<String>, u64>,
     diagnostics: &mut Vec<ContractDiagnostic>,
-) -> ResolvedCanonicalType {
+) -> Option<ResolvedCanonicalType> {
     match ty {
         CanonicalType::Named(path) => {
             let mut candidates = Vec::new();
@@ -413,98 +413,62 @@ fn resolve_type(
                     "RES002",
                     &format!("ambiguous type {}", path.join("::")),
                 ));
-                return ResolvedCanonicalType::Builtin(path.clone());
+                return None;
             }
             if let Some((canonical_path, type_id)) = candidates.first() {
-                ResolvedCanonicalType::User {
+                Some(ResolvedCanonicalType::User {
                     path: canonical_path.clone(),
                     type_id: *type_id,
-                }
-            } else if path.len() == 1 && is_builtin(path[0].as_str()) {
-                ResolvedCanonicalType::Builtin(canonical_builtin_path(path))
+                })
+            } else if path.len() == 1
+                && let Some(scalar) = CanonicalScalar::from_source_name(path[0].as_str())
+            {
+                Some(ResolvedCanonicalType::Scalar(scalar))
             } else {
                 diagnostics.push(diagnostic(
                     "RES001",
                     &format!("unknown type {}", path.join("::")),
                 ));
-                ResolvedCanonicalType::Builtin(path.clone())
+                None
             }
         }
-        CanonicalType::Reference(inner) => ResolvedCanonicalType::Reference(Box::new(
-            resolve_type(inner, namespace, type_ids, diagnostics),
-        )),
-        CanonicalType::Optional(inner) => ResolvedCanonicalType::Optional(Box::new(resolve_type(
+        CanonicalType::Reference(inner) => Some(ResolvedCanonicalType::Reference(Box::new(
+            resolve_type(inner, namespace, type_ids, diagnostics)?,
+        ))),
+        CanonicalType::Optional(inner) => Some(ResolvedCanonicalType::Optional(Box::new(
+            resolve_type(inner, namespace, type_ids, diagnostics)?,
+        ))),
+        CanonicalType::List(inner) => Some(ResolvedCanonicalType::List(Box::new(resolve_type(
             inner,
             namespace,
             type_ids,
             diagnostics,
-        ))),
-        CanonicalType::List(inner) => ResolvedCanonicalType::List(Box::new(resolve_type(
-            inner,
-            namespace,
-            type_ids,
-            diagnostics,
-        ))),
+        )?))),
         CanonicalType::Generic { path, arguments } => {
             if path == &["DateTime".to_owned()]
                 && arguments.len() == 1
                 && matches!(&arguments[0], CanonicalTypeArgument::Type(CanonicalType::Named(inner)) if inner == &["UTC".to_owned()])
             {
-                ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()])
+                Some(ResolvedCanonicalType::Scalar(CanonicalScalar::DateTime))
             } else {
-                ResolvedCanonicalType::Generic {
+                Some(ResolvedCanonicalType::Generic {
                     path: path.clone(),
                     arguments: arguments
                         .iter()
                         .map(|argument| match argument {
-                            CanonicalTypeArgument::Type(ty) => ResolvedCanonicalTypeArgument::Type(
-                                resolve_type(ty, namespace, type_ids, diagnostics),
-                            ),
+                            CanonicalTypeArgument::Type(ty) => {
+                                resolve_type(ty, namespace, type_ids, diagnostics)
+                                    .map(ResolvedCanonicalTypeArgument::Type)
+                            }
                             CanonicalTypeArgument::Literal(value) => {
-                                ResolvedCanonicalTypeArgument::Literal(value.clone())
+                                Some(ResolvedCanonicalTypeArgument::Literal(value.clone()))
                             }
                         })
-                        .collect(),
-                }
+                        .collect::<Option<Vec<_>>>()?,
+                })
             }
         }
     }
-}
-
-fn is_builtin(name: &str) -> bool {
-    matches!(
-        name,
-        "i8" | "i16"
-            | "i32"
-            | "i64"
-            | "u8"
-            | "u16"
-            | "u32"
-            | "u64"
-            | "f32"
-            | "f64"
-            | "bool"
-            | "utf8"
-            | "utf16"
-            | "uuid"
-            | "decimal"
-            | "d128"
-            | "date"
-            | "time"
-            | "datetime"
-            | "bytes"
-    )
-}
-
-fn canonical_builtin_path(path: &[String]) -> Vec<String> {
-    if path.len() == 1 {
-        let name = match path[0].as_str() {
-            "d128" => "decimal",
-            other => other,
-        };
-        return vec![name.to_owned()];
-    }
-    path.to_vec()
 }
 
 /// Applies an explicitly bound snapshot to durable identity history.

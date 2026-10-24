@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::{ArtifactError, AttributeContract, CanonicalType, TypeContractKind};
+use crate::{ArtifactError, AttributeContract, CanonicalScalar, CanonicalType, TypeContractKind};
 
 /// Version of the explicit durable identity manifest.
 pub const IDENTITY_MANIFEST_VERSION: &str = "vos-identity-manifest-v0";
@@ -117,8 +117,8 @@ pub struct BoundFieldContract {
     deny_unknown_fields
 )]
 pub enum ResolvedCanonicalType {
-    /// Builtin scalar or standard VOS type name.
-    Builtin(Vec<String>),
+    /// Canonical scalar shared with the storage layer.
+    Scalar(CanonicalScalar),
     /// User-defined type with its durable identity.
     User {
         /// Canonical type path.
@@ -316,14 +316,7 @@ fn validate_resolved_type(
                 }
             }
         }
-        ResolvedCanonicalType::Builtin(path) => {
-            if path.len() != 1 || !is_canonical_builtin(path[0].as_str()) {
-                return Err(ArtifactError {
-                    code: "RES016".to_owned(),
-                    message: "resolved builtin type path is invalid".to_owned(),
-                });
-            }
-        }
+        ResolvedCanonicalType::Scalar(_) => {}
     }
     Ok(())
 }
@@ -621,30 +614,6 @@ pub fn resolved_schema_fingerprint(types: &[ResolvedTypeContract]) -> String {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect()
-}
-
-fn is_canonical_builtin(name: &str) -> bool {
-    matches!(
-        name,
-        "i8" | "i16"
-            | "i32"
-            | "i64"
-            | "u8"
-            | "u16"
-            | "u32"
-            | "u64"
-            | "f32"
-            | "f64"
-            | "bool"
-            | "utf8"
-            | "utf16"
-            | "uuid"
-            | "decimal"
-            | "date"
-            | "time"
-            | "datetime"
-            | "bytes"
-    )
 }
 
 #[derive(Serialize)]

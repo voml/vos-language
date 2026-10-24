@@ -1,10 +1,11 @@
 use serde_json::{Value, json};
 use vos::{
-    ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityBoundProjection,
-    IdentityChange, IdentityHistory, IdentityManifest, ResolvedCanonicalType, ResolvedContract,
-    SchemaProjection, TypeContractKind, TypeIdentity, bind_identity, compare_identity,
-    evolve_identity, parse_oak, resolve_contract, resolve_contract_from_bound,
-    resolve_contract_from_units, resolved_schema_fingerprint, schema_fingerprint,
+    CanonicalScalar, ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION,
+    IdentityBoundProjection, IdentityChange, IdentityHistory, IdentityManifest,
+    ResolvedCanonicalType, ResolvedContract, SchemaProjection, TypeContractKind, TypeIdentity,
+    bind_identity, compare_identity, evolve_identity, parse_oak, resolve_contract,
+    resolve_contract_from_bound, resolve_contract_from_units, resolved_schema_fingerprint,
+    schema_fingerprint,
 };
 
 #[test]
@@ -857,7 +858,7 @@ fn identity_type_resolution_binds_user_types_and_keeps_builtins() {
     ));
     assert_eq!(
         resolved.types[1].fields[1].canonical_type,
-        ResolvedCanonicalType::Builtin(vec!["uuid".to_owned()])
+        ResolvedCanonicalType::Scalar(CanonicalScalar::Uuid)
     );
 }
 
@@ -1086,15 +1087,15 @@ fn resolved_contract_is_a_strict_versioned_artifact() {
             .code,
         "RES016"
     );
-    let mut invalid_builtin: Value = serde_json::from_str(&json).unwrap();
-    invalid_builtin["types"][0]["fields"][0]["canonicalType"] = json!({
-        "builtin": ["not-a-type"]
+    let mut invalid_scalar: Value = serde_json::from_str(&json).unwrap();
+    invalid_scalar["types"][0]["fields"][0]["canonicalType"] = json!({
+        "scalar": "not-a-type"
     });
     assert_eq!(
-        ResolvedContract::from_json(&invalid_builtin.to_string())
+        ResolvedContract::from_json(&invalid_scalar.to_string())
             .unwrap_err()
             .code,
-        "RES016"
+        "RES010"
     );
     let mut unknown: Value = serde_json::from_str(&json).unwrap();
     unknown["unexpected"] = json!(true);
@@ -1228,15 +1229,15 @@ fn builtin_aliases_resolve_to_one_canonical_spelling() {
     let resolved = resolve_contract_from_bound(&bound).unwrap();
     assert_eq!(
         resolved.types[0].fields[0].canonical_type,
-        ResolvedCanonicalType::Builtin(vec!["decimal".to_owned()])
+        ResolvedCanonicalType::Scalar(CanonicalScalar::Decimal)
     );
     assert_eq!(
         resolved.types[0].fields[1].canonical_type,
-        ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()])
+        ResolvedCanonicalType::Scalar(CanonicalScalar::DateTime)
     );
     assert_eq!(
         resolved.types[0].fields[2].canonical_type,
-        ResolvedCanonicalType::Builtin(vec!["datetime".to_owned()])
+        ResolvedCanonicalType::Scalar(CanonicalScalar::DateTime)
     );
 }
 

@@ -1,7 +1,7 @@
 {
   "formatVersion": "vos-resolved-contract-v1",
   "identityManifestVersion": "vos-identity-manifest-v0",
-  "schemaFingerprint": "8522ec25e34e757433c8b48aa47e92c1a9a13533b90e9d8e67714a1947a655e1",
+  "schemaFingerprint": "d73fdb40c7503a045d19e9f6476cb3b835700f455b229a46c70b7de1b04901f9",
   "types": [
     {
       "typeId": 1,
@@ -12,7 +12,7 @@
           "fieldId": 2,
           "virtualFieldIndex": 0,
           "canonicalName": "id",
-          "canonicalType": {"builtin": ["uuid"]},
+          "canonicalType": {"scalar": "uuid"},
           "attributes": [],
           "defaultValue": null
         }
