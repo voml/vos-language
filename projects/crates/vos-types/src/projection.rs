@@ -188,6 +188,8 @@ pub struct OperationProjection {
     pub kind: OperationKind,
     /// Operation name.
     pub name: String,
+    /// Canonical namespace-qualified path, ending with the operation name.
+    pub canonical_path: Vec<String>,
     /// Canonical signature identity key used as input to durable identity
     /// assignment. This is not itself a durable operation ID.
     pub identity: OperationIdentityKey,
@@ -370,6 +372,7 @@ impl OperationProjectionArtifact {
                 });
             }
             if operation.identity.name != operation.name
+                || operation.identity.canonical_path != operation.canonical_path
                 || operation.identity.kind != operation.kind
             {
                 return Err(ArtifactError {

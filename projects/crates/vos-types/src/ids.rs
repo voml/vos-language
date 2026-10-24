@@ -25,6 +25,10 @@ pub const ID_HEX_LEN: usize = 64;
 pub struct OperationIdentityKey {
     /// Identity derivation version.
     pub identity_version: String,
+    /// Canonical namespace-qualified path. The last segment is the operation
+    /// name, so two identically named operations in different namespaces keep
+    /// distinct identities.
+    pub canonical_path: Vec<String>,
     /// Declaration kind.
     pub kind: OperationKind,
     /// Canonical operation name.
@@ -38,15 +42,22 @@ pub struct OperationIdentityKey {
 impl OperationIdentityKey {
     /// Builds a validated identity key.
     ///
-    /// Empty names, empty type keys and duplicate parameter names are rejected
-    /// instead of being canonicalized silently.
+    /// Empty names, empty namespace segments, empty type keys and duplicate
+    /// parameter names are rejected instead of being canonicalized silently.
     pub fn new(
+        namespace: &[String],
         kind: OperationKind,
         name: &str,
         parameters: Vec<OperationParameterKey>,
         result: &str,
     ) -> Result<Self, ArtifactError> {
         validate_name(name, "ID033", "operation name")?;
+        if namespace.iter().any(|segment| segment.trim().is_empty()) {
+            return Err(ArtifactError {
+                code: "ID038".to_owned(),
+                message: "operation namespace segments must not be empty".to_owned(),
+            });
+        }
         validate_key_text(result, "operation result type")?;
         let mut names = std::collections::BTreeSet::new();
         for parameter in &parameters {
@@ -57,8 +68,11 @@ impl OperationIdentityKey {
                 });
             }
         }
+        let mut canonical_path = namespace.to_vec();
+        canonical_path.push(name.to_owned());
         Ok(Self {
             identity_version: CONTRACT_IDENTITY_VERSION.to_owned(),
+            canonical_path,
             kind,
             name: name.to_owned(),
             parameters,

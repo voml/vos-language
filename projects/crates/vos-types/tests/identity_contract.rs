@@ -11,7 +11,7 @@ fn operation_key(name: &str, parameters: &[(&str, &str)], result: &str) -> Opera
             OperationParameterKey::new(parameter, type_key).expect("valid parameter key")
         })
         .collect();
-    OperationIdentityKey::new(OperationKind::Macro, name, parameters, result)
+    OperationIdentityKey::new(&[], OperationKind::Macro, name, parameters, result)
         .expect("valid operation key")
 }
 
@@ -105,6 +105,7 @@ fn parameter_names_types_and_order_are_semantic() {
 fn declaration_kind_participates_in_operation_identity() {
     let parameters = vec![OperationParameterKey::new("value", "utf8").unwrap()];
     let macro_key = OperationIdentityKey::new(
+        &[],
         OperationKind::Macro,
         "public_name",
         parameters.clone(),
@@ -112,7 +113,8 @@ fn declaration_kind_participates_in_operation_identity() {
     )
     .unwrap();
     let query_key =
-        OperationIdentityKey::new(OperationKind::Query, "public_name", parameters, "utf8").unwrap();
+        OperationIdentityKey::new(&[], OperationKind::Query, "public_name", parameters, "utf8")
+            .unwrap();
 
     assert_eq!(macro_key.identity_version, CONTRACT_IDENTITY_VERSION);
     assert_ne!(
@@ -167,16 +169,28 @@ fn malformed_identities_are_rejected() {
 #[test]
 fn invalid_identity_keys_are_rejected_instead_of_canonicalized() {
     assert_eq!(
-        OperationIdentityKey::new(OperationKind::Query, "", Vec::new(), "unit")
+        OperationIdentityKey::new(&[], OperationKind::Query, "", Vec::new(), "unit")
             .unwrap_err()
             .code,
         "ID033"
     );
     assert_eq!(
-        OperationIdentityKey::new(OperationKind::Query, "has space", Vec::new(), "unit")
+        OperationIdentityKey::new(&[], OperationKind::Query, "has space", Vec::new(), "unit")
             .unwrap_err()
             .code,
         "ID033"
+    );
+    assert_eq!(
+        OperationIdentityKey::new(
+            &["demo".to_owned(), String::new()],
+            OperationKind::Query,
+            "active",
+            Vec::new(),
+            "unit"
+        )
+        .unwrap_err()
+        .code,
+        "ID038"
     );
     assert_eq!(
         OperationParameterKey::new("", "utf8").unwrap_err().code,
@@ -191,7 +205,7 @@ fn invalid_identity_keys_are_rejected_instead_of_canonicalized() {
         OperationParameterKey::new("value", "i64").unwrap(),
     ];
     assert_eq!(
-        OperationIdentityKey::new(OperationKind::Udf, "double", duplicate, "unit")
+        OperationIdentityKey::new(&[], OperationKind::Udf, "double", duplicate, "unit")
             .unwrap_err()
             .code,
         "ID034"
@@ -214,11 +228,49 @@ fn invalid_identity_keys_are_rejected_instead_of_canonicalized() {
 }
 
 #[test]
+fn namespace_path_participates_in_operation_identity() {
+    let parameters = vec![OperationParameterKey::new("value", "utf8").unwrap()];
+    let root = OperationIdentityKey::new(
+        &[],
+        OperationKind::Macro,
+        "normalize",
+        parameters.clone(),
+        "utf8",
+    )
+    .unwrap();
+    let nested = OperationIdentityKey::new(
+        &["demo".to_owned(), "text".to_owned()],
+        OperationKind::Macro,
+        "normalize",
+        parameters.clone(),
+        "utf8",
+    )
+    .unwrap();
+    let other = OperationIdentityKey::new(
+        &["demo".to_owned(), "binary".to_owned()],
+        OperationKind::Macro,
+        "normalize",
+        parameters,
+        "utf8",
+    )
+    .unwrap();
+
+    assert_eq!(root.canonical_path, vec!["normalize".to_owned()]);
+    assert_eq!(
+        nested.canonical_path,
+        vec!["demo".to_owned(), "text".to_owned(), "normalize".to_owned()]
+    );
+    assert_ne!(OperationId::derive(&root), OperationId::derive(&nested));
+    assert_ne!(OperationId::derive(&nested), OperationId::derive(&other));
+}
+
+#[test]
 fn identity_keys_serialize_without_source_text() {
     let key = operation_key("active", &[("limit", "i64")], "[User]");
     let json = serde_json::to_value(&key).unwrap();
 
     assert_eq!(json["identityVersion"], CONTRACT_IDENTITY_VERSION);
+    assert_eq!(json["canonicalPath"][0], "active");
     assert_eq!(json["kind"], "macro");
     assert_eq!(json["name"], "active");
     assert_eq!(json["parameters"][0]["name"], "limit");

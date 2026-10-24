@@ -8,9 +8,14 @@ use vos_types::*;
 pub fn project_operations(
     root: &VosRoot,
 ) -> Result<Vec<OperationProjection>, Vec<ContractDiagnostic>> {
+    let mut namespace = Vec::new();
     let mut operations = Vec::new();
     let mut diagnostics = Vec::new();
     for declaration in &root.declarations {
+        if declaration.kind == VosDeclarationKind::Namespace {
+            namespace = declaration.path.clone().unwrap_or_default();
+            continue;
+        }
         let kind = match declaration.kind {
             VosDeclarationKind::Query => OperationKind::Query,
             VosDeclarationKind::Udf => OperationKind::Udf,
@@ -36,6 +41,7 @@ pub fn project_operations(
             })
             .collect::<Vec<_>>();
         let identity = match operation_identity(
+            &namespace,
             kind,
             &name,
             &parameters,
@@ -54,6 +60,7 @@ pub fn project_operations(
         operations.push(OperationProjection {
             kind,
             name,
+            canonical_path: identity.canonical_path.clone(),
             operation_id: OperationId::derive(&identity),
             identity,
             parameters,
@@ -71,6 +78,7 @@ pub fn project_operations(
 }
 
 fn operation_identity(
+    namespace: &[String],
     kind: OperationKind,
     name: &str,
     parameters: &[OperationParameter],
@@ -85,7 +93,7 @@ fn operation_identity(
     let result = return_type
         .map(|value| canonical_type_key(&canonical_type(value)))
         .unwrap_or_else(|| "unit".to_owned());
-    OperationIdentityKey::new(kind, name, parameters, &result)
+    OperationIdentityKey::new(namespace, kind, name, parameters, &result)
 }
 
 /// Projects Oak operation declarations into a strict versioned artifact.
