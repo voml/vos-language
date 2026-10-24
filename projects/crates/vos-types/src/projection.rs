@@ -1,7 +1,8 @@
 use core::range::Range;
 
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+
+use crate::ids::{OperationId, OperationIdentityKey, ServiceId, ServiceIdentityKey};
 
 /// Current artifact format version for the first resolved contract envelope.
 pub const CONTRACT_FORMAT_VERSION: &str = "vos-contract-v0";
@@ -187,14 +188,13 @@ pub struct OperationProjection {
     pub kind: OperationKind,
     /// Operation name.
     pub name: String,
-    /// Canonical signature key used as input to durable identity assignment.
-    /// This is not itself a durable operation ID.
-    pub identity_key: String,
-    /// Opaque stable operation identity derived from `identity_key`. Machine
-    /// consumers (Iris, Hermes) use this field to locate an operation without
-    /// re-parsing its signature string. Human readers should still prefer
-    /// `identity_key`.
-    pub operation_id: String,
+    /// Canonical signature identity key used as input to durable identity
+    /// assignment. This is not itself a durable operation ID.
+    pub identity: OperationIdentityKey,
+    /// Durable operation identity derived from `identity`. Machine consumers
+    /// (Iris, Hermes) use this field to locate an operation without re-parsing
+    /// its signature string.
+    pub operation_id: OperationId,
     /// Parameters projected from Oak's signature.
     pub parameters: Vec<OperationParameter>,
     /// Return type when the declaration has an arrow return type.
@@ -363,29 +363,32 @@ impl OperationProjectionArtifact {
                     message: "operation name cannot be empty".to_owned(),
                 });
             }
-            if operation.identity_key.is_empty() {
+            if operation.identity.name.is_empty() {
                 return Err(ArtifactError {
                     code: "OPR015".to_owned(),
-                    message: "operation identity key cannot be empty".to_owned(),
+                    message: "operation identity name cannot be empty".to_owned(),
                 });
             }
-            if operation.operation_id.is_empty()
-                || !operation.operation_id.starts_with(OPERATION_ID_PREFIX)
-                || operation.operation_id.len() != OPERATION_ID_PREFIX.len() + 16
-                || !operation.operation_id[OPERATION_ID_PREFIX.len()..]
-                    .chars()
-                    .all(|c| c.is_ascii_hexdigit())
+            if operation.identity.name != operation.name
+                || operation.identity.kind != operation.kind
             {
+                return Err(ArtifactError {
+                    code: "OPR015".to_owned(),
+                    message: "operation identity does not match the projected declaration"
+                        .to_owned(),
+                });
+            }
+            if OperationId::parse(operation.operation_id.as_str()).is_err() {
                 return Err(ArtifactError {
                     code: "OPR016".to_owned(),
                     message: "operation id is malformed".to_owned(),
                 });
             }
-            let expected = compute_operation_id(&operation.identity_key);
+            let expected = OperationId::derive(&operation.identity);
             if operation.operation_id != expected {
                 return Err(ArtifactError {
                     code: "OPR017".to_owned(),
-                    message: "operation id does not match identity key".to_owned(),
+                    message: "operation id does not match its identity key".to_owned(),
                 });
             }
             for parameter in &operation.parameters {
@@ -414,8 +417,8 @@ pub struct ServiceProjection {
     pub name: String,
     /// Canonical namespace-qualified path.
     pub canonical_path: Vec<String>,
-    /// Opaque stable service identity derived from `canonical_path` + `name`.
-    pub service_id: String,
+    /// Opaque stable service identity derived from `canonical_path`.
+    pub service_id: ServiceId,
     /// Exact body source slice.
     pub body: Option<SyntaxSliceContract>,
     /// Full declaration span.
@@ -482,23 +485,24 @@ impl ServiceProjectionArtifact {
                     message: "service name cannot be empty".to_owned(),
                 });
             }
-            if service.service_id.is_empty()
-                || !service.service_id.starts_with(SERVICE_ID_PREFIX)
-                || service.service_id.len() != SERVICE_ID_PREFIX.len() + 16
-                || !service.service_id[SERVICE_ID_PREFIX.len()..]
-                    .chars()
-                    .all(|c| c.is_ascii_hexdigit())
-            {
+            if ServiceId::parse(service.service_id.as_str()).is_err() {
                 return Err(ArtifactError {
                     code: "SRV015".to_owned(),
                     message: "service id is malformed".to_owned(),
                 });
             }
-            let expected = compute_service_id(&service.canonical_path, &service.name);
+            let identity_key =
+                ServiceIdentityKey::new(service.canonical_path.clone()).map_err(|_| {
+                    ArtifactError {
+                        code: "SRV016".to_owned(),
+                        message: "service canonical path must have non-empty segments".to_owned(),
+                    }
+                })?;
+            let expected = ServiceId::derive(&identity_key);
             if service.service_id != expected {
                 return Err(ArtifactError {
                     code: "SRV016".to_owned(),
-                    message: "service id does not match canonical path and name".to_owned(),
+                    message: "service id does not match canonical path".to_owned(),
                 });
             }
             for slice in service.body.iter() {
@@ -600,136 +604,27 @@ fn serialize_optional_span<S: serde::Serializer>(
         .serialize(serializer)
 }
 
-/// Prefix shared by every generated opaque operation identity.
-pub const OPERATION_ID_PREFIX: &str = "op_";
-
-/// Prefix shared by every generated opaque service identity.
-pub const SERVICE_ID_PREFIX: &str = "svc_";
-
-/// Generates a deterministic opaque operation identity from a canonical
-/// `identity_key`. The result is stable across source formatting, whitespace
-/// variations, and parameter-order differences that have already been
-/// eliminated by the canonical key.
+/// Canonical textual key of a canonical type.
 ///
-/// The output is `op_<sha256(identity_key).first_16_hex_chars>`. It is short
-/// enough for human debugging while still being opaque and collision-resistant
-/// across practical operation counts.
-pub fn compute_operation_id(identity_key: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(identity_key.as_bytes());
-    let digest = hasher.finalize();
-    let mut hex = String::with_capacity(OPERATION_ID_PREFIX.len() + 16);
-    hex.push_str(OPERATION_ID_PREFIX);
-    for byte in digest.iter().take(8) {
-        use std::fmt::Write;
-        let _ = write!(hex, "{byte:02x}");
-    }
-    hex
-}
-
-/// Generates a deterministic opaque service identity from a canonical
-/// namespace path plus a service name. The path is joined with `/` so that
-/// distinct nesting produces distinct identities.
-///
-/// The output is `svc_<sha256(path/name).first_16_hex_chars>`.
-pub fn compute_service_id(canonical_path: &[String], name: &str) -> String {
-    let path_key = canonical_path.join("/");
-    let mut hasher = Sha256::new();
-    hasher.update(path_key.as_bytes());
-    hasher.update(b"/");
-    hasher.update(name.as_bytes());
-    let digest = hasher.finalize();
-    let mut hex = String::with_capacity(SERVICE_ID_PREFIX.len() + 16);
-    hex.push_str(SERVICE_ID_PREFIX);
-    for byte in digest.iter().take(8) {
-        use std::fmt::Write;
-        let _ = write!(hex, "{byte:02x}");
-    }
-    hex
-}
-
-#[cfg(test)]
-mod operation_id_tests {
-    use super::*;
-
-    #[test]
-    fn operation_id_is_prefix_plus_16_hex_chars() {
-        let id = compute_operation_id("macro:public_name(utf8)->utf8");
-        assert!(id.starts_with(OPERATION_ID_PREFIX));
-        assert_eq!(id.len(), OPERATION_ID_PREFIX.len() + 16);
-        assert!(
-            id[OPERATION_ID_PREFIX.len()..]
-                .chars()
-                .all(|c| c.is_ascii_hexdigit())
-        );
-    }
-
-    #[test]
-    fn same_identity_key_produces_same_operation_id() {
-        let a = compute_operation_id("macro:public_name(utf8)->utf8");
-        let b = compute_operation_id("macro:public_name(utf8)->utf8");
-        assert_eq!(a, b);
-    }
-
-    #[test]
-    fn different_identity_keys_produce_different_operation_ids() {
-        let a = compute_operation_id("macro:public_name(utf8)->utf8");
-        let b = compute_operation_id("query:public_name(utf8)->utf8");
-        assert_ne!(a, b);
-        let c = compute_operation_id("macro:public_name(uuid)->utf8");
-        assert_ne!(a, c);
-    }
-}
-
-#[cfg(test)]
-mod service_id_tests {
-    use super::*;
-
-    #[test]
-    fn service_id_is_prefix_plus_16_hex_chars() {
-        let path = vec![
-            "demo".to_owned(),
-            "auth".to_owned(),
-            "IdentityService".to_owned(),
-        ];
-        let id = compute_service_id(&path, "IdentityService");
-        assert!(id.starts_with(SERVICE_ID_PREFIX));
-        assert_eq!(id.len(), SERVICE_ID_PREFIX.len() + 16);
-        assert!(
-            id[SERVICE_ID_PREFIX.len()..]
-                .chars()
-                .all(|c| c.is_ascii_hexdigit())
-        );
-    }
-
-    #[test]
-    fn same_path_and_name_produces_same_service_id() {
-        let path = vec![
-            "demo".to_owned(),
-            "auth".to_owned(),
-            "IdentityService".to_owned(),
-        ];
-        let a = compute_service_id(&path, "IdentityService");
-        let b = compute_service_id(&path, "IdentityService");
-        assert_eq!(a, b);
-    }
-
-    #[test]
-    fn different_path_or_name_produces_different_service_ids() {
-        let path_a = vec![
-            "demo".to_owned(),
-            "auth".to_owned(),
-            "IdentityService".to_owned(),
-        ];
-        let path_b = vec![
-            "demo".to_owned(),
-            "auth".to_owned(),
-            "SessionService".to_owned(),
-        ];
-        let a = compute_service_id(&path_a, "IdentityService");
-        let b = compute_service_id(&path_b, "SessionService");
-        assert_ne!(a, b);
-        let c = compute_service_id(&path_a, "SessionService");
-        assert_ne!(a, c);
+/// The key is a deterministic, source-independent rendering used by operation
+/// identity keys. It never contains whitespace, comments, spans or file
+/// identity.
+pub fn canonical_type_key(value: &CanonicalType) -> String {
+    match value {
+        CanonicalType::Named(path) => path.join("::"),
+        CanonicalType::Reference(inner) => format!("&{}", canonical_type_key(inner)),
+        CanonicalType::Optional(inner) => format!("{}?", canonical_type_key(inner)),
+        CanonicalType::List(inner) => format!("[{}]", canonical_type_key(inner)),
+        CanonicalType::Generic { path, arguments } => {
+            let arguments = arguments
+                .iter()
+                .map(|argument| match argument {
+                    CanonicalTypeArgument::Type(value) => canonical_type_key(value),
+                    CanonicalTypeArgument::Literal(value) => format!("#{value}"),
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            format!("{}<{arguments}>", path.join("::"))
+        }
     }
 }

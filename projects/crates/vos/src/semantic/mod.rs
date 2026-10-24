@@ -187,9 +187,12 @@ mod tests {
         assert_eq!(operations[0].kind, OperationKind::Macro);
         assert_eq!(operations[0].name, "public_name");
         assert_eq!(operations[0].parameters[0].name, "value");
-        assert_eq!(operations[0].identity_key, "macro:public_name(utf8)->utf8");
-        assert!(operations[0].operation_id.starts_with("op_"));
-        assert_eq!(operations[0].operation_id.len(), 19);
+        assert_eq!(operations[0].identity.name, "public_name");
+        assert_eq!(operations[0].identity.parameters[0].name, "value");
+        assert_eq!(operations[0].identity.parameters[0].type_key, "utf8");
+        assert_eq!(operations[0].identity.result, "utf8");
+        assert!(operations[0].operation_id.as_str().starts_with("op_"));
+        assert_eq!(operations[0].operation_id.as_str().len(), 67);
     }
 
     #[test]
@@ -202,9 +205,9 @@ mod tests {
             .unwrap()
             .project_operations()
             .unwrap();
-        assert_eq!(first[0].identity_key, second[0].identity_key);
+        assert_eq!(first[0].identity, second[0].identity);
         assert_eq!(first[0].operation_id, second[0].operation_id);
-        assert!(first[0].operation_id.starts_with("op_"));
+        assert!(first[0].operation_id.as_str().starts_with("op_"));
     }
 
     #[test]
@@ -250,10 +253,14 @@ mod tests {
         let error = OperationProjectionArtifact::from_json(&json.to_string()).unwrap_err();
         assert_eq!(error.code, "OPR016");
 
+        json["operations"][0]["operationId"] = serde_json::Value::String("op_deadbeef".to_owned());
+        json["operations"][0]["identity"]["result"] =
+            serde_json::Value::String("[other]".to_owned());
+        let error = OperationProjectionArtifact::from_json(&json.to_string()).unwrap_err();
+        assert_eq!(error.code, "OPR016");
+
         json["operations"][0]["operationId"] =
-            serde_json::Value::String("op_deadbeefdeadbeef".to_owned());
-        json["operations"][0]["identityKey"] =
-            serde_json::Value::String("query:other(i64)->[User]".to_owned());
+            serde_json::Value::String(format!("op_{}", "deadbeef".repeat(8)));
         let error = OperationProjectionArtifact::from_json(&json.to_string()).unwrap_err();
         assert_eq!(error.code, "OPR017");
     }
@@ -320,7 +327,7 @@ mod tests {
         assert_eq!(error.code, "SRV015");
 
         json["services"][0]["serviceId"] =
-            serde_json::Value::String("svc_deadbeefdeadbeef".to_owned());
+            serde_json::Value::String(format!("svc_{}", "deadbeef".repeat(8)));
         json["services"][0]["canonicalPath"] =
             serde_json::Value::Array(vec![serde_json::Value::String("other".to_owned())]);
         let error = ServiceProjectionArtifact::from_json(&json.to_string()).unwrap_err();

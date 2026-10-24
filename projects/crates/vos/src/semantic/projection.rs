@@ -26,26 +26,37 @@ pub fn project_operations(
             ));
             continue;
         };
-        let identity_key = operation_identity_key(
+        let parameters = declaration
+            .parameters
+            .iter()
+            .map(|parameter| OperationParameter {
+                name: parameter.name.clone(),
+                type_expr: canonical_type(&parameter.type_expr),
+                span: parameter.span,
+            })
+            .collect::<Vec<_>>();
+        let identity = match operation_identity(
             kind,
-            declaration.name.as_deref().unwrap_or_default(),
-            &declaration.parameters,
+            &name,
+            &parameters,
             declaration.return_type_expr.as_ref(),
-        );
+        ) {
+            Ok(identity) => identity,
+            Err(error) => {
+                diagnostics.push(diagnostic(
+                    error.code.as_str(),
+                    &error.message,
+                    Some(declaration.span),
+                ));
+                continue;
+            }
+        };
         operations.push(OperationProjection {
             kind,
             name,
-            identity_key: identity_key.clone(),
-            operation_id: vos_types::compute_operation_id(&identity_key),
-            parameters: declaration
-                .parameters
-                .iter()
-                .map(|parameter| OperationParameter {
-                    name: parameter.name.clone(),
-                    type_expr: canonical_type(&parameter.type_expr),
-                    span: parameter.span,
-                })
-                .collect(),
+            operation_id: OperationId::derive(&identity),
+            identity,
+            parameters,
             return_type: declaration.return_type_expr.as_ref().map(canonical_type),
             signature: declaration.signature.as_ref().map(slice_contract),
             body: declaration.body.as_ref().map(slice_contract),
@@ -59,47 +70,22 @@ pub fn project_operations(
     }
 }
 
-fn operation_identity_key(
+fn operation_identity(
     kind: OperationKind,
     name: &str,
-    parameters: &[oak_vos::VosParameter],
+    parameters: &[OperationParameter],
     return_type: Option<&VosTypeSyntax>,
-) -> String {
-    let kind = match kind {
-        OperationKind::Query => "query",
-        OperationKind::Udf => "udf",
-        OperationKind::Micro => "micro",
-        OperationKind::Macro => "macro",
-    };
+) -> Result<OperationIdentityKey, vos_types::ArtifactError> {
     let parameters = parameters
         .iter()
-        .map(|parameter| canonical_type_key(&canonical_type(&parameter.type_expr)))
-        .collect::<Vec<_>>()
-        .join(",");
+        .map(|parameter| {
+            OperationParameterKey::new(&parameter.name, &canonical_type_key(&parameter.type_expr))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let result = return_type
         .map(|value| canonical_type_key(&canonical_type(value)))
         .unwrap_or_else(|| "unit".to_owned());
-    format!("{kind}:{name}({parameters})->{result}")
-}
-
-fn canonical_type_key(value: &CanonicalType) -> String {
-    match value {
-        CanonicalType::Named(path) => path.join("::"),
-        CanonicalType::Reference(inner) => format!("&{}", canonical_type_key(inner)),
-        CanonicalType::Optional(inner) => format!("{}?", canonical_type_key(inner)),
-        CanonicalType::List(inner) => format!("[{}]", canonical_type_key(inner)),
-        CanonicalType::Generic { path, arguments } => {
-            let arguments = arguments
-                .iter()
-                .map(|argument| match argument {
-                    CanonicalTypeArgument::Type(value) => canonical_type_key(value),
-                    CanonicalTypeArgument::Literal(value) => format!("#{value}"),
-                })
-                .collect::<Vec<_>>()
-                .join(",");
-            format!("{}<{arguments}>", path.join("::"))
-        }
-    }
+    OperationIdentityKey::new(kind, name, parameters, &result)
 }
 
 /// Projects Oak operation declarations into a strict versioned artifact.
@@ -142,7 +128,7 @@ pub fn project_services(root: &VosRoot) -> Result<Vec<ServiceProjection>, Vec<Co
                     continue;
                 };
                 let mut canonical_path = namespace.clone();
-                canonical_path.push(name);
+                canonical_path.push(name.clone());
                 if services
                     .iter()
                     .any(|item: &ServiceProjection| item.canonical_path == canonical_path)
@@ -154,13 +140,21 @@ pub fn project_services(root: &VosRoot) -> Result<Vec<ServiceProjection>, Vec<Co
                     ));
                     continue;
                 }
+                let identity = match ServiceIdentityKey::new(canonical_path.clone()) {
+                    Ok(identity) => identity,
+                    Err(error) => {
+                        diagnostics.push(diagnostic(
+                            error.code.as_str(),
+                            &error.message,
+                            Some(declaration.span),
+                        ));
+                        continue;
+                    }
+                };
                 services.push(ServiceProjection {
-                    name: declaration.name.clone().unwrap_or_default(),
-                    canonical_path: canonical_path.clone(),
-                    service_id: vos_types::compute_service_id(
-                        &canonical_path,
-                        declaration.name.as_deref().unwrap_or_default(),
-                    ),
+                    name,
+                    canonical_path,
+                    service_id: ServiceId::derive(&identity),
                     body: declaration.body.as_ref().map(slice_contract),
                     span: declaration.span,
                 });

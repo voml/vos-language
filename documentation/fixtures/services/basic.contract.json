@@ -19,7 +19,7 @@
         "auth",
         "IdentityService"
       ],
-      "serviceId": "svc_3c7addc7a558968f",
+      "serviceId": "svc_9840335d138fd4c32651c498ecd3f0c9aa05cf5433828d9df268aad47c9cfbc1",
       "body": {
         "text": "{\n  create(request: CreateRequest) -> Identity\n  delete(request: DeleteRequest) -> bool\n}",
         "span": {
@@ -29,7 +29,7 @@
       },
       "span": {
         "start": 22,
-        "end": 136
+        "end": 135
       }
     }
   ]
