@@ -9,7 +9,10 @@ mod identity;
 mod projection;
 pub mod resolve;
 
-pub use contract::{OperationSemantics, build_operation_contracts};
+pub use contract::{
+    OperationSemantics, ServiceContractDecl, ServiceMethodDecl, build_operation_contracts,
+    build_service_contracts,
+};
 pub use identity::{
     bind_identity, compare_identity, evolve_identity, resolve_contract,
     resolve_contract_from_bound, resolve_contract_from_units,

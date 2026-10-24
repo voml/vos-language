@@ -4,7 +4,9 @@ use core::range::Range;
 
 use serde::{Deserialize, Serialize};
 
-use crate::ids::{OperationId, canonical_digest};
+use crate::ids::{
+    MethodId, MethodIdentityKey, OperationId, ServiceId, ServiceIdentityKey, canonical_digest,
+};
 use crate::projection::{deserialize_span, serialize_span};
 use crate::{ArtifactError, OperationKind, ResolvedCanonicalType};
 
@@ -219,4 +221,237 @@ struct CanonicalOperationContract<'a> {
 struct CanonicalParameter<'a> {
     name: &'a str,
     canonical_type: &'a ResolvedCanonicalType,
+}
+
+/// Invocation mode of one service method.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MethodStreamMode {
+    /// One request, one response.
+    Unary,
+    /// One request, a stream of responses.
+    ServerStream,
+}
+
+/// One method of a service contract.
+///
+/// The method name and the owning service produce the durable [`MethodId`],
+/// while `operation_id` is the explicit binding to an [`OperationContract`].
+/// A method never re-declares operation semantics.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ServiceMethodContract {
+    /// Durable method identity.
+    pub method_id: MethodId,
+    /// Method name inside the service.
+    pub name: String,
+    /// Canonical request type.
+    pub request_type: ResolvedCanonicalType,
+    /// Canonical response type. For `server-stream` this is the element type.
+    pub response_type: ResolvedCanonicalType,
+    /// Invocation mode.
+    pub stream: MethodStreamMode,
+    /// Explicit binding to the operation that implements this method.
+    pub operation_id: OperationId,
+}
+
+/// Durable contract of a VOS service.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ServiceContract {
+    /// Durable service identity.
+    pub service_id: ServiceId,
+    /// Service name.
+    pub name: String,
+    /// Canonical namespace-qualified path ending with the service name.
+    pub canonical_path: Vec<String>,
+    /// Methods in canonical order.
+    pub methods: Vec<ServiceMethodContract>,
+    /// Source unit the service was projected from.
+    pub source_unit_id: u32,
+    /// Declaration span inside the source unit.
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
+    pub span: Range<usize>,
+}
+
+impl ServiceContract {
+    /// Rejects a service contract that a downstream consumer cannot bind.
+    pub fn validate(&self) -> Result<(), ArtifactError> {
+        ServiceId::parse(self.service_id.as_str()).map_err(|_| ArtifactError {
+            code: "SVC010".to_owned(),
+            message: "service contract carries a malformed service id".to_owned(),
+        })?;
+        if self.name.trim().is_empty()
+            || self.canonical_path.is_empty()
+            || self.canonical_path.last() != Some(&self.name)
+        {
+            return Err(ArtifactError {
+                code: "SVC011".to_owned(),
+                message: "service canonical path must end with its own name".to_owned(),
+            });
+        }
+        if self.methods.is_empty() {
+            return Err(ArtifactError {
+                code: "SVC012".to_owned(),
+                message: "service contract must declare at least one method".to_owned(),
+            });
+        }
+        let identity =
+            ServiceIdentityKey::new(self.canonical_path.clone()).map_err(|_| ArtifactError {
+                code: "SVC011".to_owned(),
+                message: "service canonical path must have non-empty segments".to_owned(),
+            })?;
+        if ServiceId::derive(&identity) != self.service_id {
+            return Err(ArtifactError {
+                code: "SVC013".to_owned(),
+                message: "service id does not match its canonical path".to_owned(),
+            });
+        }
+
+        let mut names = BTreeSet::new();
+        let mut ids = BTreeSet::new();
+        let mut operations = BTreeSet::new();
+        for method in &self.methods {
+            if method.name.trim().is_empty() {
+                return Err(ArtifactError {
+                    code: "SVC014".to_owned(),
+                    message: "service method names must not be empty".to_owned(),
+                });
+            }
+            if !names.insert(method.name.as_str()) {
+                return Err(ArtifactError {
+                    code: "SVC014".to_owned(),
+                    message: "service method names must be unique".to_owned(),
+                });
+            }
+            MethodId::parse(method.method_id.as_str()).map_err(|_| ArtifactError {
+                code: "SVC015".to_owned(),
+                message: "service method carries a malformed method id".to_owned(),
+            })?;
+            if !ids.insert(method.method_id.clone()) {
+                return Err(ArtifactError {
+                    code: "SVC015".to_owned(),
+                    message: "service method ids must be unique".to_owned(),
+                });
+            }
+            let expected = MethodId::derive(&MethodIdentityKey::new(
+                self.service_id.clone(),
+                &method.name,
+            )?);
+            if method.method_id != expected {
+                return Err(ArtifactError {
+                    code: "SVC015".to_owned(),
+                    message: "service method id does not match its name and service".to_owned(),
+                });
+            }
+            OperationId::parse(method.operation_id.as_str()).map_err(|_| ArtifactError {
+                code: "SVC016".to_owned(),
+                message: "service method binds a malformed operation id".to_owned(),
+            })?;
+            if !operations.insert(method.operation_id.clone()) {
+                return Err(ArtifactError {
+                    code: "SVC016".to_owned(),
+                    message: "an operation cannot be bound by two methods".to_owned(),
+                });
+            }
+            validate_explicit_reference(&method.request_type, "request")?;
+            validate_explicit_reference(&method.response_type, "response")?;
+        }
+        Ok(())
+    }
+}
+
+fn validate_explicit_reference(
+    canonical_type: &ResolvedCanonicalType,
+    side: &str,
+) -> Result<(), ArtifactError> {
+    match canonical_type {
+        ResolvedCanonicalType::Scalar(_) => Ok(()),
+        ResolvedCanonicalType::User { path, type_id } => {
+            if path.is_empty() || path.iter().any(String::is_empty) || *type_id == 0 {
+                return Err(ArtifactError {
+                    code: "SVC017".to_owned(),
+                    message: format!(
+                        "service {side} type must reference a canonical path and a durable type id"
+                    ),
+                });
+            }
+            Ok(())
+        }
+        ResolvedCanonicalType::Reference(inner)
+        | ResolvedCanonicalType::Optional(inner)
+        | ResolvedCanonicalType::List(inner) => validate_explicit_reference(inner, side),
+        ResolvedCanonicalType::Generic { path, arguments } => {
+            if path.is_empty() {
+                return Err(ArtifactError {
+                    code: "SVC017".to_owned(),
+                    message: format!("service {side} generic type must be canonical"),
+                });
+            }
+            for argument in arguments {
+                if let crate::ResolvedCanonicalTypeArgument::Type(argument) = argument {
+                    validate_explicit_reference(argument, side)?;
+                }
+            }
+            Ok(())
+        }
+    }
+}
+
+/// Canonical fingerprint of a set of service contracts.
+///
+/// Services and methods are ordered by durable identity, and spans and source
+/// units are excluded, so the fingerprint is stable across source units,
+/// whitespace, comments and declaration order while changing on any rename,
+/// retype, stream mode or operation rebinding.
+pub fn service_contract_fingerprint(services: &[ServiceContract]) -> String {
+    let mut views = services.iter().collect::<Vec<_>>();
+    views.sort_by(|left, right| left.service_id.cmp(&right.service_id));
+    let views = views
+        .into_iter()
+        .map(|service| {
+            let mut methods = service.methods.iter().collect::<Vec<_>>();
+            methods.sort_by(|left, right| left.method_id.cmp(&right.method_id));
+            CanonicalServiceContract {
+                fingerprint_version: CONTRACT_FINGERPRINT_VERSION,
+                service_id: &service.service_id,
+                canonical_path: &service.canonical_path,
+                methods: methods
+                    .into_iter()
+                    .map(|method| CanonicalServiceMethod {
+                        method_id: &method.method_id,
+                        name: &method.name,
+                        request_type: &method.request_type,
+                        response_type: &method.response_type,
+                        stream: method.stream,
+                        operation_id: &method.operation_id,
+                    })
+                    .collect(),
+            }
+        })
+        .collect::<Vec<_>>();
+    canonical_digest(&views)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalServiceContract<'a> {
+    fingerprint_version: &'static str,
+    service_id: &'a ServiceId,
+    canonical_path: &'a [String],
+    methods: Vec<CanonicalServiceMethod<'a>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalServiceMethod<'a> {
+    method_id: &'a MethodId,
+    name: &'a str,
+    request_type: &'a ResolvedCanonicalType,
+    response_type: &'a ResolvedCanonicalType,
+    stream: MethodStreamMode,
+    operation_id: &'a OperationId,
 }
