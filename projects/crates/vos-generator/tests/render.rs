@@ -25,6 +25,31 @@ fn rust_struct_via_dejavu() {
 }
 
 #[test]
+fn rust_struct_layout_is_byte_exact() {
+    // Whitespace control lives on opening tags only: closers must not carry
+    // markers. This pins the rendered layout so the templates stay valid.
+    let with_docs = vos_generator::rust_struct(
+        "User",
+        Some("A user row."),
+        &[("id", "uuid::Uuid"), ("name", "String")],
+    )
+    .expect("struct");
+    assert_eq!(
+        with_docs,
+        "/// A user row.\n#[derive(Clone, Debug)]\npub struct User {\n    pub id: uuid::Uuid,\n    pub name: String,\n}\n"
+    );
+
+    let without_docs = vos_generator::rust_struct("User", None, &[("id", "uuid::Uuid")]).expect("struct");
+    assert_eq!(
+        without_docs,
+        "#[derive(Clone, Debug)]\npub struct User {\n    pub id: uuid::Uuid,\n}\n"
+    );
+
+    let no_fields = vos_generator::rust_struct("Empty", None, &[]).expect("struct");
+    assert_eq!(no_fields, "#[derive(Clone, Debug)]\npub struct Empty {\n}\n");
+}
+
+#[test]
 fn module_with_struct() {
     use vos_generator::rust::RustField;
     let out = vos_generator::rust::module_with_struct(
