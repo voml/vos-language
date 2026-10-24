@@ -1,0 +1,18 @@
+namespace demo::auth
+
+class CreateRequest {
+    user_name: utf8,
+}
+
+class Identity {
+    id: uuid,
+}
+
+query create(request: CreateRequest) -> Identity { Identity }
+
+query lookup(id: uuid) -> Identity? { Identity }
+
+service IdentityService {
+    create(request: CreateRequest) -> Identity
+    lookup(id: uuid) -> Identity?
+}
