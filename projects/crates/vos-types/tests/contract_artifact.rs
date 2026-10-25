@@ -46,15 +46,18 @@ fn service_id() -> ServiceId {
 }
 
 fn service() -> ServiceContract {
-    let service_id = service_id();
+    service_named("IdentityService")
+}
+
+fn service_named(name: &str) -> ServiceContract {
+    let service_id = ServiceId::derive(
+        &ServiceIdentityKey::new(vec!["demo".to_owned(), "auth".to_owned(), name.to_owned()])
+            .unwrap(),
+    );
     ServiceContract {
         service_id: service_id.clone(),
-        name: "IdentityService".to_owned(),
-        canonical_path: vec![
-            "demo".to_owned(),
-            "auth".to_owned(),
-            "IdentityService".to_owned(),
-        ],
+        name: name.to_owned(),
+        canonical_path: vec!["demo".to_owned(), "auth".to_owned(), name.to_owned()],
         methods: vec![ServiceMethodContract {
             method_id: MethodId::derive(&MethodIdentityKey::new(service_id, "create").unwrap()),
             name: "create".to_owned(),
@@ -170,6 +173,59 @@ fn invalid_payload_keeps_its_contract_diagnostic() {
         MethodId::parse(&format!("mtd_{}", "0".repeat(64))).unwrap();
     let artifact = ContractArtifact::seal(ContractFormat::Hermes, ContractProducer::vos(), payload);
     assert_eq!(artifact.validate().unwrap_err().code, "SVC015");
+}
+
+#[test]
+fn method_bound_to_a_missing_operation_is_rejected_after_reseal() {
+    let mut payload = payload();
+    payload.services[0].methods[0].operation_id =
+        OperationId::parse(&format!("op_{}", "0".repeat(64))).unwrap();
+
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
+    assert_eq!(artifact.validate().unwrap_err().code, "SVC004");
+}
+
+#[test]
+fn duplicate_operation_ids_are_rejected_after_reseal() {
+    let mut payload = payload();
+    payload.operations.push(payload.operations[0].clone());
+
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
+    assert_eq!(artifact.validate().unwrap_err().code, "OPC003");
+}
+
+#[test]
+fn duplicate_service_identity_is_rejected_after_reseal() {
+    let mut payload = payload();
+    payload.services.push(payload.services[0].clone());
+
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
+    assert_eq!(artifact.validate().unwrap_err().code, "SVC006");
+}
+
+#[test]
+fn operation_bound_by_two_services_is_rejected_after_reseal() {
+    let mut payload = payload();
+    payload.services.push(service_named("OtherService"));
+
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
+    assert_eq!(artifact.validate().unwrap_err().code, "SVC005");
 }
 
 #[test]

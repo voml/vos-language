@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, BTreeSet};
+
 use serde::{Deserialize, Serialize};
 
 use crate::ArtifactError;
@@ -120,7 +122,10 @@ impl ContractArtifact {
     /// Rejects an artifact a downstream host cannot trust.
     ///
     /// Errors from the payload keep their operation or service diagnostic code
-    /// so a host can report the exact offending contract.
+    /// so a host can report the exact offending contract. The payload is also
+    /// checked as a whole: operation and service identities must be unique and
+    /// every method must bind an operation the payload actually carries, so a
+    /// hand-built artifact cannot pass by resealing an impossible payload.
     pub fn validate(&self) -> Result<(), ArtifactError> {
         if self.producer.name.trim().is_empty() || self.producer.version.trim().is_empty() {
             return Err(ArtifactError {
@@ -134,11 +139,58 @@ impl ContractArtifact {
                 message: "contract artifact fingerprint does not match its payload".to_owned(),
             });
         }
+        let mut operation_ids = BTreeSet::new();
         for operation in &self.payload.operations {
             operation.validate()?;
+            if !operation_ids.insert(operation.operation_id.clone()) {
+                return Err(ArtifactError {
+                    code: "OPC003".to_owned(),
+                    message: format!(
+                        "operation {} is declared more than once in the contract",
+                        operation.operation_id
+                    ),
+                });
+            }
         }
+
+        let mut service_ids = BTreeSet::new();
         for service in &self.payload.services {
             service.validate()?;
+            if !service_ids.insert(service.service_id.clone()) {
+                return Err(ArtifactError {
+                    code: "SVC006".to_owned(),
+                    message: format!(
+                        "service {} is declared more than once in the contract",
+                        service.service_id
+                    ),
+                });
+            }
+        }
+
+        let mut bound = BTreeMap::new();
+        for service in &self.payload.services {
+            for method in &service.methods {
+                if !operation_ids.contains(&method.operation_id) {
+                    return Err(ArtifactError {
+                        code: "SVC004".to_owned(),
+                        message: format!(
+                            "service method {} binds unknown operation {}",
+                            method.name, method.operation_id
+                        ),
+                    });
+                }
+                let previous =
+                    bound.insert(method.operation_id.clone(), service.service_id.clone());
+                if previous.is_some_and(|owner| owner != service.service_id) {
+                    return Err(ArtifactError {
+                        code: "SVC005".to_owned(),
+                        message: format!(
+                            "operation {} is bound by more than one service",
+                            method.operation_id
+                        ),
+                    });
+                }
+            }
         }
         Ok(())
     }

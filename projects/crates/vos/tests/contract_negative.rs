@@ -4,7 +4,9 @@
 //! so a host sees a stable rejection instead of a panic or a silent acceptance.
 
 use serde_json::Value;
-use vos::{ContractArtifact, ContractFormat, ContractPayload, ContractProducer, MethodId};
+use vos::{
+    ContractArtifact, ContractFormat, ContractPayload, ContractProducer, MethodId, OperationId,
+};
 
 const IRIS_GOLDEN: &str =
     include_str!("../../../../documentation/fixtures/contracts/operations_services.contract.json");
@@ -100,4 +102,45 @@ fn stale_fingerprints_are_rejected() {
     let mut hermes = ContractArtifact::from_json(HERMES_GOLDEN).unwrap();
     hermes.fingerprint = "0".repeat(64);
     assert_eq!(hermes.validate().unwrap_err().code, "ART020");
+}
+
+#[test]
+fn reviewed_fixtures_still_validate_with_their_golden_fingerprints() {
+    for golden in [IRIS_GOLDEN, HERMES_GOLDEN] {
+        let wire: Value = serde_json::from_str(golden).unwrap();
+        let artifact = ContractArtifact::from_json(golden).unwrap();
+
+        assert_eq!(artifact.validate(), Ok(()));
+        assert_eq!(artifact.fingerprint, wire["fingerprint"]);
+        assert_eq!(seal(payload(golden)).fingerprint, artifact.fingerprint);
+    }
+}
+
+#[test]
+fn method_bound_to_an_operation_outside_the_payload_is_rejected() {
+    for golden in [IRIS_GOLDEN, HERMES_GOLDEN] {
+        let mut payload = payload(golden);
+        payload.services[0].methods[0].operation_id =
+            OperationId::parse(&format!("op_{}", "0".repeat(64))).unwrap();
+
+        assert_eq!(seal(payload).validate().unwrap_err().code, "SVC004");
+    }
+}
+
+#[test]
+fn duplicate_operation_ids_are_rejected() {
+    let mut payload = payload(IRIS_GOLDEN);
+    let duplicate = payload.operations[0].clone();
+    payload.operations.push(duplicate);
+
+    assert_eq!(seal(payload).validate().unwrap_err().code, "OPC003");
+}
+
+#[test]
+fn duplicate_services_are_rejected() {
+    let mut payload = payload(IRIS_GOLDEN);
+    let duplicate = payload.services[0].clone();
+    payload.services.push(duplicate);
+
+    assert_eq!(seal(payload).validate().unwrap_err().code, "SVC006");
 }
