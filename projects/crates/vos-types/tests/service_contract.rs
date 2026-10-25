@@ -1,5 +1,5 @@
 use vos_types::{
-    CanonicalScalar, MethodId, MethodIdentityKey, MethodStreamMode, OperationId,
+    CanonicalScalar, ContractAttribute, MethodId, MethodIdentityKey, MethodStreamMode, OperationId,
     OperationIdentityKey, OperationKind, ResolvedCanonicalType, ServiceContract, ServiceId,
     ServiceIdentityKey, ServiceMethodContract, service_contract_fingerprint,
 };
@@ -42,6 +42,14 @@ fn method(
         response_type: response,
         stream,
         operation_id: operation,
+        attributes: vec![],
+    }
+}
+
+fn attribute(name: &str, syntax: &str) -> ContractAttribute {
+    ContractAttribute {
+        name: name.to_owned(),
+        syntax: syntax.to_owned(),
     }
 }
 
@@ -78,6 +86,7 @@ fn service() -> ServiceContract {
                 operation_id("delete"),
             ),
         ],
+        attributes: vec![],
         source_unit_id: 0,
         span: (0..40).into(),
     }
@@ -104,6 +113,8 @@ fn service_contract_round_trips_with_stable_field_names() {
         contract.methods[0].operation_id.as_str()
     );
     assert_eq!(wire["methods"][1]["stream"], "server-stream");
+    assert_eq!(wire["attributes"], serde_json::json!([]));
+    assert_eq!(wire["methods"][0]["attributes"], serde_json::json!([]));
     assert_eq!(wire["sourceUnitId"], 0);
     assert_eq!(wire["span"]["start"], 0);
     assert_eq!(wire["span"]["end"], 40);
@@ -137,6 +148,23 @@ fn unknown_fields_and_missing_fields_are_rejected() {
         .unwrap()
         .remove("stream");
     assert!(serde_json::from_value::<ServiceContract>(missing_stream).is_err());
+
+    let mut missing_attributes = serde_json::to_value(service()).unwrap();
+    missing_attributes
+        .as_object_mut()
+        .unwrap()
+        .remove("attributes");
+    assert!(
+        serde_json::from_value::<ServiceContract>(missing_attributes).is_err(),
+        "service attributes must be declared explicitly, not defaulted"
+    );
+
+    let mut missing_method_attributes = serde_json::to_value(service()).unwrap();
+    missing_method_attributes["methods"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("attributes");
+    assert!(serde_json::from_value::<ServiceContract>(missing_method_attributes).is_err());
 }
 
 #[test]
@@ -230,4 +258,100 @@ fn fingerprint_changes_with_binding_semantics() {
         "AuthService".to_owned(),
     ];
     assert_ne!(base, service_contract_fingerprint(&[renamed]));
+}
+
+#[test]
+fn unknown_attributes_are_kept_and_do_not_change_the_signature() {
+    let mut contract = service();
+    let method_id = contract.methods[0].method_id.clone();
+    let operation_id = contract.methods[0].operation_id.clone();
+    contract.attributes = vec![
+        attribute("route", "@route(\"/rpc\")"),
+        attribute("authorize", "@authorize(\"admin\")"),
+    ];
+    contract.methods[0].attributes = vec![attribute("wire", "@wire(\"json\")")];
+
+    let wire = serde_json::to_value(&contract).unwrap();
+    assert_eq!(wire["attributes"][0]["name"], "route");
+    assert_eq!(wire["attributes"][0]["syntax"], "@route(\"/rpc\")");
+    assert_eq!(wire["attributes"][1]["name"], "authorize");
+    assert_eq!(wire["methods"][0]["attributes"][0]["name"], "wire");
+    assert_eq!(
+        wire["methods"][0]["attributes"][0]["syntax"],
+        "@wire(\"json\")"
+    );
+
+    let decoded: ServiceContract = serde_json::from_value(wire).unwrap();
+    assert_eq!(decoded, contract);
+    assert_eq!(decoded.validate(), Ok(()));
+    assert_eq!(decoded.methods[0].method_id, method_id);
+    assert_eq!(decoded.methods[0].operation_id, operation_id);
+}
+
+#[test]
+fn duplicate_attributes_are_rejected_in_their_own_scope() {
+    let mut duplicate_service = service();
+    duplicate_service.attributes = vec![
+        attribute("route", "@route(\"/rpc\")"),
+        attribute("route", "@route(\"/rpc\")"),
+    ];
+    assert_eq!(
+        duplicate_service.validate().unwrap_err().code,
+        "SVC007",
+        "service attribute duplicates use the service scope code"
+    );
+
+    let mut blank_service = service();
+    blank_service.attributes = vec![attribute(" ", "@blank")];
+    assert_eq!(blank_service.validate().unwrap_err().code, "SVC007");
+
+    let mut duplicate_method = service();
+    duplicate_method.methods[0].attributes = vec![
+        attribute("wire", "@wire(\"json\")"),
+        attribute("wire", "@wire(\"json\")"),
+    ];
+    assert_eq!(
+        duplicate_method.validate().unwrap_err().code,
+        "SVC008",
+        "method attribute duplicates use the method scope code"
+    );
+
+    let mut blank_method = service();
+    blank_method.methods[1].attributes = vec![attribute("", "@blank")];
+    assert_eq!(blank_method.validate().unwrap_err().code, "SVC008");
+}
+
+#[test]
+fn attributes_with_the_same_name_and_different_syntax_coexist() {
+    let mut contract = service();
+    contract.attributes = vec![
+        attribute("route", "@route(\"/rpc\")"),
+        attribute("route", "@route(\"/http\")"),
+    ];
+    contract.methods[0].attributes = vec![
+        attribute("wire", "@wire(\"json\")"),
+        attribute("wire", "@wire(\"binary\")"),
+    ];
+    assert_eq!(contract.validate(), Ok(()));
+}
+
+#[test]
+fn fingerprint_tracks_attributes_but_not_spans() {
+    let base = service_contract_fingerprint(&[service()]);
+
+    let mut tagged = service();
+    tagged.attributes = vec![attribute("route", "@route(\"/rpc\")")];
+    assert_ne!(base, service_contract_fingerprint(&[tagged.clone()]));
+
+    let mut method_tagged = service();
+    method_tagged.methods[0].attributes = vec![attribute("wire", "@wire(\"json\")")];
+    assert_ne!(base, service_contract_fingerprint(&[method_tagged]));
+
+    let mut respanned = tagged.clone();
+    respanned.source_unit_id = 4;
+    respanned.span = (500..900).into();
+    assert_eq!(
+        service_contract_fingerprint(&[tagged]),
+        service_contract_fingerprint(&[respanned])
+    );
 }

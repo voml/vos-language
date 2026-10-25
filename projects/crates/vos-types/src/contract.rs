@@ -233,11 +233,27 @@ pub enum MethodStreamMode {
     ServerStream,
 }
 
+/// One attribute carried by a service or service method contract.
+///
+/// Attributes are an open collection: a name VOS does not understand is kept
+/// verbatim instead of being rejected. The contract carries no span, because an
+/// attribute has to survive being moved between source units and hosts, and a
+/// source position would make the artifact unusable outside its origin.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ContractAttribute {
+    /// Canonical attribute name, or the verbatim head when VOS does not know it.
+    pub name: String,
+    /// Original attribute syntax, preserved for round-tripping.
+    pub syntax: String,
+}
+
 /// One method of a service contract.
 ///
 /// The method name and the owning service produce the durable [`MethodId`],
 /// while `operation_id` is the explicit binding to an [`OperationContract`].
-/// A method never re-declares operation semantics.
+/// A method never re-declares operation semantics, and its attributes never
+/// change that signature.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ServiceMethodContract {
@@ -253,6 +269,8 @@ pub struct ServiceMethodContract {
     pub stream: MethodStreamMode,
     /// Explicit binding to the operation that implements this method.
     pub operation_id: OperationId,
+    /// Attributes declared on the method, in source order.
+    pub attributes: Vec<ContractAttribute>,
 }
 
 /// Durable contract of a VOS service.
@@ -265,6 +283,8 @@ pub struct ServiceContract {
     pub name: String,
     /// Canonical namespace-qualified path ending with the service name.
     pub canonical_path: Vec<String>,
+    /// Attributes declared on the service, in source order.
+    pub attributes: Vec<ContractAttribute>,
     /// Methods in canonical order.
     pub methods: Vec<ServiceMethodContract>,
     /// Source unit the service was projected from.
@@ -310,11 +330,13 @@ impl ServiceContract {
                 message: "service id does not match its canonical path".to_owned(),
             });
         }
+        validate_attributes(&self.attributes, "SVC007", "service")?;
 
         let mut names = BTreeSet::new();
         let mut ids = BTreeSet::new();
         let mut operations = BTreeSet::new();
         for method in &self.methods {
+            validate_attributes(&method.attributes, "SVC008", "service method")?;
             if method.name.trim().is_empty() {
                 return Err(ArtifactError {
                     code: "SVC014".to_owned(),
@@ -364,6 +386,29 @@ impl ServiceContract {
     }
 }
 
+fn validate_attributes(
+    attributes: &[ContractAttribute],
+    code: &str,
+    scope: &str,
+) -> Result<(), ArtifactError> {
+    let mut seen = BTreeSet::new();
+    for attribute in attributes {
+        if attribute.name.trim().is_empty() {
+            return Err(ArtifactError {
+                code: code.to_owned(),
+                message: format!("{scope} attribute names must not be empty"),
+            });
+        }
+        if !seen.insert((attribute.name.as_str(), attribute.syntax.as_str())) {
+            return Err(ArtifactError {
+                code: code.to_owned(),
+                message: format!("{scope} attributes must not repeat the same name and syntax"),
+            });
+        }
+    }
+    Ok(())
+}
+
 fn validate_explicit_reference(
     canonical_type: &ResolvedCanonicalType,
     side: &str,
@@ -406,7 +451,7 @@ fn validate_explicit_reference(
 /// Services and methods are ordered by durable identity, and spans and source
 /// units are excluded, so the fingerprint is stable across source units,
 /// whitespace, comments and declaration order while changing on any rename,
-/// retype, stream mode or operation rebinding.
+/// retype, stream mode, operation rebinding or attribute change.
 pub fn service_contract_fingerprint(services: &[ServiceContract]) -> String {
     let mut views = services.iter().collect::<Vec<_>>();
     views.sort_by(|left, right| left.service_id.cmp(&right.service_id));
@@ -419,6 +464,7 @@ pub fn service_contract_fingerprint(services: &[ServiceContract]) -> String {
                 fingerprint_version: CONTRACT_FINGERPRINT_VERSION,
                 service_id: &service.service_id,
                 canonical_path: &service.canonical_path,
+                attributes: canonical_attributes(&service.attributes),
                 methods: methods
                     .into_iter()
                     .map(|method| CanonicalServiceMethod {
@@ -428,6 +474,7 @@ pub fn service_contract_fingerprint(services: &[ServiceContract]) -> String {
                         response_type: &method.response_type,
                         stream: method.stream,
                         operation_id: &method.operation_id,
+                        attributes: canonical_attributes(&method.attributes),
                     })
                     .collect(),
             }
@@ -436,12 +483,23 @@ pub fn service_contract_fingerprint(services: &[ServiceContract]) -> String {
     canonical_digest(&views)
 }
 
+fn canonical_attributes(attributes: &[ContractAttribute]) -> Vec<CanonicalAttribute<'_>> {
+    attributes
+        .iter()
+        .map(|attribute| CanonicalAttribute {
+            name: &attribute.name,
+            syntax: &attribute.syntax,
+        })
+        .collect()
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct CanonicalServiceContract<'a> {
     fingerprint_version: &'static str,
     service_id: &'a ServiceId,
     canonical_path: &'a [String],
+    attributes: Vec<CanonicalAttribute<'a>>,
     methods: Vec<CanonicalServiceMethod<'a>>,
 }
 
@@ -454,4 +512,12 @@ struct CanonicalServiceMethod<'a> {
     response_type: &'a ResolvedCanonicalType,
     stream: MethodStreamMode,
     operation_id: &'a OperationId,
+    attributes: Vec<CanonicalAttribute<'a>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalAttribute<'a> {
+    name: &'a str,
+    syntax: &'a str,
 }

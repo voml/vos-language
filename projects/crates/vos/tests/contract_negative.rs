@@ -5,7 +5,8 @@
 
 use serde_json::Value;
 use vos::{
-    ContractArtifact, ContractFormat, ContractPayload, ContractProducer, MethodId, OperationId,
+    ContractArtifact, ContractAttribute, ContractFormat, ContractPayload, ContractProducer,
+    MethodId, OperationId,
 };
 
 const IRIS_GOLDEN: &str =
@@ -143,4 +144,52 @@ fn duplicate_services_are_rejected() {
     payload.services.push(duplicate);
 
     assert_eq!(seal(payload).validate().unwrap_err().code, "SVC006");
+}
+
+#[test]
+fn unknown_attributes_round_trip_through_the_sealed_artifact() {
+    let base = seal(payload(IRIS_GOLDEN));
+    let mut payload = payload(IRIS_GOLDEN);
+    payload.services[0].attributes = vec![
+        ContractAttribute {
+            name: "route".to_owned(),
+            syntax: "@route(\"/rpc\")".to_owned(),
+        },
+        ContractAttribute {
+            name: "authorize".to_owned(),
+            syntax: "@authorize(\"admin\")".to_owned(),
+        },
+    ];
+    payload.services[0].methods[0].attributes = vec![ContractAttribute {
+        name: "wire".to_owned(),
+        syntax: "@wire(\"json\")".to_owned(),
+    }];
+
+    let artifact = seal(payload.clone());
+    assert_ne!(
+        artifact.fingerprint, base.fingerprint,
+        "attributes must enter the payload fingerprint"
+    );
+    assert_eq!(artifact.validate(), Ok(()));
+    assert_eq!(
+        artifact.payload.services[0].methods[0].method_id,
+        base.payload.services[0].methods[0].method_id,
+        "attributes must never change the method identity"
+    );
+    assert_eq!(
+        artifact.payload.services[0].methods[0].operation_id,
+        base.payload.services[0].methods[0].operation_id,
+        "attributes must never change the operation binding"
+    );
+
+    let decoded = ContractArtifact::from_json(&artifact.to_json().unwrap()).unwrap();
+    assert_eq!(decoded, artifact);
+    assert_eq!(
+        decoded.payload.services[0].attributes,
+        payload.services[0].attributes
+    );
+    assert_eq!(
+        decoded.payload.services[0].methods[0].attributes,
+        payload.services[0].methods[0].attributes
+    );
 }

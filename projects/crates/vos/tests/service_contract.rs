@@ -219,6 +219,10 @@ fn service_contract_binds_methods_to_declared_operations() {
     assert_eq!(service.service_id, services[0].service_id);
     assert_eq!(service.validate(), Ok(()));
     assert_eq!(service.methods.len(), 2);
+    assert!(
+        service.attributes.is_empty(),
+        "the contract layer carries no service attributes until Oak projects them"
+    );
 
     let create = service
         .methods
@@ -256,6 +260,7 @@ fn service_contract_binds_methods_to_declared_operations() {
             .unwrap()
             .operation_id
     );
+    assert!(create.attributes.is_empty());
 
     let delete = service
         .methods
@@ -403,7 +408,7 @@ fn service_fingerprint_ignores_order_and_provenance() {
     let operations = operation_contracts(SOURCE);
     let services = projected_services(SOURCE);
     let declared = declaration(&services[0], &operations);
-    let base = build(SOURCE, &[declared.clone()]).unwrap();
+    let base = build(SOURCE, std::slice::from_ref(&declared)).unwrap();
 
     let mut reversed = declared;
     reversed.methods.reverse();

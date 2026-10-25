@@ -199,7 +199,8 @@ pub struct ServiceContractDecl {
 /// Diagnostics: `SVC001` projected service without a declaration, `SVC002`
 /// duplicate declaration, `SVC003` declaration for an unknown service, `SVC004`
 /// method binding an operation that has no contract, `SVC005` operation bound
-/// by two services, `SVC006` the same service projected from two units.
+/// by two services, `SVC006` the same service projected from two units,
+/// `SVC007` malformed service attributes, `SVC008` malformed method attributes.
 pub fn build_service_contracts(
     units: &[(u32, &[ServiceProjection])],
     declarations: &[ServiceContractDecl],
@@ -307,6 +308,7 @@ pub fn build_service_contracts(
                         response_type,
                         stream: method.stream,
                         operation_id: method.operation_id.clone(),
+                        attributes: Vec::new(),
                     })
                 })
                 .collect::<Option<Vec<_>>>()
@@ -317,6 +319,7 @@ pub fn build_service_contracts(
                 service_id: service.service_id.clone(),
                 name: service.name.clone(),
                 canonical_path: service.canonical_path.clone(),
+                attributes: Vec::new(),
                 methods,
                 source_unit_id: *source_unit_id,
                 span: service.span,

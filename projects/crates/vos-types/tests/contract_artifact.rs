@@ -65,7 +65,9 @@ fn service_named(name: &str) -> ServiceContract {
             response_type: ResolvedCanonicalType::Scalar(CanonicalScalar::Bool),
             stream: MethodStreamMode::Unary,
             operation_id: operation_id("create"),
+            attributes: vec![],
         }],
+        attributes: vec![],
         source_unit_id: 0,
         span: (0..40).into(),
     }
