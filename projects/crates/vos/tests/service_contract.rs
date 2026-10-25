@@ -221,7 +221,7 @@ fn service_contract_binds_methods_to_declared_operations() {
     assert_eq!(service.methods.len(), 2);
     assert!(
         service.attributes.is_empty(),
-        "the contract layer carries no service attributes until Oak projects them"
+        "the fixture source declares no service attributes"
     );
 
     let create = service
@@ -344,8 +344,10 @@ fn duplicate_method_names_and_operation_reuse_are_rejected() {
 
     let mut duplicate_names = declaration(&services[0], &operations);
     duplicate_names.methods[1].name = "create".to_owned();
+    duplicate_names.methods[1].request_type = duplicate_names.methods[0].request_type.clone();
+    duplicate_names.methods[1].response_type = duplicate_names.methods[0].response_type.clone();
     let diagnostics = build(SOURCE, &[duplicate_names]).unwrap_err();
-    assert_eq!(codes(&diagnostics), vec!["SVC014"]);
+    assert!(codes(&diagnostics).contains(&"SVC014"));
 
     let mut reused_operation = declaration(&services[0], &operations);
     reused_operation.methods[1].operation_id = reused_operation.methods[0].operation_id.clone();
@@ -364,7 +366,17 @@ fn operation_bound_by_two_services_is_rejected() {
         .operation_id
         .clone();
     let declarations = vec![
-        declaration(&services[0], &operations),
+        ServiceContractDecl {
+            service_id: services[0].service_id.clone(),
+            methods: vec![method(
+                "create",
+                &["CreateRequest"],
+                &["CreateRequest"],
+                MethodStreamMode::Unary,
+                &operations,
+                "create",
+            )],
+        },
         ServiceContractDecl {
             service_id: services[1].service_id.clone(),
             methods: vec![ServiceMethodDecl {
@@ -427,16 +439,141 @@ fn service_fingerprint_ignores_order_and_provenance() {
 }
 
 #[test]
+fn declaration_must_match_the_source_signature() {
+    let operations = operation_contracts(SOURCE);
+    let services = projected_services(SOURCE);
+
+    let mut missing_name = declaration(&services[0], &operations);
+    missing_name.methods[0].name = "missing".to_owned();
+    assert_eq!(
+        codes(&build(SOURCE, &[missing_name]).unwrap_err()),
+        vec!["SVC018"]
+    );
+
+    let mut undeclared = declaration(&services[0], &operations);
+    undeclared.methods.retain(|method| method.name != "delete");
+    assert_eq!(
+        codes(&build(SOURCE, &[undeclared]).unwrap_err()),
+        vec!["SVC019"]
+    );
+
+    let mut wrong_request = declaration(&services[0], &operations);
+    wrong_request.methods[0].request_type = CanonicalType::Named(vec!["Identity".to_owned()]);
+    assert_eq!(
+        codes(&build(SOURCE, &[wrong_request]).unwrap_err()),
+        vec!["SVC021"]
+    );
+
+    let mut wrong_response = declaration(&services[0], &operations);
+    wrong_response.methods[0].response_type =
+        CanonicalType::Named(vec!["DeleteRequest".to_owned()]);
+    assert_eq!(
+        codes(&build(SOURCE, &[wrong_response]).unwrap_err()),
+        vec!["SVC022"]
+    );
+
+    let mut wrong_stream = declaration(&services[0], &operations);
+    wrong_stream.methods[0].stream = MethodStreamMode::ServerStream;
+    assert_eq!(
+        codes(&build(SOURCE, &[wrong_stream]).unwrap_err()),
+        vec!["SVC023"]
+    );
+}
+
+#[test]
+fn multi_parameter_methods_are_not_synthesised() {
+    let source = "namespace demo::auth\n\
+                  \n\
+                  class CreateRequest {\n\
+                  \x20   user_name: utf8,\n\
+                  }\n\
+                  \n\
+                  class DeleteRequest {\n\
+                  \x20   id: uuid,\n\
+                  }\n\
+                  \n\
+                  class Identity {\n\
+                  \x20   id: uuid,\n\
+                  }\n\
+                  \n\
+                  query create(request: CreateRequest, extra: CreateRequest) -> CreateRequest { request }\n\
+                  \n\
+                  service IdentityService {\n\
+                  \x20 create(request: CreateRequest, extra: CreateRequest) -> CreateRequest\n\
+                  }\n";
+    let operations = operation_contracts(source);
+    let services = projected_services(source);
+    let declared = ServiceContractDecl {
+        service_id: services[0].service_id.clone(),
+        methods: vec![method(
+            "create",
+            &["CreateRequest"],
+            &["CreateRequest"],
+            MethodStreamMode::Unary,
+            &operations,
+            "create",
+        )],
+    };
+    let diagnostics = build(source, &[declared]).unwrap_err();
+    assert_eq!(codes(&diagnostics), vec!["SVC020"]);
+}
+
+#[test]
 fn service_fingerprint_tracks_binding_semantics() {
     let operations = operation_contracts(SOURCE);
     let services = projected_services(SOURCE);
     let base = build(SOURCE, &[declaration(&services[0], &operations)]).unwrap();
     let base_fingerprint = service_contract_fingerprint(&base);
 
-    let mut streamed = declaration(&services[0], &operations);
-    streamed.methods[0].stream = MethodStreamMode::ServerStream;
-    let streamed = build(SOURCE, &[streamed]).unwrap();
-    assert_ne!(base_fingerprint, service_contract_fingerprint(&streamed));
+    let single_source = |return_type: &str| {
+        format!(
+            "namespace demo::auth\n\
+             \n\
+             class CreateRequest {{\n\
+             \x20   user_name: utf8,\n\
+             }}\n\
+             \n\
+             class DeleteRequest {{\n\
+             \x20   id: uuid,\n\
+             }}\n\
+             \n\
+             class Identity {{\n\
+             \x20   id: uuid,\n\
+             }}\n\
+             \n\
+             query create(request: CreateRequest) -> CreateRequest {{ request }}\n\
+             \n\
+             service IdentityService {{\n\
+             \x20 create(request: CreateRequest) -> {return_type}\n\
+             }}\n"
+        )
+    };
+    let build_single = |return_type: &str, stream: MethodStreamMode| {
+        let source = single_source(return_type);
+        let services = projected_services(&source);
+        let operations = operation_contracts(&source);
+        build(
+            &source,
+            &[ServiceContractDecl {
+                service_id: services[0].service_id.clone(),
+                methods: vec![method(
+                    "create",
+                    &["CreateRequest"],
+                    &["CreateRequest"],
+                    stream,
+                    &operations,
+                    "create",
+                )],
+            }],
+        )
+        .unwrap()
+    };
+    let unary = build_single("CreateRequest", MethodStreamMode::Unary);
+    let streamed = build_single("stream<CreateRequest>", MethodStreamMode::ServerStream);
+    assert_ne!(
+        service_contract_fingerprint(&unary),
+        service_contract_fingerprint(&streamed)
+    );
 
     let mut rebound = base.clone();
     rebound[0].methods[1].operation_id = rebound[0].methods[0].operation_id.clone();

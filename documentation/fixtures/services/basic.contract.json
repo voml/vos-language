@@ -20,6 +20,65 @@
         "IdentityService"
       ],
       "serviceId": "svc_9840335d138fd4c32651c498ecd3f0c9aa05cf5433828d9df268aad47c9cfbc1",
+      "attributes": [],
+      "methods": [
+        {
+          "name": "create",
+          "parameters": [
+            {
+              "name": "request",
+              "typeExpr": {
+                "named": [
+                  "CreateRequest"
+                ]
+              },
+              "span": {
+                "start": 57,
+                "end": 79
+              }
+            }
+          ],
+          "returnType": {
+            "named": [
+              "Identity"
+            ]
+          },
+          "stream": false,
+          "attributes": [],
+          "span": {
+            "start": 50,
+            "end": 92
+          }
+        },
+        {
+          "name": "delete",
+          "parameters": [
+            {
+              "name": "request",
+              "typeExpr": {
+                "named": [
+                  "DeleteRequest"
+                ]
+              },
+              "span": {
+                "start": 102,
+                "end": 124
+              }
+            }
+          ],
+          "returnType": {
+            "named": [
+              "bool"
+            ]
+          },
+          "stream": false,
+          "attributes": [],
+          "span": {
+            "start": 95,
+            "end": 133
+          }
+        }
+      ],
       "body": {
         "text": "{\n  create(request: CreateRequest) -> Identity\n  delete(request: DeleteRequest) -> bool\n}",
         "span": {

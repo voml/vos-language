@@ -4,7 +4,7 @@
     "name": "hermes-fixture",
     "version": "0"
   },
-  "fingerprint": "788337dab40809ecfad272d622da9c5758b86612025120e4594b964866e074c7",
+  "fingerprint": "1e4a0457b3152d7b55d5178ccbfa065fb9ea90da441ec55d1598774543e27845",
   "payload": {
     "operations": [
       {
@@ -134,15 +134,13 @@
               "scalar": "uuid"
             },
             "responseType": {
-              "optional": {
-                "user": {
-                  "path": [
-                    "demo",
-                    "auth",
-                    "Identity"
-                  ],
-                  "typeId": 2
-                }
+              "user": {
+                "path": [
+                  "demo",
+                  "auth",
+                  "Identity"
+                ],
+                "typeId": 2
               }
             },
             "stream": "server-stream",
@@ -153,7 +151,7 @@
         "sourceUnitId": 0,
         "span": {
           "start": 215,
-          "end": 323
+          "end": 330
         }
       }
     ]

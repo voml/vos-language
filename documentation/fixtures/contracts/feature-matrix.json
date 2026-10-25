@@ -94,10 +94,10 @@
       "documented": true,
       "parsed": true,
       "projected": true,
-      "resolved": false,
-      "conformance": false,
+      "resolved": true,
+      "conformance": true,
       "downstream-consumed": false,
-      "note": "Oak parses service and operation declarations. VOS projects them into separate artifacts but does not resolve or consume them downstream yet"
+      "note": "Oak projects service attributes and method signatures, and build_service_contracts resolves them against the authored operation bindings while rejecting any declaration that disagrees with the source"
     }
   ]
 }

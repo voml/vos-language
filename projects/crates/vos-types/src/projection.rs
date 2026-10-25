@@ -422,9 +422,41 @@ pub struct ServiceProjection {
     pub canonical_path: Vec<String>,
     /// Opaque stable service identity derived from `canonical_path`.
     pub service_id: ServiceId,
+    /// Attributes preserved before the `service` keyword, in source order.
+    pub attributes: Vec<AttributeContract>,
+    /// Methods projected from the service body, in source order.
+    pub methods: Vec<ServiceMethodProjection>,
     /// Exact body source slice.
     pub body: Option<SyntaxSliceContract>,
     /// Full declaration span.
+    #[serde(
+        serialize_with = "serialize_span",
+        deserialize_with = "deserialize_span"
+    )]
+    pub span: Range<usize>,
+}
+
+/// One method projected from a service body without lowering its body.
+///
+/// The projection carries only what Oak can see: the method name, its named
+/// parameters, the exact return type expression, the `stream` marker and the
+/// method attributes. It never decides request/response contract types, stream
+/// mode or operation binding; those belong to the authored contract layer.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct ServiceMethodProjection {
+    /// Method name as written.
+    pub name: String,
+    /// Named parameters in source order.
+    pub parameters: Vec<OperationParameter>,
+    /// Return type expression when the method declares one.
+    pub return_type: Option<CanonicalType>,
+    /// Whether the source used the `stream<T>` server-streaming form.
+    pub stream: bool,
+    /// Attributes declared on the method, in source order.
+    pub attributes: Vec<AttributeContract>,
+    /// Full method span.
     #[serde(
         serialize_with = "serialize_span",
         deserialize_with = "deserialize_span"
@@ -515,6 +547,24 @@ impl ServiceProjectionArtifact {
                         code: "SRV014".to_owned(),
                         message: "service body syntax slice does not match source".to_owned(),
                     });
+                }
+            }
+            for attribute in &service.attributes {
+                validate_span(&attribute.span, source, "service attribute span")?;
+            }
+            for method in &service.methods {
+                validate_span(&method.span, source, "service method span")?;
+                if method.name.trim().is_empty() {
+                    return Err(ArtifactError {
+                        code: "SRV018".to_owned(),
+                        message: "service method name cannot be empty".to_owned(),
+                    });
+                }
+                for parameter in &method.parameters {
+                    validate_span(&parameter.span, source, "service method parameter span")?;
+                }
+                for attribute in &method.attributes {
+                    validate_span(&attribute.span, source, "service method attribute span")?;
                 }
             }
         }

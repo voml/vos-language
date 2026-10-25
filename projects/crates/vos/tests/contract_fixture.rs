@@ -98,9 +98,7 @@ fn declaration(
             ServiceMethodDecl {
                 name: "lookup".to_owned(),
                 request_type: CanonicalType::Named(vec!["uuid".to_owned()]),
-                response_type: CanonicalType::Optional(Box::new(CanonicalType::Named(vec![
-                    "Identity".to_owned(),
-                ]))),
+                response_type: CanonicalType::Named(vec!["Identity".to_owned()]),
                 stream: MethodStreamMode::ServerStream,
                 operation_id: operation_id(operations, "lookup"),
             },

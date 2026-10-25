@@ -1,6 +1,7 @@
 use core::range::Range;
 use oak_vos::{
-    VosDeclarationKind, VosField, VosFieldAttribute, VosRoot, VosTypeArgument, VosTypeSyntax,
+    VosDeclarationKind, VosField, VosFieldAttribute, VosRoot, VosServiceMethod, VosTypeArgument,
+    VosTypeSyntax,
 };
 use vos_types::*;
 
@@ -159,10 +160,36 @@ pub fn project_services(root: &VosRoot) -> Result<Vec<ServiceProjection>, Vec<Co
                         continue;
                     }
                 };
+                let attributes = match declaration
+                    .attributes
+                    .iter()
+                    .map(resolve_attribute)
+                    .collect::<Result<Vec<_>, _>>()
+                {
+                    Ok(attributes) => attributes,
+                    Err(diagnostic) => {
+                        diagnostics.push(diagnostic);
+                        continue;
+                    }
+                };
+                let methods = match declaration
+                    .methods
+                    .iter()
+                    .map(project_service_method)
+                    .collect::<Result<Vec<_>, _>>()
+                {
+                    Ok(methods) => methods,
+                    Err(diagnostic) => {
+                        diagnostics.push(diagnostic);
+                        continue;
+                    }
+                };
                 services.push(ServiceProjection {
                     name,
                     canonical_path,
                     service_id: ServiceId::derive(&identity),
+                    attributes,
+                    methods,
                     body: declaration.body.as_ref().map(slice_contract),
                     span: declaration.span,
                 });
@@ -202,6 +229,40 @@ fn slice_contract(slice: &oak_vos::VosSyntaxSlice) -> SyntaxSliceContract {
         text: slice.text.clone(),
         span: slice.span,
     }
+}
+
+fn project_service_method(
+    method: &VosServiceMethod,
+) -> Result<ServiceMethodProjection, ContractDiagnostic> {
+    let parameters = method
+        .parameters
+        .iter()
+        .map(|parameter| OperationParameter {
+            name: parameter.name.clone(),
+            type_expr: canonical_type(&parameter.type_expr),
+            span: parameter.span,
+        })
+        .collect();
+    let (return_type, stream) = match method.return_type.as_ref() {
+        Some(return_type) => (
+            Some(canonical_type(&return_type.type_expr)),
+            return_type.stream,
+        ),
+        None => (None, false),
+    };
+    let attributes = method
+        .attributes
+        .iter()
+        .map(resolve_attribute)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(ServiceMethodProjection {
+        name: method.name.clone(),
+        parameters,
+        return_type,
+        stream,
+        attributes,
+        span: method.span,
+    })
 }
 
 /// Projects the supported Oak syntax without claiming symbol resolution.

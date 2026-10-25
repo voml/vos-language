@@ -5,10 +5,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use core::range::Range;
 
 use vos_types::{
-    ArtifactError, CanonicalType, ContractDiagnostic, MethodId, MethodIdentityKey,
-    MethodStreamMode, OperationContract, OperationEffect, OperationId, OperationParameterContract,
-    OperationProjection, ResolvedTypeContract, SemanticCapability, ServiceContract, ServiceId,
-    ServiceMethodContract, ServiceProjection,
+    ArtifactError, AttributeContract, CanonicalType, ContractAttribute, ContractDiagnostic,
+    MethodId, MethodIdentityKey, MethodStreamMode, OperationContract, OperationEffect, OperationId,
+    OperationParameterContract, OperationProjection, ResolvedTypeContract, SemanticCapability,
+    ServiceContract, ServiceId, ServiceMethodContract, ServiceProjection, canonical_type_key,
 };
 
 use super::identity::resolve_type;
@@ -164,9 +164,11 @@ pub fn build_operation_contracts(
 
 /// Authored declaration of one service method.
 ///
-/// Request and response types are authored as canonical VOS types and resolved
-/// against the declared type contracts, so a method can never reference a type
-/// that the contract does not define.
+/// Request and response types are authored as canonical VOS types and must
+/// agree with the Oak-projected method body, so the declaration can never
+/// invent a signature the source does not have. Types are resolved against the
+/// declared type contracts, so a method can never reference a type that the
+/// contract does not define.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ServiceMethodDecl {
     /// Method name inside the owning service.
@@ -183,9 +185,10 @@ pub struct ServiceMethodDecl {
 
 /// Authored contract declaration of one service.
 ///
-/// The service identity comes from the Oak projection. Methods are declared
-/// here because Oak does not project service bodies into methods, and this
-/// layer must never parse the body to recover them.
+/// The service identity and the method signatures come from the Oak projection.
+/// The declaration adds only the explicit operation binding and is rejected when
+/// it disagrees with the projected method names, request parameters, return
+/// types or stream markers.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ServiceContractDecl {
     /// Durable identity of the projected service this declaration belongs to.
@@ -196,11 +199,20 @@ pub struct ServiceContractDecl {
 
 /// Builds validated service contracts from Oak projections and declarations.
 ///
+/// The source projection owns the method names, the single named request
+/// parameter, the return type and the `stream` marker, while the declaration
+/// owns the operation binding. A declaration that disagrees with the source is
+/// rejected instead of being silently rewritten.
+///
 /// Diagnostics: `SVC001` projected service without a declaration, `SVC002`
 /// duplicate declaration, `SVC003` declaration for an unknown service, `SVC004`
 /// method binding an operation that has no contract, `SVC005` operation bound
 /// by two services, `SVC006` the same service projected from two units,
-/// `SVC007` malformed service attributes, `SVC008` malformed method attributes.
+/// `SVC007` malformed service attributes, `SVC008` malformed method attributes,
+/// `SVC018` declared method missing from the source, `SVC019` source method
+/// without a declaration, `SVC020` source method without exactly one request
+/// parameter, `SVC021` request type mismatch, `SVC022` response type mismatch,
+/// `SVC023` stream marker mismatch, `SVC024` source method without a return type.
 pub fn build_service_contracts(
     units: &[(u32, &[ServiceProjection])],
     declarations: &[ServiceContractDecl],
@@ -257,10 +269,36 @@ pub fn build_service_contracts(
             };
             used.insert(service.service_id.clone());
             let namespace = &service.canonical_path[..service.canonical_path.len() - 1];
+            let projected_methods = service
+                .methods
+                .iter()
+                .map(|method| (method.name.as_str(), method))
+                .collect::<BTreeMap<_, _>>();
             let Some(methods) = declaration
                 .methods
                 .iter()
                 .map(|method| {
+                    let Some(projected) = projected_methods.get(method.name.as_str()) else {
+                        diagnostics.push(diagnostic(
+                            "SVC018",
+                            &format!(
+                                "service method {} is missing from the source declaration",
+                                method.name
+                            ),
+                        ));
+                        return None;
+                    };
+                    if projected.parameters.len() != 1 {
+                        diagnostics.push(diagnostic(
+                            "SVC020",
+                            &format!(
+                                "service method {} must declare exactly one request parameter in source",
+                                method.name
+                            ),
+                        ));
+                        return None;
+                    }
+                    let parameter = &projected.parameters[0];
                     let request_type =
                         resolve_type(&method.request_type, namespace, &type_ids, &mut diagnostics)?;
                     let response_type = resolve_type(
@@ -269,6 +307,55 @@ pub fn build_service_contracts(
                         &type_ids,
                         &mut diagnostics,
                     )?;
+                    if canonical_type_key(&parameter.type_expr)
+                        != canonical_type_key(&method.request_type)
+                    {
+                        diagnostics.push(diagnostic(
+                            "SVC021",
+                            &format!(
+                                "service method {} request type does not match the source parameter",
+                                method.name
+                            ),
+                        ));
+                        return None;
+                    }
+                    let Some(projected_response) = projected.return_type.as_ref() else {
+                        diagnostics.push(diagnostic(
+                            "SVC024",
+                            &format!(
+                                "service method {} declares no return type in source",
+                                method.name
+                            ),
+                        ));
+                        return None;
+                    };
+                    if canonical_type_key(projected_response)
+                        != canonical_type_key(&method.response_type)
+                    {
+                        diagnostics.push(diagnostic(
+                            "SVC022",
+                            &format!(
+                                "service method {} response type does not match the source return type",
+                                method.name
+                            ),
+                        ));
+                        return None;
+                    }
+                    let projected_stream = if projected.stream {
+                        MethodStreamMode::ServerStream
+                    } else {
+                        MethodStreamMode::Unary
+                    };
+                    if projected_stream != method.stream {
+                        diagnostics.push(diagnostic(
+                            "SVC023",
+                            &format!(
+                                "service method {} stream marker does not match the source return type",
+                                method.name
+                            ),
+                        ));
+                        return None;
+                    }
                     if !operation_ids.contains(&method.operation_id) {
                         diagnostics.push(diagnostic(
                             "SVC004",
@@ -308,18 +395,30 @@ pub fn build_service_contracts(
                         response_type,
                         stream: method.stream,
                         operation_id: method.operation_id.clone(),
-                        attributes: Vec::new(),
+                        attributes: contract_attributes(&projected.attributes),
                     })
                 })
                 .collect::<Option<Vec<_>>>()
             else {
                 continue;
             };
+            for name in projected_methods.keys() {
+                if !declaration
+                    .methods
+                    .iter()
+                    .any(|method| method.name == *name)
+                {
+                    diagnostics.push(diagnostic(
+                        "SVC019",
+                        &format!("source method {name} has no contract declaration"),
+                    ));
+                }
+            }
             let contract = ServiceContract {
                 service_id: service.service_id.clone(),
                 name: service.name.clone(),
                 canonical_path: service.canonical_path.clone(),
-                attributes: Vec::new(),
+                attributes: contract_attributes(&service.attributes),
                 methods,
                 source_unit_id: *source_unit_id,
                 span: service.span,
@@ -346,6 +445,16 @@ pub fn build_service_contracts(
     } else {
         Err(diagnostics)
     }
+}
+
+fn contract_attributes(attributes: &[AttributeContract]) -> Vec<ContractAttribute> {
+    attributes
+        .iter()
+        .map(|attribute| ContractAttribute {
+            name: attribute.name.clone(),
+            syntax: attribute.syntax.clone(),
+        })
+        .collect()
 }
 
 fn diagnostic(code: &str, message: &str) -> ContractDiagnostic {
