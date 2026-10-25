@@ -5,12 +5,14 @@ on:
   push:
     branches: [master, dev]
     paths:
+      - "Cargo.toml"
       - "projects/crates/**"
       - "../../documentation/fixtures/**"
       - ".github/workflows/check-rust.yml"
   pull_request:
     branches: [master, dev]
     paths:
+      - "Cargo.toml"
       - "projects/crates/**"
       - "../../documentation/fixtures/**"
       - ".github/workflows/check-rust.yml"
