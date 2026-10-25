@@ -39,14 +39,18 @@ fn rust_struct_layout_is_byte_exact() {
         "/// A user row.\n#[derive(Clone, Debug)]\npub struct User {\n    pub id: uuid::Uuid,\n    pub name: String,\n}\n"
     );
 
-    let without_docs = vos_generator::rust_struct("User", None, &[("id", "uuid::Uuid")]).expect("struct");
+    let without_docs =
+        vos_generator::rust_struct("User", None, &[("id", "uuid::Uuid")]).expect("struct");
     assert_eq!(
         without_docs,
         "#[derive(Clone, Debug)]\npub struct User {\n    pub id: uuid::Uuid,\n}\n"
     );
 
     let no_fields = vos_generator::rust_struct("Empty", None, &[]).expect("struct");
-    assert_eq!(no_fields, "#[derive(Clone, Debug)]\npub struct Empty {\n}\n");
+    assert_eq!(
+        no_fields,
+        "#[derive(Clone, Debug)]\npub struct Empty {\n}\n"
+    );
 }
 
 #[test]
