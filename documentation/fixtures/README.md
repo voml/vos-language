@@ -25,10 +25,12 @@ empty `errors` array for successful cases.
 ## Fixture families
 
 | Directory                      | Focus                                    | Oak/VOS entry                       |
-|--------------------------------|------------------------------------------|--------------------------------------|
+|--------------------------------|------------------------------------------|-------------------------------------|
 | [`schema`](./schema)           | Schema and DDL documents                 | Oak VOS frontend                    |
 | [`operations`](./operations)   | Expressions and object/method operations | Oak VOS frontend                    |
+| [`services`](./services)       | Service declarations and projections     | Oak VOS frontend                    |
 | [`diagnostics`](./diagnostics) | Invalid or warning-bearing source        | Oak diagnostics                     |
+| [`contracts`](./contracts)     | Resolved contracts and sealed artifacts  | VOS semantic consumer               |
 
 Under `operations/`, the Oak VOS operation surface is expected; elsewhere the Oak VOS schema surface is expected. A
 `stem.kind.json` sidecar can make
@@ -79,6 +81,14 @@ Diagnostics use the Oak/VOS structured diagnostic contract:
 Schema cases may include `*.catalog.json` snapshots. These capture durable `TypeId`, `FieldId`, virtual field indexes,
 and revision state. They complement the source-facing AST: a field's stable identity is not merely its current name or
 position.
+
+### Sealed contract artifacts
+
+`contracts/operations_services.contract.json` is the sealed `vos/iris.contract/v0` artifact built from
+`operations_services.vos`. `contracts/operations_services.hermes.contract.json` carries the same payload under
+`vos/hermes.contract/v0`, so both formats share one fingerprint and differ only in producer provenance. Negative cases
+mutate these goldens and assert stable diagnostic codes for duplicate or malformed methods, unknown fields and stale
+fingerprints.
 
 ### Contract projection matrix
 
