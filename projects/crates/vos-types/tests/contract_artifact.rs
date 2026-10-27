@@ -31,6 +31,7 @@ fn create_operation() -> OperationContract {
         capabilities: vec![],
         source_unit_id: 0,
         span: (0..0).into(),
+        stable_id_hint: None,
     }
 }
 
@@ -66,10 +67,12 @@ fn service_named(name: &str) -> ServiceContract {
             stream: MethodStreamMode::Unary,
             operation_id: operation_id("create"),
             attributes: vec![],
+            stable_id_hint: None,
         }],
         attributes: vec![],
         source_unit_id: 0,
         span: (0..40).into(),
+        stable_id_hint: None,
     }
 }
 

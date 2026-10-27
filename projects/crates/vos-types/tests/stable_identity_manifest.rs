@@ -5,7 +5,7 @@ use vos_types::{
     ResolvedTypeContract, ServiceContract, ServiceId, ServiceIdentityKey, ServiceMethodContract,
     SourceProvenance, StableId, StableIdentityEntry, StableIdentityManifest, TypeContractKind,
     ContractArtifact, ContractPayload, ContractFormat, ContractProducer,
-    STABLE_IDENTITY_MANIFEST_VERSION,
+    STABLE_IDENTITY_MANIFEST_VERSION, identity_hash_u64,
 };
 
 fn minimal_contract() -> ResolvedContract {
@@ -312,6 +312,7 @@ fn op_key(name: &str) -> OperationContract {
         capabilities: vec![],
         source_unit_id: 0,
         span: (0..name.len()).into(),
+        stable_id_hint: None,
     }
 }
 
@@ -336,6 +337,7 @@ fn sample_artifact() -> ContractArtifact {
             stream: MethodStreamMode::Unary,
             operation_id: op_hello.operation_id.clone(),
             attributes: vec![],
+            stable_id_hint: None,
         },
         ServiceMethodContract {
             method_id: MethodId::derive(
@@ -347,6 +349,7 @@ fn sample_artifact() -> ContractArtifact {
             stream: MethodStreamMode::Unary,
             operation_id: op_farewell.operation_id.clone(),
             attributes: vec![],
+            stable_id_hint: None,
         },
     ];
     let svc = ServiceContract {
@@ -357,6 +360,7 @@ fn sample_artifact() -> ContractArtifact {
         methods,
         source_unit_id: 0,
         span: (0..30).into(),
+        stable_id_hint: None,
     };
     let payload = ContractPayload {
         operations: vec![op_hello, op_farewell],
@@ -548,4 +552,275 @@ fn service_rename_preserves_stable_id_while_current_name_changes() {
     assert_ne!(after_svc.current_name, before_svc.current_name);
 
     assert!(old_svc_id.as_str() != new_svc_id.as_str());
+}
+
+// ---------------------------------------------------------------------------
+// Evolution semantics: stable_id_hint as pre-allocated durable identity
+// ---------------------------------------------------------------------------
+
+#[test]
+fn stable_id_hint_preserves_identity_across_service_rename() {
+    // Build an artifact where the service carries a pre-allocated stable_id_hint.
+    let original = sample_artifact();
+    let before = StableIdentityManifest::from_artifact(&original);
+
+    // Build a RENAMED artifact with NEW derived identities but the SAME hints.
+    // This is what the VOS compiler should emit: first compile allocates a
+    // stable_id_hint, subsequent compiles keep it even when names change.
+    let mut renamed_payload = original.payload.clone();
+    let new_svc_id = ServiceId::derive(
+        &ServiceIdentityKey::new(vec![
+            "demo".to_owned(),
+            "GreetServiceRenamed".to_owned(),
+        ])
+        .unwrap(),
+    );
+    renamed_payload.services[0].name = "GreetServiceRenamed".to_owned();
+    renamed_payload.services[0].canonical_path = vec![
+        "demo".to_owned(),
+        "GreetServiceRenamed".to_owned(),
+    ];
+    renamed_payload.services[0].service_id = new_svc_id.clone();
+    // The crucial part: pre-allocate stable_id_hints so the manifest builder
+    // ignores the content-derived ids. The service gets hint 100, methods get
+    // 101 and 102.
+    renamed_payload.services[0].stable_id_hint = Some(100);
+    renamed_payload.services[0].methods[0].method_id = MethodId::derive(
+        &MethodIdentityKey::new(new_svc_id.clone(), "greet").unwrap(),
+    );
+    renamed_payload.services[0].methods[0].stable_id_hint = Some(101);
+    renamed_payload.services[0].methods[1].method_id = MethodId::derive(
+        &MethodIdentityKey::new(new_svc_id.clone(), "leave").unwrap(),
+    );
+    renamed_payload.services[0].methods[1].stable_id_hint = Some(102);
+
+    let renamed = ContractArtifact::seal(
+        original.version,
+        original.producer.clone(),
+        renamed_payload,
+    );
+    renamed.validate().expect("renamed artifact with hints must be valid");
+
+    let after = StableIdentityManifest::from_artifact(&renamed);
+    let after_svc_entry = after
+        .entries
+        .iter()
+        .find(|e| e.entity_kind == EntityKind::Service)
+        .unwrap();
+
+    // The service_id DID change (content-derived identity).
+    assert_ne!(
+        renamed.payload.services[0].service_id,
+        original.payload.services[0].service_id,
+        "service_id must change on rename"
+    );
+    // But the manifest stable_id for the service entry is now driven by the
+    // hint (100), NOT the content-derived identity.
+    assert_eq!(after_svc_entry.stable_id, StableId::new(100));
+    assert_eq!(after_svc_entry.current_name, "GreetServiceRenamed");
+    // Methods also keep their hints.
+    let after_method_ids: Vec<StableId> = after
+        .entries
+        .iter()
+        .filter(|e| e.entity_kind == EntityKind::Method)
+        .map(|e| e.stable_id)
+        .collect();
+    assert!(after_method_ids.contains(&StableId::new(101)));
+    assert!(after_method_ids.contains(&StableId::new(102)));
+    // Rename tracking passes: same stable_id (from hint), different current_name.
+    assert!(after.verify_rename_tracking(&before).is_ok());
+}
+
+#[test]
+fn stable_id_hint_is_preferred_over_derived_identity_when_present() {
+    // A minimal case: an operation with both a content-derived operation_id
+    // and an explicit stable_id_hint. The manifest must use the hint.
+    let with_hint = {
+        let mut op = op_key("hello");
+        op.stable_id_hint = Some(9999);
+        let mut payload = original_payload();
+        payload.operations = vec![op];
+        ContractArtifact::seal(
+            ContractFormat::Hermes,
+            ContractProducer::vos(),
+            payload,
+        )
+    };
+
+    let manifest = StableIdentityManifest::from_artifact(&with_hint);
+    let op_entry = manifest
+        .entries
+        .iter()
+        .find(|e| e.entity_kind == EntityKind::Operation)
+        .unwrap();
+    assert_eq!(op_entry.stable_id, StableId::new(9999));
+
+    // Without the hint, the stable_id falls back to hashing the operation_id.
+    let without_hint = {
+        let op = op_key("hello");
+        let mut payload = original_payload();
+        payload.operations = vec![op];
+        ContractArtifact::seal(
+            ContractFormat::Hermes,
+            ContractProducer::vos(),
+            payload,
+        )
+    };
+    let manifest2 = StableIdentityManifest::from_artifact(&without_hint);
+    let op_entry2 = manifest2
+        .entries
+        .iter()
+        .find(|e| e.entity_kind == EntityKind::Operation)
+        .unwrap();
+    assert_eq!(
+        op_entry2.stable_id,
+        StableId::new(identity_hash_u64(
+            without_hint.payload.operations[0].operation_id.as_str()
+        ))
+    );
+    // And they MUST differ — hint 9999 vs content-derived.
+    assert_ne!(op_entry.stable_id, op_entry2.stable_id);
+}
+
+// ---------------------------------------------------------------------------
+// from_full_artifact merges ResolvedContract types/fields with artifact ops/services
+// ---------------------------------------------------------------------------
+
+#[test]
+fn from_full_artifact_merges_all_kinds_into_one_manifest() {
+    // ResolvedContract: 2 tables + 4 fields.
+    let resolved = ResolvedContract {
+        format_version: "vos-resolved-contract-v1".to_owned(),
+        identity_manifest_version: "vos-identity-manifest-v0".to_owned(),
+        schema_fingerprint: "d73fdb40c7503a045d19e9f6476cb3b835700f455b229a46c70b7de1b04901f9"
+            .to_owned(),
+        types: vec![
+            ResolvedTypeContract {
+                type_id: 1,
+                canonical_path: vec!["User".to_owned()],
+                kind: TypeContractKind::Table,
+                fields: vec![
+                    ResolvedFieldContract {
+                        field_id: 11,
+                        virtual_field_index: Some(0),
+                        canonical_name: "id".to_owned(),
+                        canonical_type: ResolvedCanonicalType::Scalar(CanonicalScalar::Uuid),
+                        attributes: vec![],
+                        default_value: None,
+                    },
+                    ResolvedFieldContract {
+                        field_id: 12,
+                        virtual_field_index: Some(1),
+                        canonical_name: "name".to_owned(),
+                        canonical_type: ResolvedCanonicalType::Scalar(CanonicalScalar::Utf8),
+                        attributes: vec![],
+                        default_value: None,
+                    },
+                ],
+            },
+            ResolvedTypeContract {
+                type_id: 2,
+                canonical_path: vec!["Post".to_owned()],
+                kind: TypeContractKind::Class,
+                fields: vec![
+                    ResolvedFieldContract {
+                        field_id: 21,
+                        virtual_field_index: None,
+                        canonical_name: "title".to_owned(),
+                        canonical_type: ResolvedCanonicalType::Scalar(CanonicalScalar::Utf8),
+                        attributes: vec![],
+                        default_value: None,
+                    },
+                    ResolvedFieldContract {
+                        field_id: 22,
+                        virtual_field_index: None,
+                        canonical_name: "body".to_owned(),
+                        canonical_type: ResolvedCanonicalType::Scalar(CanonicalScalar::Utf8),
+                        attributes: vec![],
+                        default_value: None,
+                    },
+                ],
+            },
+        ],
+    };
+
+    // ContractArtifact: 2 operations + 1 service + 2 methods.
+    let artifact = sample_artifact();
+
+    let merged = StableIdentityManifest::from_full_artifact(&resolved, &artifact);
+
+    // 2 types + 4 fields + 2 operations + 1 service + 2 methods = 11.
+    assert_eq!(merged.entries.len(), 11, "must produce exactly 11 entries");
+
+    // Verify every kind is represented with the expected count.
+    let count = |kind: EntityKind| {
+        merged
+            .entries
+            .iter()
+            .filter(|e| e.entity_kind == kind)
+            .count()
+    };
+    assert_eq!(count(EntityKind::Table), 1);
+    assert_eq!(count(EntityKind::Class), 1);
+    assert_eq!(count(EntityKind::Field), 4);
+    assert_eq!(count(EntityKind::Operation), 2);
+    assert_eq!(count(EntityKind::Service), 1);
+    assert_eq!(count(EntityKind::Method), 2);
+
+    // Every stable_id is non-zero and unique — no accidental collisions.
+    let mut ids = merged.entries.iter().map(|e| e.stable_id).collect::<Vec<_>>();
+    assert!(ids.iter().all(|id| id.is_valid()));
+    ids.sort();
+    ids.dedup();
+    assert_eq!(ids.len(), 11, "stable ids must be globally unique");
+
+    // Types carry their resolved durable identities.
+    let user_table = merged
+        .entries
+        .iter()
+        .find(|e| e.stable_id == StableId::new(1))
+        .expect("User table entry");
+    assert_eq!(user_table.entity_kind, EntityKind::Table);
+    assert_eq!(user_table.current_name, "User");
+
+    let post_class = merged
+        .entries
+        .iter()
+        .find(|e| e.stable_id == StableId::new(2))
+        .expect("Post class entry");
+    assert_eq!(post_class.entity_kind, EntityKind::Class);
+    assert_eq!(post_class.current_name, "Post");
+}
+
+/// Small helper used by the hint test above to build an empty artifact payload.
+fn original_payload() -> ContractPayload {
+    let svc_id = ServiceId::derive(
+        &ServiceIdentityKey::new(vec!["demo".to_owned(), "GreetService".to_owned()]).unwrap(),
+    );
+    let op = op_key("hello");
+    let op_id = op.operation_id.clone();
+    let methods = vec![ServiceMethodContract {
+        method_id: MethodId::derive(&MethodIdentityKey::new(svc_id.clone(), "greet").unwrap()),
+        name: "greet".to_owned(),
+        request_type: ResolvedCanonicalType::Scalar(CanonicalScalar::Utf8),
+        response_type: ResolvedCanonicalType::Scalar(CanonicalScalar::Utf8),
+        stream: MethodStreamMode::Unary,
+        operation_id: op_id,
+        attributes: vec![],
+        stable_id_hint: None,
+    }];
+    let svc = ServiceContract {
+        service_id: svc_id,
+        name: "GreetService".to_owned(),
+        canonical_path: vec!["demo".to_owned(), "GreetService".to_owned()],
+        attributes: vec![],
+        methods,
+        source_unit_id: 0,
+        span: (0..30).into(),
+        stable_id_hint: None,
+    };
+    ContractPayload {
+        operations: vec![op],
+        services: vec![svc],
+    }
 }

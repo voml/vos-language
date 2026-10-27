@@ -43,6 +43,7 @@ fn method(
         stream,
         operation_id: operation,
         attributes: vec![],
+        stable_id_hint: None,
     }
 }
 
@@ -89,6 +90,7 @@ fn service() -> ServiceContract {
         attributes: vec![],
         source_unit_id: 0,
         span: (0..40).into(),
+        stable_id_hint: None,
     }
 }
 

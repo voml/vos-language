@@ -50,6 +50,7 @@ fn operation(
         capabilities,
         source_unit_id: 0,
         span: (0..0).into(),
+        stable_id_hint: None,
     }
 }
 
