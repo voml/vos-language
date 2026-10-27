@@ -273,6 +273,20 @@ pub(crate) fn canonical_digest<T: Serialize>(value: &T) -> String {
     digest
 }
 
+/// Derives a stable 64-bit identity from an arbitrary string input.
+///
+/// Hashes the input with SHA-256 and takes its first 8 bytes in big-endian
+/// order. Useful when an entity carries an opaque string identity (e.g. an
+/// [`OperationId`] or a [`ServiceId`]) and needs to be represented as a
+/// [`StableId`]. The derivation is deterministic and collision-resistant for
+/// realistic VOS catalog sizes.
+pub fn identity_hash_u64(value: impl AsRef<str>) -> u64 {
+    let bytes = Sha256::digest(value.as_ref().as_bytes());
+    u64::from_be_bytes([
+        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+    ])
+}
+
 fn validate_identity(
     value: &str,
     prefix: &str,

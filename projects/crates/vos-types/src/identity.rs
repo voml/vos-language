@@ -3,8 +3,15 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::ids::canonical_digest;
-use crate::{ArtifactError, AttributeContract, CanonicalScalar, CanonicalType, TypeContractKind};
+use crate::contract::{
+    ContractAttribute, MethodStreamMode, OperationCardinality, OperationContract, OperationEffect,
+    SemanticCapability, ServiceContract, ServiceMethodContract,
+};
+use crate::ids::{canonical_digest, identity_hash_u64};
+use crate::{
+    ArtifactError, AttributeContract, CanonicalScalar, CanonicalType, ContractArtifact,
+    OperationKind, TypeContractKind,
+};
 
 /// Version of the explicit durable identity manifest.
 pub const IDENTITY_MANIFEST_VERSION: &str = "vos-identity-manifest-v0";
@@ -1039,6 +1046,100 @@ impl StableIdentityManifest {
         }
     }
 
+    /// Builds a stable identity manifest from a contract artifact.
+    ///
+    /// Every [`OperationContract`], [`ServiceContract`] and
+    /// [`ServiceMethodContract`] in the artifact receives one entry. The
+    /// existing durable string identity (`operation_id`, `service_id`,
+    /// `method_id`) is deterministically hashed into a [`StableId`], so the
+    /// stable id survives source reorder as long as the durable string
+    /// identity does not change.
+    pub fn from_artifact(artifact: &ContractArtifact) -> Self {
+        Self::from_payload_id(&artifact.payload, artifact_id_from_artifact(artifact))
+    }
+
+    /// Builds a stable identity manifest from the union of a resolved contract
+    /// and a contract artifact.
+    ///
+    /// Types and their fields come from the resolved contract; operations,
+    /// services and service methods come from the artifact payload. Entries
+    /// are merged by kind so duplicate stable ids cannot appear when the two
+    /// inputs happen to carry the same value.
+    pub fn from_full_artifact(
+        resolved: &ResolvedContract,
+        artifact: &ContractArtifact,
+    ) -> Self {
+        let mut merged = Self::from_resolved_contract(resolved);
+        let artifact_entries = Self::from_artifact(artifact).entries;
+        let mut seen = merged
+            .entries
+            .iter()
+            .map(|entry| entry.stable_id)
+            .collect::<BTreeSet<_>>();
+        for entry in artifact_entries {
+            if seen.insert(entry.stable_id) {
+                merged.entries.push(entry);
+            }
+        }
+        merged.artifact_id = artifact_id_from_artifact(artifact);
+        merged
+    }
+
+    /// Builds a manifest directly from the artifact payload with a caller
+    /// supplied artifact id. Useful for tests and any consumer that already
+    /// has the payload decomposed.
+    pub fn from_payload_id(payload: &crate::ContractPayload, artifact_id: String) -> Self {
+        let mut entries = Vec::new();
+        for operation in &payload.operations {
+            entries.push(StableIdentityEntry {
+                stable_id: StableId::new(identity_hash_u64(operation.operation_id.as_str())),
+                entity_kind: EntityKind::Operation,
+                current_name: operation.name.clone(),
+                fingerprint: operation_fingerprint(operation),
+                provenance: SourceProvenance::spanned(
+                    operation.source_unit_id,
+                    SourceSpan::new(operation.span.start, operation.span.end)
+                        .unwrap_or_else(|| SourceSpan::new(operation.span.start, operation.span.start).unwrap()),
+                ),
+                previous: None,
+            });
+        }
+        for service in &payload.services {
+            let name = service
+                .canonical_path
+                .last()
+                .cloned()
+                .unwrap_or_else(|| service.name.clone());
+            entries.push(StableIdentityEntry {
+                stable_id: StableId::new(identity_hash_u64(service.service_id.as_str())),
+                entity_kind: EntityKind::Service,
+                current_name: name.clone(),
+                fingerprint: service_fingerprint(service),
+                provenance: SourceProvenance::spanned(
+                    service.source_unit_id,
+                    SourceSpan::new(service.span.start, service.span.end)
+                        .unwrap_or_else(|| SourceSpan::new(service.span.start, service.span.start).unwrap()),
+                ),
+                previous: None,
+            });
+            for method in &service.methods {
+                entries.push(StableIdentityEntry {
+                    stable_id: StableId::new(identity_hash_u64(method.method_id.as_str())),
+                    entity_kind: EntityKind::Method,
+                    current_name: method.name.clone(),
+                    fingerprint: method_fingerprint(method),
+                    provenance: SourceProvenance::unit(service.source_unit_id),
+                    previous: None,
+                });
+            }
+        }
+        Self {
+            format_version: STABLE_IDENTITY_MANIFEST_VERSION.to_owned(),
+            artifact_id,
+            entries,
+        }
+    }
+
     /// Verifies that reordering entities does not change the stable id set.
     ///
     /// Returns a list of human-readable error strings describing every
@@ -1211,4 +1312,130 @@ impl<'a> From<&'a ResolvedFieldContract> for CanonicalFieldIdentity<'a> {
 
 fn field_fingerprint(field: &ResolvedFieldContract) -> String {
     canonical_digest(&CanonicalFieldIdentity::from(field))
+}
+
+// ---------------------------------------------------------------------------
+// Fingerprint helpers for operation / service / method stable entries
+// ---------------------------------------------------------------------------
+
+/// Canonical identity of a single operation contract, excluding provenance.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalOperationIdentity<'a> {
+    fingerprint_version: &'a str,
+    operation_id: &'a str,
+    kind: OperationKind,
+    canonical_path: &'a [String],
+    parameters: Vec<CanonicalOperationParameter<'a>>,
+    result_type: &'a Option<ResolvedCanonicalType>,
+    cardinality: OperationCardinality,
+    effect: OperationEffect,
+    capabilities: Vec<SemanticCapability>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalOperationParameter<'a> {
+    name: &'a str,
+    canonical_type: &'a ResolvedCanonicalType,
+}
+
+fn operation_fingerprint(operation: &OperationContract) -> String {
+    let mut capabilities = operation.capabilities.clone();
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    canonical_digest(&CanonicalOperationIdentity {
+        fingerprint_version: IDENTITY_FINGERPRINT_VERSION,
+        operation_id: operation.operation_id.as_str(),
+        kind: operation.kind,
+        canonical_path: &operation.canonical_path,
+        parameters: operation
+            .parameters
+            .iter()
+            .map(|parameter| CanonicalOperationParameter {
+                name: &parameter.name,
+                canonical_type: &parameter.canonical_type,
+            })
+            .collect(),
+        result_type: &operation.result_type,
+        cardinality: operation.cardinality,
+        effect: operation.effect,
+        capabilities,
+    })
+}
+
+/// Canonical identity of a single service contract, excluding provenance.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalServiceIdentity<'a> {
+    fingerprint_version: &'a str,
+    service_id: &'a str,
+    canonical_path: &'a [String],
+    attributes: Vec<CanonicalAttributeIdentity<'a>>,
+}
+
+fn service_fingerprint(service: &ServiceContract) -> String {
+    canonical_digest(&CanonicalServiceIdentity {
+        fingerprint_version: IDENTITY_FINGERPRINT_VERSION,
+        service_id: service.service_id.as_str(),
+        canonical_path: &service.canonical_path,
+        attributes: canonical_attributes_identity(&service.attributes),
+    })
+}
+
+/// Canonical identity of a single service method contract.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalMethodIdentity<'a> {
+    fingerprint_version: &'a str,
+    method_id: &'a str,
+    name: &'a str,
+    request_type: &'a ResolvedCanonicalType,
+    response_type: &'a ResolvedCanonicalType,
+    stream: MethodStreamMode,
+    operation_id: &'a str,
+    attributes: Vec<CanonicalAttributeIdentity<'a>>,
+}
+
+fn method_fingerprint(method: &ServiceMethodContract) -> String {
+    canonical_digest(&CanonicalMethodIdentity {
+        fingerprint_version: IDENTITY_FINGERPRINT_VERSION,
+        method_id: method.method_id.as_str(),
+        name: &method.name,
+        request_type: &method.request_type,
+        response_type: &method.response_type,
+        stream: method.stream,
+        operation_id: method.operation_id.as_str(),
+        attributes: canonical_attributes_identity(&method.attributes),
+    })
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalAttributeIdentity<'a> {
+    name: &'a str,
+    syntax: &'a str,
+}
+
+fn canonical_attributes_identity(attributes: &[ContractAttribute]) -> Vec<CanonicalAttributeIdentity<'_>> {
+    let mut result = attributes
+        .iter()
+        .map(|attribute| CanonicalAttributeIdentity {
+            name: &attribute.name,
+            syntax: &attribute.syntax,
+        })
+        .collect::<Vec<_>>();
+    // Sort by name then syntax to make the fingerprint stable across attribute
+    // declaration order, which is not a semantic concern for identity.
+    result.sort_by(|left, right| left.name.cmp(right.name).then(left.syntax.cmp(right.syntax)));
+    result
+}
+
+// ---------------------------------------------------------------------------
+// Helpers shared by from_artifact and from_full_artifact
+// ---------------------------------------------------------------------------
+
+/// Derives a stable artifact id from a contract artifact.
+fn artifact_id_from_artifact(artifact: &ContractArtifact) -> String {
+    format!("{}::{}", artifact.version.as_str(), artifact.producer.name)
 }
