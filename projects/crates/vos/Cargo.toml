@@ -13,6 +13,8 @@ vos-generator = { workspace = true }
 vos-types = { workspace = true }
 uuid = { workspace = true }
 oak-vos = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
