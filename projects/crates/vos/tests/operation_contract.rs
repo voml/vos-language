@@ -65,6 +65,7 @@ fn canonical_types_are_resolved_for_parameters_and_results() {
         &[(0, &operations)],
         &semantics,
         &contract_types(SERVICE_SOURCE),
+        None,
     )
     .unwrap();
 
@@ -118,7 +119,7 @@ fn unknown_parameter_types_are_rejected_instead_of_defaulting() {
     let operations = operations(source);
     let semantics = semantics_for(&operations, OperationEffect::Read, vec![]);
 
-    let diagnostics = build_operation_contracts(&[(0, &operations)], &semantics, &[]).unwrap_err();
+    let diagnostics = build_operation_contracts(&[(0, &operations)], &semantics, &[], None).unwrap_err();
     assert!(
         diagnostics.iter().any(|item| item.code == "RES001"),
         "unresolved types must surface as diagnostics, got {diagnostics:?}"
@@ -129,7 +130,7 @@ fn unknown_parameter_types_are_rejected_instead_of_defaulting() {
 fn missing_declared_effect_is_rejected() {
     let operations = operations(SERVICE_SOURCE);
     let diagnostics =
-        build_operation_contracts(&[(0, &operations)], &[], &contract_types(SERVICE_SOURCE))
+        build_operation_contracts(&[(0, &operations)], &[], &contract_types(SERVICE_SOURCE), None)
             .unwrap_err();
 
     assert_eq!(diagnostics.len(), 2);
@@ -147,7 +148,7 @@ fn duplicate_and_unknown_semantics_are_rejected() {
     let duplicated = semantics[0].clone();
     semantics.push(duplicated);
     let diagnostics =
-        build_operation_contracts(&[(0, &projections)], &semantics, &types).unwrap_err();
+        build_operation_contracts(&[(0, &projections)], &semantics, &types, None).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "OPC002"));
 
     let mut unknown = semantics_for(&projections, OperationEffect::Pure, vec![]);
@@ -158,7 +159,7 @@ fn duplicate_and_unknown_semantics_are_rejected() {
         vec![],
     ));
     let diagnostics =
-        build_operation_contracts(&[(0, &projections)], &unknown, &types).unwrap_err();
+        build_operation_contracts(&[(0, &projections)], &unknown, &types, None).unwrap_err();
     assert!(diagnostics.iter().any(|item| item.code == "OPC004"));
 }
 
@@ -170,6 +171,7 @@ fn the_same_operation_in_two_units_is_rejected() {
         &[(0, &operations), (1, &operations)],
         &semantics,
         &contract_types(SERVICE_SOURCE),
+        None,
     )
     .unwrap_err();
 
@@ -195,12 +197,14 @@ fn contracts_are_order_independent_across_source_units() {
         &[(0, &operations[..1]), (1, &operations[1..])],
         &semantics,
         &types,
+        None,
     )
     .unwrap();
     let reverse = build_operation_contracts(
         &[(9, &operations[1..]), (4, &operations[..1])],
         &semantics,
         &types,
+        None,
     )
     .unwrap();
 
@@ -260,7 +264,7 @@ fn declared_effects_are_carried_into_the_contract() {
             vec![],
         ),
     ];
-    let contracts = build_operation_contracts(&[(0, &operations)], &semantics, &types).unwrap();
+    let contracts = build_operation_contracts(&[(0, &operations)], &semantics, &types, None).unwrap();
 
     let active = contracts
         .iter()

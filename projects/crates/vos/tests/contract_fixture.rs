@@ -69,7 +69,7 @@ fn operation_contracts() -> Vec<OperationContract> {
             OperationSemantics::new(operation.operation_id.clone(), effect, vec![])
         })
         .collect::<Vec<_>>();
-    build_operation_contracts(&[(0, &operations)], &semantics, &schema_types()).unwrap()
+    build_operation_contracts(&[(0, &operations)], &semantics, &schema_types(), None).unwrap()
 }
 
 fn operation_id(operations: &[OperationContract], name: &str) -> OperationId {
@@ -116,6 +116,7 @@ fn artifact() -> ContractArtifact {
         &[declaration(&services[0], &operations)],
         &operations,
         &types,
+        None,
     )
     .unwrap();
 
@@ -196,7 +197,7 @@ fn method_bound_to_unknown_operation_is_reported() {
     let mut declared = declaration(&services[0], &operations);
     declared.methods[0].operation_id = missing.clone();
     let diagnostics =
-        build_service_contracts(&[(0, &services)], &[declared], &operations, &types).unwrap_err();
+        build_service_contracts(&[(0, &services)], &[declared], &operations, &types, None).unwrap_err();
 
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].code, "SVC004");

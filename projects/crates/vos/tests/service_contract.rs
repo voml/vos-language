@@ -124,7 +124,7 @@ fn operation_contracts(source: &str) -> Vec<vos::OperationContract> {
             )
         })
         .collect::<Vec<_>>();
-    build_operation_contracts(&[(0, &operations)], &semantics, &schema_types(source)).unwrap()
+    build_operation_contracts(&[(0, &operations)], &semantics, &schema_types(source), None).unwrap()
 }
 
 fn method(
@@ -196,6 +196,7 @@ fn build(
         declarations,
         &operation_contracts(source),
         &schema_types(source),
+        None,
     )
 }
 
@@ -332,6 +333,7 @@ fn method_bound_to_unknown_operation_is_rejected() {
         &[declaration(&services[0], &operations)],
         &create_only,
         &schema_types(SOURCE),
+        None,
     )
     .unwrap_err();
     assert_eq!(codes(&diagnostics), vec!["SVC004"]);
@@ -400,6 +402,7 @@ fn service_projected_from_two_units_is_rejected() {
         &[declaration(&services[0], &operation_contracts(SOURCE))],
         &operation_contracts(SOURCE),
         &schema_types(SOURCE),
+        None,
     )
     .unwrap_err();
     assert_eq!(codes(&diagnostics), vec!["SVC006"]);
@@ -429,6 +432,7 @@ fn service_fingerprint_ignores_order_and_provenance() {
         &[reversed],
         &operations,
         &schema_types(SOURCE),
+        None,
     )
     .unwrap();
 

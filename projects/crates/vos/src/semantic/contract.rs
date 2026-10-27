@@ -11,6 +11,8 @@ use vos_types::{
     ServiceContract, ServiceId, ServiceMethodContract, ServiceProjection, canonical_type_key,
 };
 
+use crate::registry::{IdentityRegistry, method_key, operation_key, service_key};
+
 use super::identity::resolve_type;
 
 /// Declared effect and capability requirements of one operation.
@@ -51,10 +53,15 @@ impl OperationSemantics {
 /// identity, effect and capability requirements come from `semantics`. The
 /// result is ordered by durable identity, which makes the contract independent
 /// of source-unit and declaration order.
+///
+/// When `registry` is `Some`, each operation is pre-allocated a monotonic,
+/// persistent `stable_id_hint` keyed on its canonical path. `None` preserves
+/// the previous behaviour (all hints stay unset).
 pub fn build_operation_contracts(
     units: &[(u32, &[OperationProjection])],
     semantics: &[OperationSemantics],
     types: &[ResolvedTypeContract],
+    mut registry: Option<&mut IdentityRegistry>,
 ) -> Result<Vec<OperationContract>, Vec<ContractDiagnostic>> {
     let type_ids = types
         .iter()
@@ -137,7 +144,9 @@ pub fn build_operation_contracts(
                 capabilities: entry.capabilities.clone(),
                 source_unit_id: *source_unit_id,
                 span: operation.span,
-                stable_id_hint: None,
+                stable_id_hint: registry
+                    .as_mut()
+                    .map(|r| r.ensure_hint(&operation_key(&operation.canonical_path))),
             };
             match contract.validate() {
                 Ok(()) => operations.push(contract),
@@ -219,6 +228,7 @@ pub fn build_service_contracts(
     declarations: &[ServiceContractDecl],
     operations: &[OperationContract],
     types: &[ResolvedTypeContract],
+    mut registry: Option<&mut IdentityRegistry>,
 ) -> Result<Vec<ServiceContract>, Vec<ContractDiagnostic>> {
     let type_ids = types
         .iter()
@@ -397,7 +407,9 @@ pub fn build_service_contracts(
                         stream: method.stream,
                         operation_id: method.operation_id.clone(),
                         attributes: contract_attributes(&projected.attributes),
-                        stable_id_hint: None,
+                        stable_id_hint: registry.as_mut().map(|r| {
+                            r.ensure_hint(&method_key(&service.canonical_path, &method.name))
+                        }),
                     })
                 })
                 .collect::<Option<Vec<_>>>()
@@ -424,7 +436,9 @@ pub fn build_service_contracts(
                 methods,
                 source_unit_id: *source_unit_id,
                 span: service.span,
-                stable_id_hint: None,
+                stable_id_hint: registry
+                    .as_mut()
+                    .map(|r| r.ensure_hint(&service_key(&service.canonical_path))),
             };
             match contract.validate() {
                 Ok(()) => services.push(contract),
