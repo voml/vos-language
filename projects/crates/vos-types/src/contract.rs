@@ -100,6 +100,18 @@ pub struct OperationContract {
         deserialize_with = "deserialize_span"
     )]
     pub span: Range<usize>,
+    /// Pre-allocated stable identity hint used by the manifest builder.
+    ///
+    /// When present, the hint is authoritative and survives rename, reorder
+    /// and source-unit moves. The operation's derived [`OperationId`] still
+    /// tracks its current canonical path and signature, but the manifest
+    /// builder prefers this hint so downstream consumers can correlate an
+    /// entity across evolution events.
+    ///
+    /// `None` means no hint was provided; the manifest builder falls back to
+    /// hashing the derived `operation_id`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stable_id_hint: Option<u64>,
 }
 
 impl OperationContract {
@@ -271,6 +283,18 @@ pub struct ServiceMethodContract {
     pub operation_id: OperationId,
     /// Attributes declared on the method, in source order.
     pub attributes: Vec<ContractAttribute>,
+    /// Pre-allocated stable identity hint used by the manifest builder.
+    ///
+    /// When present, the hint is authoritative and survives rename, reorder
+    /// and source-unit moves. The method's derived [`MethodId`] still tracks
+    /// its current service binding and name, but the manifest builder prefers
+    /// this hint so downstream consumers can correlate a method across
+    /// evolution events.
+    ///
+    /// `None` means no hint was provided; the manifest builder falls back to
+    /// hashing the derived `method_id`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stable_id_hint: Option<u64>,
 }
 
 /// Durable contract of a VOS service.
@@ -295,6 +319,17 @@ pub struct ServiceContract {
         deserialize_with = "deserialize_span"
     )]
     pub span: Range<usize>,
+    /// Pre-allocated stable identity hint used by the manifest builder.
+    ///
+    /// When present, the hint is authoritative and survives rename, reorder
+    /// and source-unit moves. The service's derived [`ServiceId`] still tracks
+    /// its current canonical path, but the manifest builder prefers this hint
+    /// so downstream consumers can correlate a service across evolution events.
+    ///
+    /// `None` means no hint was provided; the manifest builder falls back to
+    /// hashing the derived `service_id`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stable_id_hint: Option<u64>,
 }
 
 impl ServiceContract {

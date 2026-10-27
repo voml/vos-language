@@ -137,6 +137,7 @@ pub fn build_operation_contracts(
                 capabilities: entry.capabilities.clone(),
                 source_unit_id: *source_unit_id,
                 span: operation.span,
+                stable_id_hint: None,
             };
             match contract.validate() {
                 Ok(()) => operations.push(contract),
@@ -396,6 +397,7 @@ pub fn build_service_contracts(
                         stream: method.stream,
                         operation_id: method.operation_id.clone(),
                         attributes: contract_attributes(&projected.attributes),
+                        stable_id_hint: None,
                     })
                 })
                 .collect::<Option<Vec<_>>>()
@@ -422,6 +424,7 @@ pub fn build_service_contracts(
                 methods,
                 source_unit_id: *source_unit_id,
                 span: service.span,
+                stable_id_hint: None,
             };
             match contract.validate() {
                 Ok(()) => services.push(contract),

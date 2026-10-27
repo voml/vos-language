@@ -1091,8 +1091,12 @@ impl StableIdentityManifest {
     pub fn from_payload_id(payload: &crate::ContractPayload, artifact_id: String) -> Self {
         let mut entries = Vec::new();
         for operation in &payload.operations {
+            let stable_id = operation
+                .stable_id_hint
+                .map(StableId::new)
+                .unwrap_or_else(|| StableId::new(identity_hash_u64(operation.operation_id.as_str())));
             entries.push(StableIdentityEntry {
-                stable_id: StableId::new(identity_hash_u64(operation.operation_id.as_str())),
+                stable_id,
                 entity_kind: EntityKind::Operation,
                 current_name: operation.name.clone(),
                 fingerprint: operation_fingerprint(operation),
@@ -1110,8 +1114,12 @@ impl StableIdentityManifest {
                 .last()
                 .cloned()
                 .unwrap_or_else(|| service.name.clone());
+            let stable_id = service
+                .stable_id_hint
+                .map(StableId::new)
+                .unwrap_or_else(|| StableId::new(identity_hash_u64(service.service_id.as_str())));
             entries.push(StableIdentityEntry {
-                stable_id: StableId::new(identity_hash_u64(service.service_id.as_str())),
+                stable_id,
                 entity_kind: EntityKind::Service,
                 current_name: name.clone(),
                 fingerprint: service_fingerprint(service),
@@ -1123,8 +1131,12 @@ impl StableIdentityManifest {
                 previous: None,
             });
             for method in &service.methods {
+                let stable_id = method
+                    .stable_id_hint
+                    .map(StableId::new)
+                    .unwrap_or_else(|| StableId::new(identity_hash_u64(method.method_id.as_str())));
                 entries.push(StableIdentityEntry {
-                    stable_id: StableId::new(identity_hash_u64(method.method_id.as_str())),
+                    stable_id,
                     entity_kind: EntityKind::Method,
                     current_name: method.name.clone(),
                     fingerprint: method_fingerprint(method),
