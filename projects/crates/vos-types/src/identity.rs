@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::ids::canonical_digest;
 use crate::{ArtifactError, AttributeContract, CanonicalScalar, CanonicalType, TypeContractKind};
 
 /// Version of the explicit durable identity manifest.
@@ -738,4 +739,476 @@ impl BoundFieldContract {
     pub fn canonical_content_eq(&self, other: &Self) -> bool {
         CanonicalFieldContract::from(self) == CanonicalFieldContract::from(other)
     }
+}
+
+// ---------------------------------------------------------------------------
+// Stable identity manifest skeleton (P1 common-contract closure)
+// ---------------------------------------------------------------------------
+
+/// Format version of the stable identity manifest.
+pub const STABLE_IDENTITY_MANIFEST_VERSION: &str = "vos-stable-identity-v1";
+
+/// Opaque 64-bit stable identity shared by every VOS entity kind.
+///
+/// Zero is reserved and invalid. A stable identity survives renames, reorders
+/// and source-unit moves. Its allocation is authoritative and never derived
+/// from source order, name or fingerprint.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct StableId(pub u64);
+
+impl StableId {
+    /// The reserved zero identity that no valid entity may carry.
+    pub const RESERVED_ZERO: Self = Self(0);
+
+    /// Builds a stable identity from a raw non-zero value. Callers are
+    /// responsible for ensuring the value is globally unique within an
+    /// artifact family and never reused after retirement.
+    pub fn new(value: u64) -> Self {
+        Self(value)
+    }
+
+    /// Returns the raw 64-bit value.
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+
+    /// Returns `false` for the reserved zero identity.
+    pub fn is_valid(&self) -> bool {
+        self.0 != 0
+    }
+}
+
+impl core::fmt::Display for StableId {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "#{}", self.0)
+    }
+}
+
+/// Kind of VOS entity that carries a stable identity.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum EntityKind {
+    /// Persistent object schema (table).
+    Table,
+    /// Inline value or class schema.
+    Class,
+    /// Schema field owned by a type.
+    Field,
+    /// Query, UDF, micro or macro operation.
+    Operation,
+    /// Service declaration.
+    Service,
+    /// Service method.
+    Method,
+}
+
+impl EntityKind {
+    /// Returns `true` when this kind owns fields (types only).
+    pub fn is_type(&self) -> bool {
+        matches!(self, Self::Table | Self::Class)
+    }
+
+    /// Returns `true` when this kind is a type-owned child (field).
+    pub fn is_field(&self) -> bool {
+        matches!(self, Self::Field)
+    }
+
+    /// Returns `true` when this kind is an operation-like declaration.
+    pub fn is_operation(&self) -> bool {
+        matches!(self, Self::Operation)
+    }
+
+    /// Returns `true` when this kind is a service or service method.
+    pub fn is_service(&self) -> bool {
+        matches!(self, Self::Service | Self::Method)
+    }
+}
+
+/// Byte span inside a source unit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SourceSpan {
+    /// Start byte offset (inclusive).
+    pub start: usize,
+    /// End byte offset (exclusive).
+    pub end: usize,
+}
+
+impl SourceSpan {
+    /// Builds a validated span. Empty spans are allowed.
+    pub fn new(start: usize, end: usize) -> Option<Self> {
+        if start <= end {
+            Some(Self { start, end })
+        } else {
+            None
+        }
+    }
+}
+
+/// Source provenance of a stable identity entry.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SourceProvenance {
+    /// Source unit id within the artifact.
+    pub source_unit_id: u32,
+    /// Declaration span inside the source unit when available.
+    pub span: Option<SourceSpan>,
+}
+
+impl SourceProvenance {
+    /// Provenance with only a source unit id and no span.
+    pub fn unit(source_unit_id: u32) -> Self {
+        Self {
+            source_unit_id,
+            span: None,
+        }
+    }
+
+    /// Provenance with both source unit and span.
+    pub fn spanned(source_unit_id: u32, span: SourceSpan) -> Self {
+        Self {
+            source_unit_id,
+            span: Some(span),
+        }
+    }
+}
+
+/// One stable identity entry in a manifest.
+///
+/// Each VOS entity owns exactly one entry. The `stable_id` never changes
+/// across rename, reorder or source-unit moves. The `fingerprint` reflects
+/// canonical semantic content and must change whenever the entity body
+/// changes semantically.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct StableIdentityEntry {
+    /// Globally unique durable identifier.
+    pub stable_id: StableId,
+    /// Entity kind (table / class / field / operation / service / method).
+    pub entity_kind: EntityKind,
+    /// Current canonical name. Subject to rename tracking.
+    pub current_name: String,
+    /// Canonical semantic fingerprint (64 lowercase hex SHA-256).
+    pub fingerprint: String,
+    /// Source provenance (source unit and optional span).
+    pub provenance: SourceProvenance,
+    /// Previous stable identity when this entry tracks a rename chain.
+    pub previous: Option<StableId>,
+}
+
+/// Manifest of every stable identity in a VOS artifact.
+///
+/// The manifest is the single source of truth for durable entity identity.
+/// Entries are **not** ordered semantically; any traversal that needs a
+/// deterministic order must sort by `stable_id` or another explicit key.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct StableIdentityManifest {
+    /// Manifest format version.
+    pub format_version: String,
+    /// Unique artifact identifier (e.g. package name + version).
+    pub artifact_id: String,
+    /// Stable identity entries. Array order is not semantic.
+    pub entries: Vec<StableIdentityEntry>,
+}
+
+impl StableIdentityManifest {
+    /// Builds an empty manifest with the current format version.
+    pub fn new(artifact_id: impl Into<String>) -> Self {
+        Self {
+            format_version: STABLE_IDENTITY_MANIFEST_VERSION.to_owned(),
+            artifact_id: artifact_id.into(),
+            entries: Vec::new(),
+        }
+    }
+
+    /// Serializes the manifest using stable field names.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    /// Reads a strict manifest without applying it to a projection.
+    pub fn from_json(input: &str) -> Result<Self, ArtifactError> {
+        let manifest: Self = serde_json::from_str(input).map_err(|error| ArtifactError {
+            code: "SIM010".to_owned(),
+            message: error.to_string(),
+        })?;
+        manifest.validate()?;
+        Ok(manifest)
+    }
+
+    /// Validates version, unique stable ids, non-empty names and fingerprint
+    /// shape. Does **not** apply the manifest to a projection.
+    pub fn validate(&self) -> Result<(), ArtifactError> {
+        if self.format_version != STABLE_IDENTITY_MANIFEST_VERSION {
+            return Err(ArtifactError {
+                code: "SIM011".to_owned(),
+                message: "unsupported stable identity manifest version".to_owned(),
+            });
+        }
+        if self.artifact_id.trim().is_empty() {
+            return Err(ArtifactError {
+                code: "SIM012".to_owned(),
+                message: "stable identity manifest artifact id must not be empty"
+                    .to_owned(),
+            });
+        }
+        let mut seen = BTreeSet::new();
+        for entry in &self.entries {
+            if !entry.stable_id.is_valid() {
+                return Err(ArtifactError {
+                    code: "SIM013".to_owned(),
+                    message: "stable identity must be non-zero".to_owned(),
+                });
+            }
+            if !seen.insert(entry.stable_id) {
+                return Err(ArtifactError {
+                    code: "SIM014".to_owned(),
+                    message: format!("duplicate stable identity {}", entry.stable_id),
+                });
+            }
+            if entry.current_name.trim().is_empty() {
+                return Err(ArtifactError {
+                    code: "SIM015".to_owned(),
+                    message: "stable identity entry name must not be empty".to_owned(),
+                });
+            }
+            if entry.fingerprint.len() != 64
+                || !entry.fingerprint.bytes().all(|byte| byte.is_ascii_hexdigit())
+            {
+                return Err(ArtifactError {
+                    code: "SIM016".to_owned(),
+                    message: "stable identity entry fingerprint must be 64 ascii-hex chars"
+                        .to_owned(),
+                });
+            }
+            if let Some(previous) = entry.previous
+                && !previous.is_valid()
+            {
+                return Err(ArtifactError {
+                    code: "SIM017".to_owned(),
+                    message: "stable identity previous link must be non-zero".to_owned(),
+                });
+            }
+        }
+        Ok(())
+    }
+
+    /// Builds a stable identity manifest from a resolved contract.
+    ///
+    /// Every [`ResolvedTypeContract`] and its fields receive one entry. The
+    /// existing durable `type_id` and `field_id` are reused as the stable id
+    /// for the corresponding entries, so reordering or renaming entities
+    /// after this manifest is produced still yields the same stable id.
+    pub fn from_resolved_contract(contract: &ResolvedContract) -> Self {
+        let mut entries = Vec::new();
+        for type_contract in &contract.types {
+            let kind = match type_contract.kind {
+                TypeContractKind::Table => EntityKind::Table,
+                TypeContractKind::Class => EntityKind::Class,
+            };
+            let name = type_contract
+                .canonical_path
+                .last()
+                .cloned()
+                .unwrap_or_default();
+            entries.push(StableIdentityEntry {
+                stable_id: StableId::new(type_contract.type_id),
+                entity_kind: kind,
+                current_name: name,
+                fingerprint: type_fingerprint(type_contract),
+                provenance: SourceProvenance::unit(0),
+                previous: None,
+            });
+            for field in &type_contract.fields {
+                entries.push(StableIdentityEntry {
+                    stable_id: StableId::new(field.field_id),
+                    entity_kind: EntityKind::Field,
+                    current_name: field.canonical_name.clone(),
+                    fingerprint: field_fingerprint(field),
+                    provenance: SourceProvenance::unit(0),
+                    previous: None,
+                });
+            }
+        }
+        Self {
+            format_version: STABLE_IDENTITY_MANIFEST_VERSION.to_owned(),
+            artifact_id: contract.format_version.clone(),
+            entries,
+        }
+    }
+
+    /// Verifies that reordering entities does not change the stable id set.
+    ///
+    /// Returns a list of human-readable error strings describing every
+    /// mismatch. The manifest is considered stable under reorder when the
+    /// set of `(stable_id, entity_kind)` pairs is identical and no entry's
+    /// canonical name changes its stable id.
+    pub fn verify_reorder_stable(&self, before: &StableIdentityManifest) -> Result<(), Vec<String>> {
+        let mut errors = Vec::new();
+
+        let before_by_id = before
+            .entries
+            .iter()
+            .map(|entry| (entry.stable_id, entry))
+            .collect::<BTreeMap<_, _>>();
+        let self_by_id = self
+            .entries
+            .iter()
+            .map(|entry| (entry.stable_id, entry))
+            .collect::<BTreeMap<_, _>>();
+
+        // No entry may disappear under a pure reorder.
+        for (stable_id, before_entry) in &before_by_id {
+            if !self_by_id.contains_key(stable_id) {
+                errors.push(format!(
+                    "reorder removed stable identity {} ({:?})",
+                    stable_id, before_entry.current_name
+                ));
+            }
+        }
+        // No entry may appear with a new stable id under a pure reorder.
+        for (stable_id, self_entry) in &self_by_id {
+            if !before_by_id.contains_key(stable_id) {
+                errors.push(format!(
+                    "reorder introduced new stable identity {} ({:?})",
+                    stable_id, self_entry.current_name
+                ));
+            }
+        }
+
+        // Corresponding entries must keep their kind and canonical name.
+        for (stable_id, before_entry) in &before_by_id {
+            let Some(self_entry) = self_by_id.get(stable_id) else {
+                continue;
+            };
+            if self_entry.entity_kind != before_entry.entity_kind {
+                errors.push(format!(
+                    "reorder changed entity kind of {} from {:?} to {:?}",
+                    stable_id, before_entry.entity_kind, self_entry.entity_kind
+                ));
+            }
+            if self_entry.current_name != before_entry.current_name {
+                errors.push(format!(
+                    "reorder changed canonical name of {} from {:?} to {:?}",
+                    stable_id, before_entry.current_name, self_entry.current_name
+                ));
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
+
+    /// Verifies that renaming an entity keeps the stable id intact.
+    ///
+    /// A rename is detected when two entries share the same stable id but have
+    /// different canonical names. This is always allowed: the stable id is the
+    /// durable handle and the name is display-only. If no rename happened the
+    /// check succeeds trivially.
+    pub fn verify_rename_tracking(&self, before: &StableIdentityManifest) -> Result<(), Vec<String>> {
+        let mut errors = Vec::new();
+
+        let before_by_id = before
+            .entries
+            .iter()
+            .map(|entry| (entry.stable_id, entry))
+            .collect::<BTreeMap<_, _>>();
+
+        for self_entry in &self.entries {
+            let Some(before_entry) = before_by_id.get(&self_entry.stable_id) else {
+                continue;
+            };
+            // Rename must not change entity kind.
+            if self_entry.entity_kind != before_entry.entity_kind {
+                errors.push(format!(
+                    "rename changed entity kind of {} from {:?} to {:?}",
+                    self_entry.stable_id, before_entry.entity_kind, self_entry.entity_kind
+                ));
+            }
+            // If name unchanged, fingerprint should also be unchanged (pure
+            // reorder is handled by verify_reorder_stable). If name changed,
+            // fingerprint may or may not change — either is legal.
+            if self_entry.current_name == before_entry.current_name
+                && self_entry.fingerprint != before_entry.fingerprint
+            {
+                errors.push(format!(
+                    "entry {} kept its name but changed fingerprint without a rename",
+                    self_entry.stable_id
+                ));
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Canonical fingerprint helpers for stable identity entries.
+// ---------------------------------------------------------------------------
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalTypeIdentity<'a> {
+    fingerprint_version: &'a str,
+    type_id: u64,
+    canonical_path: &'a [String],
+    kind: TypeContractKind,
+    fields: Vec<CanonicalFieldIdentity<'a>>,
+}
+
+fn type_fingerprint(type_contract: &ResolvedTypeContract) -> String {
+    let mut fields = type_contract
+        .fields
+        .iter()
+        .map(CanonicalFieldIdentity::from)
+        .collect::<Vec<_>>();
+    fields.sort_by_key(|item| item.field_id);
+    canonical_digest(&CanonicalTypeIdentity {
+        fingerprint_version: IDENTITY_FINGERPRINT_VERSION,
+        type_id: type_contract.type_id,
+        canonical_path: &type_contract.canonical_path,
+        kind: type_contract.kind,
+        fields,
+    })
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CanonicalFieldIdentity<'a> {
+    field_id: u64,
+    canonical_name: &'a str,
+    canonical_type: &'a ResolvedCanonicalType,
+    attributes: Vec<String>,
+    default_value: Option<&'a str>,
+}
+
+impl<'a> From<&'a ResolvedFieldContract> for CanonicalFieldIdentity<'a> {
+    fn from(field: &'a ResolvedFieldContract) -> Self {
+        let mut attributes = field
+            .attributes
+            .iter()
+            .map(|attribute| attribute.name.clone())
+            .collect::<Vec<_>>();
+        attributes.sort();
+        Self {
+            field_id: field.field_id,
+            canonical_name: &field.canonical_name,
+            canonical_type: &field.canonical_type,
+            attributes,
+            default_value: field.default_value.as_deref(),
+        }
+    }
+}
+
+fn field_fingerprint(field: &ResolvedFieldContract) -> String {
+    canonical_digest(&CanonicalFieldIdentity::from(field))
 }
