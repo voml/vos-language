@@ -95,12 +95,26 @@ fn unsupported_declarations_never_disappear_from_a_successful_contract() {
 }
 
 #[test]
-fn attribute_groups_and_arguments_require_oak_structure() {
-    for attribute in ["[primary, wire]", "[backfill(\"value\")]", "[]"] {
+fn attribute_without_structured_name_is_rejected() {
+    // Empty bracket — Oak exposes no name, so VOS cannot classify the attribute.
+    let source = "class T { [] id: uuid }";
+    let diagnostics = parse_oak(&source).unwrap().project_schema().unwrap_err();
+    assert_eq!(diagnostics[0].code, "VOS005");
+}
+
+#[test]
+fn attribute_groups_and_arguments_survive_oak_projection() {
+    // Oak builder exposes the first identifier as `name` for both plain and
+    // argument-bearing attributes, so both shapes survive into the VOS
+    // projection with their full source syntax preserved.
+    for attribute in ["[primary, wire]", "[backfill(\"value\")]"] {
         let source = format!("class T {{ {attribute} id: uuid }}");
-        let diagnostics = parse_oak(&source).unwrap().project_schema().unwrap_err();
-        assert_eq!(diagnostics[0].code, "VOS005");
-        assert_eq!(&source[diagnostics[0].span.unwrap()], attribute);
+        let projection = parse_oak(&source).unwrap().project_schema().unwrap();
+        assert_eq!(
+            projection.types[0].fields[0].attributes[0].syntax,
+            attribute
+        );
+        assert!(!projection.types[0].fields[0].attributes[0].name.is_empty());
     }
 }
 

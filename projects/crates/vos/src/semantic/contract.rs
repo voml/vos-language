@@ -719,4 +719,67 @@ mod tests {
             assert_eq!(semantics.effect, expected);
         }
     }
+
+    #[test]
+    fn parses_effect_and_capability_from_vos_source_attributes_via_oak() {
+        // Leading attribute on a top-level operation declaration must survive the
+        // Oak parse → project pipeline without being dropped.
+        let source = "\
+[effect(read)]
+query listTodos() -> [Todo] { Todo }
+
+[effect(write)] [capability(storage)]
+micro addTodo(title: utf8) -> Todo { Todo.new(title) }
+
+[effect(pure)]
+macro is_done(todo: Todo) -> bool { todo.done }
+";
+        let parsed = oak_vos::parse(source).expect("Oak parses VOS with leading attributes");
+        let operations = crate::semantic::projection::project_operations(&parsed)
+            .expect("VOS projects operations");
+        assert_eq!(operations.len(), 3, "all three operations must project");
+
+        let list = operations
+            .iter()
+            .find(|op| op.name == "listTodos")
+            .expect("listTodos must be present");
+        assert_eq!(list.attributes.len(), 1, "listTodos carries one attribute");
+        assert_eq!(list.attributes[0].name, "effect");
+        assert_eq!(list.attributes[0].syntax, "[effect(read)]");
+        let list_semantics = parse_operation_semantics_from_attributes(list).unwrap();
+        assert_eq!(list_semantics.effect, OperationEffect::Read);
+        assert!(list_semantics.capabilities.is_empty());
+
+        let add = operations
+            .iter()
+            .find(|op| op.name == "addTodo")
+            .expect("addTodo must be present");
+        assert_eq!(add.attributes.len(), 2, "addTodo carries two attributes");
+        let add_semantics = parse_operation_semantics_from_attributes(add).unwrap();
+        assert_eq!(add_semantics.effect, OperationEffect::Write);
+        assert_eq!(add_semantics.capabilities, vec![SemanticCapability::Storage]);
+
+        let is_done = operations
+            .iter()
+            .find(|op| op.name == "is_done")
+            .expect("is_done must be present");
+        let pure_semantics = parse_operation_semantics_from_attributes(is_done).unwrap();
+        assert_eq!(pure_semantics.effect, OperationEffect::Pure);
+    }
+
+    #[test]
+    fn operation_without_effect_attribute_is_rejected() {
+        let source = "query ping() -> bool { true }";
+        let parsed = oak_vos::parse(source).expect("Oak parses");
+        let operations = crate::semantic::projection::project_operations(&parsed)
+            .expect("VOS projects");
+        assert_eq!(operations.len(), 1);
+        // Negative: no [effect(...)] attribute → OPC001 diagnostic
+        let diagnostics = parse_operation_semantics_from_attributes(&operations[0])
+            .unwrap_err();
+        assert!(
+            diagnostics.iter().any(|d| d.code == "OPC001"),
+            "expected OPC001 for missing effect, got {diagnostics:?}"
+        );
+    }
 }

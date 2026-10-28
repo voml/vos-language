@@ -1,0 +1,19 @@
+// Operation declarations with leading effect and capability attributes.
+// Validates that Oak parses declaration-level attributes for non-service operations.
+
+namespace demo::todo
+
+[effect(read)]
+query listTodos() -> [Todo] { Todo }
+
+[effect(write)] [capability(storage)]
+micro addTodo(title: utf8) -> Todo { Todo.new(title) }
+
+[effect(pure)]
+macro is_done(todo: Todo) -> bool { todo.done }
+
+table Todo {
+    @@id: uuid
+    title: utf8
+    done: bool
+}

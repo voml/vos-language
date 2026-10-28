@@ -402,13 +402,10 @@ fn resolve_attribute(
                 Some(attribute.span),
             ));
         };
-        if attribute.text != format!("[{name}]") {
-            return Err(diagnostic(
-                "VOS005",
-                "attribute group or arguments require structured Oak attribute output",
-                Some(attribute.span),
-            ));
-        }
+        // Oak builder exposes the first identifier as `name` for both plain
+        // `[foo]` and argument-bearing `[foo(bar)]` attributes, so we accept
+        // either shape — the full source text lives in `syntax` for downstream
+        // consumers that need the arguments.
         name.clone()
     };
     Ok(AttributeContract {
