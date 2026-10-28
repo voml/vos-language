@@ -1,0 +1,27 @@
+{
+  "formatVersion": "vos-identity-manifest-v0",
+  "types": [
+    {
+      "canonicalPath": ["demo", "binaries", "Blob"],
+      "typeId": 1,
+      "kind": "table",
+      "fields": [
+        {
+          "canonicalName": "id",
+          "fieldId": 2,
+          "virtualFieldIndex": 0
+        },
+        {
+          "canonicalName": "payload",
+          "fieldId": 3,
+          "virtualFieldIndex": 1
+        },
+        {
+          "canonicalName": "digest",
+          "fieldId": 4,
+          "virtualFieldIndex": 2
+        }
+      ]
+    }
+  ]
+}

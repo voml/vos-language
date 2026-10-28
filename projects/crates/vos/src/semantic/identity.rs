@@ -460,6 +460,13 @@ pub(crate) fn resolve_type(
                 && matches!(&arguments[0], CanonicalTypeArgument::Type(CanonicalType::Named(inner)) if inner == &["UTC".to_owned()])
             {
                 Some(ResolvedCanonicalType::Scalar(CanonicalScalar::DateTime))
+            } else if path == &["bytes".to_owned()] {
+                diagnostics.push(diagnostic_with_span(
+                    "RES017",
+                    "bytes is a scalar and does not take type arguments",
+                    span,
+                ));
+                None
             } else {
                 Some(ResolvedCanonicalType::Generic {
                     path: path.clone(),

@@ -179,6 +179,44 @@
       "note": "Negative: one operation declared by two units reports `OPC003`"
     },
     {
+      "id": "types.bytes",
+      "kind": "type-fixture",
+      "stage": "resolved",
+      "entry": "bytes/schema.vos",
+      "manifest": "bytes/schema.manifest.json",
+      "files": [
+        "bytes/schema.vos",
+        "bytes/schema.manifest.json"
+      ],
+      "note": "`bytes` resolves to the shared `CanonicalScalar::Bytes` scalar and carries no type arguments and no storage threshold"
+    },
+    {
+      "id": "values.bytes",
+      "kind": "value-fixture",
+      "stage": "resolved",
+      "entry": "bytes/values.json",
+      "files": [
+        "bytes/values.json"
+      ],
+      "note": "Positive `bytes` octet sequences: empty, NUL, invalid UTF-8, UTF-8-looking octets and a sequence beyond the fixture host's declared inline boundary"
+    },
+    {
+      "id": "values.bytes-invalid",
+      "kind": "value-fixture",
+      "stage": "diagnostic",
+      "entry": "bytes/invalid.json",
+      "files": [
+        "bytes/invalid.json",
+        "bytes/invalid/unknown_encoding.json",
+        "bytes/invalid/odd_hex.json",
+        "bytes/invalid/non_hex.json",
+        "bytes/invalid/uppercase_hex.json",
+        "bytes/invalid/unknown_field.json",
+        "bytes/invalid/stale_version.json"
+      ],
+      "note": "Negative `bytes` wire artifacts rejected by exact code: version, encoding, odd length, non-lowercase hex and unknown fields"
+    },
+    {
       "id": "diagnostics.golden",
       "kind": "diagnostic-golden",
       "stage": "diagnostic",

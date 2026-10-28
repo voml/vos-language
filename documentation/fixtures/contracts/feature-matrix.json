@@ -98,6 +98,16 @@
       "conformance": true,
       "downstream-consumed": false,
       "note": "Oak projects service attributes and method signatures, and build_service_contracts resolves them against the authored operation bindings while rejecting any declaration that disagrees with the source"
+    },
+    {
+      "id": "scalar.bytes-value",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": true,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "`bytes` resolves to the shared `CanonicalScalar::Bytes` scalar and its value wire is a strict lowercase-hex `BytesValue`, so no stage decodes octets as text. Inline versus object-reference placement is declared by the storage implementation through `BytesPlacementPolicy` and VOS owns no octet threshold."
     }
   ]
 }

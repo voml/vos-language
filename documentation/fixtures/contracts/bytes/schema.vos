@@ -1,0 +1,7 @@
+namespace demo::binaries
+
+table Blob {
+    [primary] id: uuid,
+    payload: bytes,
+    digest: bytes,
+}
