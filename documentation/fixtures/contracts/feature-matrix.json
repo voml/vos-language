@@ -118,6 +118,16 @@
       "conformance": true,
       "downstream-consumed": false,
       "note": "`file` resolves to `ResolvedCanonicalType::File` and is described by `FileDescriptor`: a `FileManifestIdentity` over the complete octets plus separate name and media type metadata. Full reads, range reads, EOF, reference release and `file<...>` rejection are pinned by the `file` fixtures, while chunk layout and object keys stay with the storage implementation."
+    },
+    {
+      "id": "logical.vector-dimension",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": true,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "`vector<N>` resolves to `Vector { element: f32, dimension: N }`, so element precision and dimension are part of the resolved contract. `vector<0>`, `vector<utf8>` and a bare `vector` are diagnosed with `RES019` and `RES020`, and `VectorValue` rejects a wrong component count, NaN and infinity. Distance metrics and ANN indexes stay out of the typed value contract."
     }
   ]
 }

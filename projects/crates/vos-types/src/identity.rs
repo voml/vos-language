@@ -129,6 +129,13 @@ pub enum ResolvedCanonicalType {
     Scalar(CanonicalScalar),
     /// Large logical file described by [`crate::FileDescriptor`].
     File,
+    /// Fixed-dimension vector with an explicit element precision.
+    Vector {
+        /// Element precision fixed by the contract.
+        element: crate::VectorElement,
+        /// Dimension fixed by the contract. Zero is invalid.
+        dimension: u32,
+    },
     /// User-defined type with its durable identity.
     User {
         /// Canonical type path.
@@ -324,6 +331,14 @@ fn validate_resolved_type(
                 if let ResolvedCanonicalTypeArgument::Type(inner) = argument {
                     validate_resolved_type(inner, type_by_path, path_by_type)?;
                 }
+            }
+        }
+        ResolvedCanonicalType::Vector { dimension, .. } => {
+            if *dimension == 0 {
+                return Err(ArtifactError {
+                    code: "RES021".to_owned(),
+                    message: "resolved vector dimension must be positive".to_owned(),
+                });
             }
         }
         ResolvedCanonicalType::Scalar(_) | ResolvedCanonicalType::File => {}

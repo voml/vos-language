@@ -255,6 +255,46 @@
       "note": "Negative `file` descriptors rejected by exact code: version, digest spelling, empty metadata and unknown fields"
     },
     {
+      "id": "types.vector",
+      "kind": "type-fixture",
+      "stage": "resolved",
+      "entry": "vector/schema.vos",
+      "manifest": "vector/schema.manifest.json",
+      "files": [
+        "vector/schema.vos",
+        "vector/schema.manifest.json",
+        "vector/zero_dimension.vos",
+        "vector/type_argument.vos",
+        "vector/no_dimension.vos"
+      ],
+      "note": "`vector<N>` resolves to a `Vector` with `f32` precision and the authored dimension, while `vector<0>`, `vector<utf8>` and a bare `vector` are diagnosed with `RES019` and `RES020`"
+    },
+    {
+      "id": "values.vector",
+      "kind": "value-fixture",
+      "stage": "resolved",
+      "entry": "vector/values.json",
+      "files": [
+        "vector/values.json"
+      ],
+      "note": "Positive `vector<N>` values pin the element precision, the fixed dimension and the component order, with NaN and infinity tokens rejected at the value boundary"
+    },
+    {
+      "id": "values.vector-invalid",
+      "kind": "value-fixture",
+      "stage": "diagnostic",
+      "entry": "vector/invalid.json",
+      "files": [
+        "vector/invalid.json",
+        "vector/invalid/dimension_mismatch.json",
+        "vector/invalid/zero_dimension.json",
+        "vector/invalid/unsupported_element.json",
+        "vector/invalid/stale_version.json",
+        "vector/invalid/unknown_field.json"
+      ],
+      "note": "Negative `vector<N>` artifacts rejected by exact code: dimension, component count, element precision, version and unknown fields"
+    },
+    {
       "id": "diagnostics.golden",
       "kind": "diagnostic-golden",
       "stage": "diagnostic",

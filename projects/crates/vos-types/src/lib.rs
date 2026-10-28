@@ -10,6 +10,7 @@ mod identity;
 mod ids;
 mod projection;
 mod scalar;
+mod vector;
 
 pub use artifact::*;
 pub use bytes::*;
@@ -19,3 +20,4 @@ pub use identity::*;
 pub use ids::*;
 pub use projection::*;
 pub use scalar::*;
+pub use vector::*;

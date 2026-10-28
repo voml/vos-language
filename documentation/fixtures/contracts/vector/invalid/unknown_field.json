@@ -1,0 +1,7 @@
+{
+  "formatVersion": "vos-vector-value-v0",
+  "element": "f32",
+  "dimension": 2,
+  "components": [1.0, 2.0],
+  "metric": "cosine"
+}

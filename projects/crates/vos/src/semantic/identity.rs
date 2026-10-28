@@ -430,6 +430,13 @@ pub(crate) fn resolve_type(
                 })
             } else if path.len() == 1 && path[0] == "file" {
                 Some(ResolvedCanonicalType::File)
+            } else if path.len() == 1 && path[0] == "vector" {
+                diagnostics.push(diagnostic_with_span(
+                    "RES019",
+                    "vector requires a literal dimension",
+                    span,
+                ));
+                None
             } else if path.len() == 1
                 && let Some(scalar) = CanonicalScalar::from_source_name(path[0].as_str())
             {
@@ -476,6 +483,8 @@ pub(crate) fn resolve_type(
                     span,
                 ));
                 None
+            } else if path == &["vector".to_owned()] {
+                resolve_vector(arguments, span, diagnostics)
             } else {
                 Some(ResolvedCanonicalType::Generic {
                     path: path.clone(),
@@ -493,6 +502,40 @@ pub(crate) fn resolve_type(
                         .collect::<Option<Vec<_>>>()?,
                 })
             }
+        }
+    }
+}
+
+/// Resolves `vector<N>` to the fixed dimension carried by the contract.
+///
+/// The dimension is a literal of the source type, not a resolved type argument, so
+/// a type argument, a missing dimension or a non-positive dimension is diagnosed
+/// instead of being sealed as an unchecked generic.
+fn resolve_vector(
+    arguments: &[CanonicalTypeArgument],
+    span: Option<Range<usize>>,
+    diagnostics: &mut Vec<ContractDiagnostic>,
+) -> Option<ResolvedCanonicalType> {
+    let [CanonicalTypeArgument::Literal(dimension)] = arguments else {
+        diagnostics.push(diagnostic_with_span(
+            "RES019",
+            "vector requires exactly one literal dimension",
+            span,
+        ));
+        return None;
+    };
+    match dimension.parse::<u32>() {
+        Ok(dimension) if dimension > 0 => Some(ResolvedCanonicalType::Vector {
+            element: VectorElement::F32,
+            dimension,
+        }),
+        _ => {
+            diagnostics.push(diagnostic_with_span(
+                "RES020",
+                &format!("vector dimension must be a positive decimal integer, found {dimension}"),
+                span,
+            ));
+            None
         }
     }
 }

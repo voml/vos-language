@@ -450,6 +450,15 @@ fn validate_explicit_reference(
 ) -> Result<(), ArtifactError> {
     match canonical_type {
         ResolvedCanonicalType::Scalar(_) | ResolvedCanonicalType::File => Ok(()),
+        ResolvedCanonicalType::Vector { dimension, .. } => {
+            if *dimension == 0 {
+                return Err(ArtifactError {
+                    code: "SVC017".to_owned(),
+                    message: format!("service {side} vector type must have a positive dimension"),
+                });
+            }
+            Ok(())
+        }
         ResolvedCanonicalType::User { path, type_id } => {
             if path.is_empty() || path.iter().any(String::is_empty) || *type_id == 0 {
                 return Err(ArtifactError {
