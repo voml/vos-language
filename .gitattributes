@@ -1,6 +1,10 @@
-# Conformance goldens must stay LF so normalize_source matches on all hosts.
+# Conformance and contract goldens must stay LF so string-level golden
+# comparisons (hermes golden, dejavu rendered layout) match on all hosts.
+documentation/fixtures/** text eol=lf
 specifications/fixtures/** text eol=lf
 
-# VOS sources and JSON goldens: UTF-8 + LF (avoid UTF-16 / CRLF drift on Windows).
+# VOS sources, JSON goldens and dejavu templates: UTF-8 + LF
+# (avoid UTF-16 / CRLF drift on Windows checkouts).
 *.vos text eol=lf
-specifications/fixtures/**/*.json text eol=lf
+*.json text eol=lf
+*.dejavu text eol=lf
