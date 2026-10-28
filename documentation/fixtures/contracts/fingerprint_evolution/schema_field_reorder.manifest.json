@@ -1,0 +1,39 @@
+{
+  "formatVersion": "vos-identity-manifest-v0",
+  "types": [
+    {
+      "canonicalPath": ["demo", "vault", "Account"],
+      "typeId": 1,
+      "kind": "class",
+      "fields": [
+        {
+          "canonicalName": "id",
+          "fieldId": 2,
+          "virtualFieldIndex": 0
+        },
+        {
+          "canonicalName": "email",
+          "fieldId": 3,
+          "virtualFieldIndex": 1
+        }
+      ]
+    },
+    {
+      "canonicalPath": ["demo", "vault", "Ledger"],
+      "typeId": 4,
+      "kind": "table",
+      "fields": [
+        {
+          "canonicalName": "owner",
+          "fieldId": 6,
+          "virtualFieldIndex": 0
+        },
+        {
+          "canonicalName": "id",
+          "fieldId": 5,
+          "virtualFieldIndex": 1
+        }
+      ]
+    }
+  ]
+}
