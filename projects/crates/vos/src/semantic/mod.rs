@@ -11,7 +11,7 @@ pub mod resolve;
 
 pub use contract::{
     OperationSemantics, ServiceContractDecl, ServiceMethodDecl, build_operation_contracts,
-    build_service_contracts,
+    build_service_contracts, parse_operation_semantics_from_attributes,
 };
 pub use identity::{
     bind_identity, compare_identity, evolve_identity, resolve_contract,

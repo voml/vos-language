@@ -58,6 +58,18 @@ pub fn project_operations(
                 continue;
             }
         };
+        let attributes = match declaration
+            .attributes
+            .iter()
+            .map(resolve_attribute)
+            .collect::<Result<Vec<_>, _>>()
+        {
+            Ok(attributes) => attributes,
+            Err(diagnostic) => {
+                diagnostics.push(diagnostic);
+                continue;
+            }
+        };
         operations.push(OperationProjection {
             kind,
             name,
@@ -66,6 +78,7 @@ pub fn project_operations(
             identity,
             parameters,
             return_type: declaration.return_type_expr.as_ref().map(canonical_type),
+            attributes,
             signature: declaration.signature.as_ref().map(slice_contract),
             body: declaration.body.as_ref().map(slice_contract),
             span: declaration.span,

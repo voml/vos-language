@@ -47,6 +47,126 @@ impl OperationSemantics {
     }
 }
 
+/// Parses an [`OperationSemantics`] from the attributes projected off a VOS
+/// operation declaration.
+///
+/// Supported attributes:
+///
+/// * `[effect(read)]` / `[effect(write)]` / `[effect(pure)]` — exactly one
+///   required per operation.
+/// * `[capability(NAME)]` — zero or more, drawn from the closed
+///   [`SemanticCapability`] vocabulary.
+///
+/// An unknown attribute name is kept verbatim and ignored, so future attribute
+/// families do not break existing consumers.
+pub fn parse_operation_semantics_from_attributes(
+    operation: &OperationProjection,
+) -> Result<OperationSemantics, Vec<ContractDiagnostic>> {
+    let mut diagnostics = Vec::new();
+    let mut effect: Option<OperationEffect> = None;
+    let mut capabilities = Vec::new();
+
+    for attribute in &operation.attributes {
+        match attribute.name.as_str() {
+            "effect" => {
+                let Some(parsed) = parse_effect_value(&attribute.syntax) else {
+                    diagnostics.push(diagnostic_with_span(
+                        "OPC005",
+                        &format!(
+                            "operation {} declares an unknown effect in {}",
+                            operation.name, attribute.syntax
+                        ),
+                        Some(attribute.span.clone()),
+                    ));
+                    continue;
+                };
+                if effect.is_some() {
+                    diagnostics.push(diagnostic_with_span(
+                        "OPC006",
+                        &format!(
+                            "operation {} declares more than one effect attribute",
+                            operation.name
+                        ),
+                        Some(attribute.span.clone()),
+                    ));
+                    continue;
+                }
+                effect = Some(parsed);
+            }
+            "capability" => {
+                let Some(parsed) = parse_capability_value(&attribute.syntax) else {
+                    diagnostics.push(diagnostic_with_span(
+                        "OPC007",
+                        &format!(
+                            "operation {} declares an unknown capability in {}",
+                            operation.name, attribute.syntax
+                        ),
+                        Some(attribute.span.clone()),
+                    ));
+                    continue;
+                };
+                capabilities.push(parsed);
+            }
+            _ => { /* unknown attribute — kept verbatim for downstream users */ }
+        }
+    }
+
+    let Some(effect) = effect else {
+        diagnostics.push(diagnostic(
+            "OPC001",
+            &format!(
+                "operation {} has no declared effect",
+                operation.operation_id
+            ),
+        ));
+        return Err(diagnostics);
+    };
+
+    if diagnostics.is_empty() {
+        Ok(OperationSemantics::new(
+            operation.operation_id.clone(),
+            effect,
+            capabilities,
+        ))
+    } else {
+        Err(diagnostics)
+    }
+}
+
+fn parse_effect_value(syntax: &str) -> Option<OperationEffect> {
+    let arg = extract_attribute_argument(syntax)?;
+    Some(match arg {
+        "read" => OperationEffect::Read,
+        "write" => OperationEffect::Write,
+        "pure" => OperationEffect::Pure,
+        _ => return None,
+    })
+}
+
+fn parse_capability_value(syntax: &str) -> Option<SemanticCapability> {
+    let arg = extract_attribute_argument(syntax)?;
+    Some(match arg {
+        "aggregation" => SemanticCapability::Aggregation,
+        "search" => SemanticCapability::Search,
+        "storage" => SemanticCapability::Storage,
+        "vector" => SemanticCapability::Vector,
+        _ => return None,
+    })
+}
+
+/// Extracts the inner argument from a bracket attribute with the shape
+/// `[name(arg)]`. Returns `None` when the attribute has no argument list or
+/// the argument is empty.
+fn extract_attribute_argument(syntax: &str) -> Option<&str> {
+    let start = syntax.find('(')?;
+    let end = syntax.rfind(')')?;
+    if end <= start {
+        return None;
+    }
+    let arg = syntax[start + 1..end].trim();
+    if arg.is_empty() { None } else { Some(arg) }
+}
+
 /// Builds validated operation contracts from Oak projections.
 ///
 /// Operations are read from every source unit so provenance survives, while
@@ -482,10 +602,121 @@ fn diagnostic(code: &str, message: &str) -> ContractDiagnostic {
     }
 }
 
+fn diagnostic_with_span(
+    code: &str,
+    message: &str,
+    span: Option<Range<usize>>,
+) -> ContractDiagnostic {
+    ContractDiagnostic {
+        code: code.to_owned(),
+        message: message.to_owned(),
+        span,
+    }
+}
+
 fn contract_diagnostic(error: &ArtifactError, span: Option<Range<usize>>) -> ContractDiagnostic {
     ContractDiagnostic {
         code: error.code.clone(),
         message: error.message.clone(),
         span,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vos_types::AttributeContract;
+
+    fn make_op(attributes: Vec<AttributeContract>) -> OperationProjection {
+        let source = "query ping() -> bool { true }";
+        let parsed = oak_vos::parse(source).unwrap();
+        let mut op = crate::semantic::projection::project_operations(&parsed)
+            .unwrap()
+            .into_iter()
+            .next()
+            .unwrap();
+        op.attributes = attributes;
+        op
+    }
+
+    fn attr(name: &str, syntax: &str) -> AttributeContract {
+        AttributeContract {
+            name: name.to_owned(),
+            syntax: syntax.to_owned(),
+            span: (0usize..0).into(),
+        }
+    }
+
+    #[test]
+    fn parses_effect_and_capability_from_operation_attributes() {
+        let op = make_op(vec![
+            attr("effect", "[effect(read)]"),
+            attr("capability", "[capability(search)]"),
+            attr("capability", "[capability(storage)]"),
+        ]);
+        let semantics = parse_operation_semantics_from_attributes(&op).unwrap();
+        assert_eq!(semantics.effect, OperationEffect::Read);
+        assert_eq!(
+            semantics.capabilities,
+            vec![SemanticCapability::Search, SemanticCapability::Storage]
+        );
+        assert_eq!(semantics.operation_id, op.operation_id);
+    }
+
+    #[test]
+    fn missing_effect_is_diagnosed() {
+        let op = make_op(vec![attr("capability", "[capability(vector)]")]);
+        let diagnostics = parse_operation_semantics_from_attributes(&op).unwrap_err();
+        assert!(diagnostics.iter().any(|d| d.code == "OPC001"));
+    }
+
+    #[test]
+    fn unknown_effect_value_is_diagnosed() {
+        let op = make_op(vec![attr("effect", "[effect(mutate)]")]);
+        let diagnostics = parse_operation_semantics_from_attributes(&op).unwrap_err();
+        assert!(diagnostics.iter().any(|d| d.code == "OPC005"));
+    }
+
+    #[test]
+    fn duplicate_effect_is_diagnosed() {
+        let op = make_op(vec![
+            attr("effect", "[effect(read)]"),
+            attr("effect", "[effect(write)]"),
+        ]);
+        let diagnostics = parse_operation_semantics_from_attributes(&op).unwrap_err();
+        assert!(diagnostics.iter().any(|d| d.code == "OPC006"));
+    }
+
+    #[test]
+    fn unknown_capability_is_diagnosed() {
+        let op = make_op(vec![
+            attr("effect", "[effect(pure)]"),
+            attr("capability", "[capability(kinesis)]"),
+        ]);
+        let diagnostics = parse_operation_semantics_from_attributes(&op).unwrap_err();
+        assert!(diagnostics.iter().any(|d| d.code == "OPC007"));
+    }
+
+    #[test]
+    fn unknown_attribute_names_are_kept_verbatim_and_ignored() {
+        let op = make_op(vec![
+            attr("effect", "[effect(read)]"),
+            attr("cache", "[cache(invalidate)]"),
+        ]);
+        let result = parse_operation_semantics_from_attributes(&op);
+        assert!(result.is_ok(), "unknown attribute names must not fail parsing");
+    }
+
+    #[test]
+    fn accepts_all_known_effects() {
+        for (label, expected) in [
+            ("read", OperationEffect::Read),
+            ("write", OperationEffect::Write),
+            ("pure", OperationEffect::Pure),
+        ] {
+            let op = make_op(vec![attr("effect", &format!("[effect({label})]"))]);
+            let semantics = parse_operation_semantics_from_attributes(&op).unwrap();
+            assert_eq!(semantics.effect, expected);
+        }
     }
 }

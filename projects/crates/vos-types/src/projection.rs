@@ -201,6 +201,11 @@ pub struct OperationProjection {
     pub parameters: Vec<OperationParameter>,
     /// Return type when the declaration has an arrow return type.
     pub return_type: Option<CanonicalType>,
+    /// Attributes declared on the operation before the `query|udf|micro|macro`
+    /// keyword, in source order. The contract layer reads structured effect and
+    /// capability declarations from these attributes.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attributes: Vec<AttributeContract>,
     /// Exact signature source slice.
     pub signature: Option<SyntaxSliceContract>,
     /// Exact body source slice.
