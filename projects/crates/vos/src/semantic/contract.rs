@@ -76,7 +76,7 @@ pub fn parse_operation_semantics_from_attributes(
                             "operation {} declares an unknown effect in {}",
                             operation.name, attribute.syntax
                         ),
-                        Some(attribute.span.clone()),
+                        Some(attribute.span),
                     ));
                     continue;
                 };
@@ -87,7 +87,7 @@ pub fn parse_operation_semantics_from_attributes(
                             "operation {} declares more than one effect attribute",
                             operation.name
                         ),
-                        Some(attribute.span.clone()),
+                        Some(attribute.span),
                     ));
                     continue;
                 }
@@ -101,7 +101,7 @@ pub fn parse_operation_semantics_from_attributes(
                             "operation {} declares an unknown capability in {}",
                             operation.name, attribute.syntax
                         ),
-                        Some(attribute.span.clone()),
+                        Some(attribute.span),
                     ));
                     continue;
                 };

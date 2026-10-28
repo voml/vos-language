@@ -98,7 +98,7 @@ fn unsupported_declarations_never_disappear_from_a_successful_contract() {
 fn attribute_without_structured_name_is_rejected() {
     // Empty bracket — Oak exposes no name, so VOS cannot classify the attribute.
     let source = "class T { [] id: uuid }";
-    let diagnostics = parse_oak(&source).unwrap().project_schema().unwrap_err();
+    let diagnostics = parse_oak(source).unwrap().project_schema().unwrap_err();
     assert_eq!(diagnostics[0].code, "VOS005");
 }
 
