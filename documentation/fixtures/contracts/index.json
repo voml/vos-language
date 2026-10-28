@@ -1,0 +1,205 @@
+{
+  "formatVersion": "vos-contract-fixture-index-v0",
+  "note": "Machine-readable catalog of every conformance fixture in this directory. A downstream host picks a case by id, opens entry, and follows golden, manifest and the nested sub-indexes without scanning the tree.",
+  "stages": [
+    "projected",
+    "resolved",
+    "artifact",
+    "evolution",
+    "diagnostic",
+    "matrix"
+  ],
+  "cases": [
+    {
+      "id": "schema.projection-basic",
+      "kind": "schema-projection",
+      "stage": "projected",
+      "entry": "projection_basic.vos",
+      "golden": "projection_basic.contract.json",
+      "files": [
+        "projection_basic.vos",
+        "projection_basic.contract.json"
+      ],
+      "note": "A schema source unit projects to the strict syntax-projection envelope"
+    },
+    {
+      "id": "schema.resolved-basic",
+      "kind": "resolved-schema",
+      "stage": "resolved",
+      "entry": "projection_basic.vos",
+      "manifest": "identity_basic.manifest.json",
+      "golden": "identity_basic.resolved.json",
+      "schemaFingerprint": "d73fdb40c7503a045d19e9f6476cb3b835700f455b229a46c70b7de1b04901f9",
+      "files": [
+        "projection_basic.vos",
+        "identity_basic.manifest.json",
+        "identity_basic.resolved.json"
+      ],
+      "note": "The same schema source unit plus an identity manifest resolves to the durable `ResolvedContract` golden"
+    },
+    {
+      "id": "contract.iris-artifact",
+      "kind": "contract-artifact",
+      "stage": "artifact",
+      "entry": "operations_services.vos",
+      "golden": "operations_services.contract.json",
+      "files": [
+        "operations_services.vos",
+        "operations_services.contract.json"
+      ],
+      "note": "Sealed `vos/iris.contract/v0` artifact that Iris reads without re-parsing the source"
+    },
+    {
+      "id": "contract.hermes-artifact",
+      "kind": "contract-artifact",
+      "stage": "artifact",
+      "entry": "operations_services.vos",
+      "golden": "operations_services.hermes.contract.json",
+      "files": [
+        "operations_services.vos",
+        "operations_services.hermes.contract.json"
+      ],
+      "note": "Sealed `vos/hermes.contract/v0` artifact that Hermes reads without re-parsing the source"
+    },
+    {
+      "id": "operations.effect-attributes",
+      "kind": "operation-projection",
+      "stage": "projected",
+      "entry": "operation_effect_attributes.vos",
+      "operations": 3,
+      "files": [
+        "operation_effect_attributes.vos"
+      ],
+      "note": "Every operation-like declaration keeps its leading effect and capability attributes in the projection"
+    },
+    {
+      "id": "fingerprint.evolution",
+      "kind": "fingerprint-evolution",
+      "stage": "evolution",
+      "entry": "fingerprint_evolution/matrix.json",
+      "files": [
+        "fingerprint_evolution/matrix.json",
+        "fingerprint_evolution/base.vos",
+        "fingerprint_evolution/base.manifest.json",
+        "fingerprint_evolution/schema_field_reorder.vos",
+        "fingerprint_evolution/schema_field_reorder.manifest.json",
+        "fingerprint_evolution/schema_field_rename.vos",
+        "fingerprint_evolution/schema_field_rename.manifest.json",
+        "fingerprint_evolution/schema_field_add.vos",
+        "fingerprint_evolution/schema_field_add.manifest.json",
+        "fingerprint_evolution/schema_field_remove.vos",
+        "fingerprint_evolution/schema_field_remove.manifest.json",
+        "fingerprint_evolution/schema_field_retype.vos",
+        "fingerprint_evolution/schema_field_attribute.vos",
+        "fingerprint_evolution/schema_type_rename.vos",
+        "fingerprint_evolution/schema_type_rename.manifest.json",
+        "fingerprint_evolution/ops_effect.vos",
+        "fingerprint_evolution/ops_capability.vos",
+        "fingerprint_evolution/ops_capability_order.vos",
+        "fingerprint_evolution/ops_param_rename.vos",
+        "fingerprint_evolution/ops_result_type.vos",
+        "fingerprint_evolution/ops_kind.vos",
+        "fingerprint_evolution/svc_stream.vos",
+        "fingerprint_evolution/svc_attribute.vos",
+        "fingerprint_evolution/artifact_order.vos"
+      ],
+      "note": "Nested `vos-fingerprint-evolution-v0` matrix of the schema and artifact fingerprint verdicts"
+    },
+    {
+      "id": "multi-document.vault",
+      "kind": "multi-document",
+      "stage": "projected",
+      "entry": "multi_document/vault/workspace.vos",
+      "files": [
+        "multi_document/vault/workspace.vos",
+        "multi_document/vault/account.vos",
+        "multi_document/vault/account.manifest.json",
+        "multi_document/vault/ledger.vos",
+        "multi_document/vault/ledger.manifest.json",
+        "multi_document/vault/service.vos"
+      ],
+      "note": "Positive graph: `using` entry, a cross-document type reference and a service binding an operation from another unit"
+    },
+    {
+      "id": "multi-document.unresolved-entry",
+      "kind": "multi-document",
+      "stage": "projected",
+      "entry": "multi_document/unresolved/entry.vos",
+      "files": [
+        "multi_document/unresolved/entry.vos"
+      ],
+      "note": "Negative: a `using` target that does not exist reports a not-found VFS diagnostic"
+    },
+    {
+      "id": "multi-document.cycle",
+      "kind": "multi-document",
+      "stage": "projected",
+      "entry": "multi_document/cycle/a.vos",
+      "files": [
+        "multi_document/cycle/a.vos",
+        "multi_document/cycle/b.vos"
+      ],
+      "note": "Negative: a `using` cycle reports a circular VFS diagnostic instead of recursing"
+    },
+    {
+      "id": "multi-document.dangling-reference",
+      "kind": "multi-document",
+      "stage": "projected",
+      "entry": "multi_document/dangling/reference.vos",
+      "files": [
+        "multi_document/dangling/reference.vos",
+        "multi_document/dangling/reference.manifest.json"
+      ],
+      "note": "Negative: a field naming a type no unit declares reports `RES001`"
+    },
+    {
+      "id": "multi-document.duplicate-types",
+      "kind": "multi-document",
+      "stage": "projected",
+      "entry": "multi_document/duplicate/first.vos",
+      "files": [
+        "multi_document/duplicate/first.vos",
+        "multi_document/duplicate/first.manifest.json",
+        "multi_document/duplicate/second.vos",
+        "multi_document/duplicate/second.manifest.json",
+        "multi_document/duplicate/other.vos",
+        "multi_document/duplicate/other.manifest.json"
+      ],
+      "note": "Negative: two units declaring one type path report `RES004`, and colliding durable IDs report `RES006` and `RES007`"
+    },
+    {
+      "id": "multi-document.duplicate-operations",
+      "kind": "multi-document",
+      "stage": "projected",
+      "entry": "multi_document/duplicate/fetch_first.vos",
+      "files": [
+        "multi_document/duplicate/fetch_first.vos",
+        "multi_document/duplicate/fetch_second.vos"
+      ],
+      "note": "Negative: one operation declared by two units reports `OPC003`"
+    },
+    {
+      "id": "diagnostics.golden",
+      "kind": "diagnostic-golden",
+      "stage": "diagnostic",
+      "entry": "diagnostics/codes.json",
+      "files": [
+        "diagnostics/codes.json",
+        "diagnostics/operation_missing_effect.vos",
+        "diagnostics/operation_unknown_parameter_type.vos",
+        "diagnostics/service_method_errors.vos"
+      ],
+      "note": "Nested `vos-diagnostic-golden-v0` cases pinning code, message and byte span for operation and service diagnostics"
+    },
+    {
+      "id": "feature.matrix",
+      "kind": "feature-matrix",
+      "stage": "matrix",
+      "entry": "feature-matrix.json",
+      "files": [
+        "feature-matrix.json"
+      ],
+      "note": "Nested `vos-feature-matrix-v0` stage table stating what is projected, resolved and consumed downstream"
+    }
+  ]
+}

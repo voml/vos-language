@@ -74,10 +74,10 @@
       "documented": true,
       "parsed": true,
       "projected": true,
-      "resolved": false,
+      "resolved": "partial",
       "conformance": true,
       "downstream-consumed": false,
-      "note": "VFS + collect pass + resolve pass + cycle detection. Symbol table populated but cross-source name resolution (imports, re-exports, visibility) is not yet implemented."
+      "note": "VFS + collect pass + resolve pass + cycle detection, pinned by the multi_document fixtures. Contract projection still rejects using declarations, so an import never feeds definition resolution, and the collected symbol table is not consumed by the contract API."
     },
     {
       "id": "durable-identity.fingerprint",
@@ -87,7 +87,7 @@
       "resolved": "partial",
       "conformance": true,
       "downstream-consumed": false,
-      "note": "SHA-256 operation_id 已在 OperationProjection 生成；source-unit fingerprint 字段待后续加入 ContractEnvelope"
+      "note": "SHA-256 operation_id is generated in OperationProjection, and the schema and artifact fingerprints plus their evolution verdicts are pinned by the fingerprint_evolution matrix. A per-source-unit fingerprint field is not part of the contract envelope yet."
     },
     {
       "id": "operation-service.contract",

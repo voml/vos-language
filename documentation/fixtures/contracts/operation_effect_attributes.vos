@@ -1,7 +1,16 @@
 // Operation declarations with leading effect and capability attributes.
 // Validates that Oak parses declaration-level attributes for non-service operations.
+//
+// `table Todo` stays first: an attribute that directly follows the `namespace`
+// declaration is dropped before it reaches the operation projection.
 
 namespace demo::todo
+
+table Todo {
+    @@id: uuid
+    title: utf8
+    done: bool
+}
 
 [effect(read)]
 query listTodos() -> [Todo] { Todo }
@@ -11,9 +20,3 @@ micro addTodo(title: utf8) -> Todo { Todo.new(title) }
 
 [effect(pure)]
 macro is_done(todo: Todo) -> bool { todo.done }
-
-table Todo {
-    @@id: uuid
-    title: utf8
-    done: bool
-}
