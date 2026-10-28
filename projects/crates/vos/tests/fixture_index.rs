@@ -74,7 +74,9 @@ fn collect_files(directory: &Path, base: &Path, files: &mut BTreeSet<String>) {
         if entry.file_type().expect("fixture entry type").is_dir() {
             collect_files(&path, base, files);
         } else {
-            let relative = path.strip_prefix(base).expect("fixture path is under its root");
+            let relative = path
+                .strip_prefix(base)
+                .expect("fixture path is under its root");
             files.insert(
                 relative
                     .components()
@@ -94,7 +96,11 @@ fn index_catalogues_every_fixture_file_and_nothing_else() {
 
     let mut ids = BTreeSet::new();
     for case in &index.cases {
-        assert!(ids.insert(case.id.as_str()), "duplicate case id {}", case.id);
+        assert!(
+            ids.insert(case.id.as_str()),
+            "duplicate case id {}",
+            case.id
+        );
         assert!(
             index.stages.iter().any(|stage| stage == &case.stage),
             "{} uses unknown stage {}",
@@ -142,7 +148,11 @@ fn index_catalogues_every_fixture_file_and_nothing_else() {
 fn indexed_projection_and_resolution_goldens_still_reproduce() {
     let index = index();
     for case in cases_of(&index, "schema-projection") {
-        let golden = read(case.golden.as_deref().expect("a projection case names its golden"));
+        let golden = read(
+            case.golden
+                .as_deref()
+                .expect("a projection case names its golden"),
+        );
         let projection = parse_oak(&read(&case.entry))
             .expect("Oak parses the indexed source")
             .project_schema()
@@ -155,10 +165,16 @@ fn indexed_projection_and_resolution_goldens_still_reproduce() {
     assert!(!resolved.is_empty(), "no resolved case is indexed");
     for case in resolved {
         let manifest = IdentityManifest::from_json(&read(
-            case.manifest.as_deref().expect("a resolved case names its manifest"),
+            case.manifest
+                .as_deref()
+                .expect("a resolved case names its manifest"),
         ))
         .expect("the indexed identity manifest reads");
-        let golden = read(case.golden.as_deref().expect("a resolved case names its golden"));
+        let golden = read(
+            case.golden
+                .as_deref()
+                .expect("a resolved case names its golden"),
+        );
         let projection = parse_oak(&read(&case.entry))
             .expect("Oak parses the indexed source")
             .project_schema()
@@ -185,7 +201,11 @@ fn indexed_contract_artifacts_are_readable_by_a_downstream_host() {
     let index = index();
     let mut formats = BTreeSet::new();
     for case in cases_of(&index, "contract-artifact") {
-        let golden = read(case.golden.as_deref().expect("an artifact case names its golden"));
+        let golden = read(
+            case.golden
+                .as_deref()
+                .expect("an artifact case names its golden"),
+        );
         let artifact = match ContractArtifact::from_json(&golden) {
             Ok(artifact) => artifact,
             Err(error) => panic!("{} artifact does not read: {}", case.id, error.code),
@@ -217,7 +237,8 @@ fn indexed_operation_sources_keep_their_leading_attributes() {
             .expect("the indexed source projects operations");
         assert_eq!(
             operations.len(),
-            case.operations.expect("the case records its operation count"),
+            case.operations
+                .expect("the case records its operation count"),
             "{} projected a different number of operations",
             case.id
         );

@@ -736,7 +736,10 @@ mod tests {
             attr("cache", "[cache(invalidate)]"),
         ]);
         let result = parse_operation_semantics_from_attributes(&op);
-        assert!(result.is_ok(), "unknown attribute names must not fail parsing");
+        assert!(
+            result.is_ok(),
+            "unknown attribute names must not fail parsing"
+        );
     }
 
     #[test]
@@ -789,7 +792,10 @@ macro is_done(todo: Todo) -> bool { todo.done }
         assert_eq!(add.attributes.len(), 2, "addTodo carries two attributes");
         let add_semantics = parse_operation_semantics_from_attributes(add).unwrap();
         assert_eq!(add_semantics.effect, OperationEffect::Write);
-        assert_eq!(add_semantics.capabilities, vec![SemanticCapability::Storage]);
+        assert_eq!(
+            add_semantics.capabilities,
+            vec![SemanticCapability::Storage]
+        );
 
         let is_done = operations
             .iter()
@@ -803,12 +809,11 @@ macro is_done(todo: Todo) -> bool { todo.done }
     fn operation_without_effect_attribute_is_rejected() {
         let source = "query ping() -> bool { true }";
         let parsed = oak_vos::parse(source).expect("Oak parses");
-        let operations = crate::semantic::projection::project_operations(&parsed)
-            .expect("VOS projects");
+        let operations =
+            crate::semantic::projection::project_operations(&parsed).expect("VOS projects");
         assert_eq!(operations.len(), 1);
         // Negative: no [effect(...)] attribute → OPC001 diagnostic
-        let diagnostics = parse_operation_semantics_from_attributes(&operations[0])
-            .unwrap_err();
+        let diagnostics = parse_operation_semantics_from_attributes(&operations[0]).unwrap_err();
         assert!(
             diagnostics.iter().any(|d| d.code == "OPC001"),
             "expected OPC001 for missing effect, got {diagnostics:?}"

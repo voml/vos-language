@@ -76,7 +76,11 @@ fn using_tree_loads_every_document_of_the_vault_fixture() {
         ],
         "every `using` path must survive the collect pass"
     );
-    assert_eq!(entry.declarations.len(), 1, "the entry only declares a namespace");
+    assert_eq!(
+        entry.declarations.len(),
+        1,
+        "the entry only declares a namespace"
+    );
     assert!(matches!(
         &entry.declarations[0],
         DeclKind::Namespace { path } if path.join("::") == "demo::vault"
@@ -134,11 +138,7 @@ fn cross_document_type_reference_resolves_to_the_owning_unit() {
     assert_eq!(
         owner.canonical_type,
         ResolvedCanonicalType::User {
-            path: vec![
-                "demo".to_owned(),
-                "vault".to_owned(),
-                "Account".to_owned()
-            ],
+            path: vec!["demo".to_owned(), "vault".to_owned(), "Account".to_owned()],
             type_id: 1,
         },
         "a type declared in another document resolves to that document's durable identity"
@@ -231,8 +231,9 @@ fn service_binds_an_operation_declared_in_another_document() {
             },
         ],
     };
-    let contracts = build_service_contracts(&[(0, &services)], &[declaration], &operations, &types, None)
-        .expect("the service binds an operation declared in a sibling document");
+    let contracts =
+        build_service_contracts(&[(0, &services)], &[declaration], &operations, &types, None)
+            .expect("the service binds an operation declared in a sibling document");
 
     let artifact = ContractArtifact::seal(
         ContractFormat::Iris,
@@ -256,11 +257,9 @@ fn service_binds_an_operation_declared_in_another_document() {
         .operation_id
         .clone();
     assert!(
-        artifact
-            .payload
-            .operations
-            .iter()
-            .any(|operation| operation.operation_id == bound_record && operation.source_unit_id == 1),
+        artifact.payload.operations.iter().any(
+            |operation| operation.operation_id == bound_record && operation.source_unit_id == 1
+        ),
         "the method binding must point at the operation owned by the other document"
     );
 }
@@ -324,7 +323,10 @@ fn duplicate_type_path_across_documents_is_diagnosed_as_res004() {
         .expect_err("two documents declaring one type path must fail");
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].code, "RES004");
-    assert_eq!(diagnostics[0].message, "duplicate type path across source units");
+    assert_eq!(
+        diagnostics[0].message,
+        "duplicate type path across source units"
+    );
 }
 
 #[test]
@@ -343,10 +345,8 @@ fn duplicate_type_and_field_ids_across_documents_are_diagnosed() {
         "the duplicate type id must be reported: {diagnostics:?}"
     );
     assert!(
-        diagnostics
-            .iter()
-            .any(|item| item.code == "RES006"
-                && item.message == "duplicate field ID across source units"),
+        diagnostics.iter().any(|item| item.code == "RES006"
+            && item.message == "duplicate field ID across source units"),
         "the duplicate field id must be reported: {diagnostics:?}"
     );
 }

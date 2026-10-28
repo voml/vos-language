@@ -957,8 +957,7 @@ impl StableIdentityManifest {
         if self.artifact_id.trim().is_empty() {
             return Err(ArtifactError {
                 code: "SIM012".to_owned(),
-                message: "stable identity manifest artifact id must not be empty"
-                    .to_owned(),
+                message: "stable identity manifest artifact id must not be empty".to_owned(),
             });
         }
         let mut seen = BTreeSet::new();
@@ -982,7 +981,10 @@ impl StableIdentityManifest {
                 });
             }
             if entry.fingerprint.len() != 64
-                || !entry.fingerprint.bytes().all(|byte| byte.is_ascii_hexdigit())
+                || !entry
+                    .fingerprint
+                    .bytes()
+                    .all(|byte| byte.is_ascii_hexdigit())
             {
                 return Err(ArtifactError {
                     code: "SIM016".to_owned(),
@@ -1065,10 +1067,7 @@ impl StableIdentityManifest {
     /// services and service methods come from the artifact payload. Entries
     /// are merged by kind so duplicate stable ids cannot appear when the two
     /// inputs happen to carry the same value.
-    pub fn from_full_artifact(
-        resolved: &ResolvedContract,
-        artifact: &ContractArtifact,
-    ) -> Self {
+    pub fn from_full_artifact(resolved: &ResolvedContract, artifact: &ContractArtifact) -> Self {
         let mut merged = Self::from_resolved_contract(resolved);
         let artifact_entries = Self::from_artifact(artifact).entries;
         let mut seen = merged
@@ -1094,7 +1093,9 @@ impl StableIdentityManifest {
             let stable_id = operation
                 .stable_id_hint
                 .map(StableId::new)
-                .unwrap_or_else(|| StableId::new(identity_hash_u64(operation.operation_id.as_str())));
+                .unwrap_or_else(|| {
+                    StableId::new(identity_hash_u64(operation.operation_id.as_str()))
+                });
             entries.push(StableIdentityEntry {
                 stable_id,
                 entity_kind: EntityKind::Operation,
@@ -1102,8 +1103,9 @@ impl StableIdentityManifest {
                 fingerprint: operation_fingerprint(operation),
                 provenance: SourceProvenance::spanned(
                     operation.source_unit_id,
-                    SourceSpan::new(operation.span.start, operation.span.end)
-                        .unwrap_or_else(|| SourceSpan::new(operation.span.start, operation.span.start).unwrap()),
+                    SourceSpan::new(operation.span.start, operation.span.end).unwrap_or_else(
+                        || SourceSpan::new(operation.span.start, operation.span.start).unwrap(),
+                    ),
                 ),
                 previous: None,
             });
@@ -1125,8 +1127,9 @@ impl StableIdentityManifest {
                 fingerprint: service_fingerprint(service),
                 provenance: SourceProvenance::spanned(
                     service.source_unit_id,
-                    SourceSpan::new(service.span.start, service.span.end)
-                        .unwrap_or_else(|| SourceSpan::new(service.span.start, service.span.start).unwrap()),
+                    SourceSpan::new(service.span.start, service.span.end).unwrap_or_else(|| {
+                        SourceSpan::new(service.span.start, service.span.start).unwrap()
+                    }),
                 ),
                 previous: None,
             });
@@ -1158,7 +1161,10 @@ impl StableIdentityManifest {
     /// mismatch. The manifest is considered stable under reorder when the
     /// set of `(stable_id, entity_kind)` pairs is identical and no entry's
     /// canonical name changes its stable id.
-    pub fn verify_reorder_stable(&self, before: &StableIdentityManifest) -> Result<(), Vec<String>> {
+    pub fn verify_reorder_stable(
+        &self,
+        before: &StableIdentityManifest,
+    ) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
 
         let before_by_id = before
@@ -1223,7 +1229,10 @@ impl StableIdentityManifest {
     /// different canonical names. This is always allowed: the stable id is the
     /// durable handle and the name is display-only. If no rename happened the
     /// check succeeds trivially.
-    pub fn verify_rename_tracking(&self, before: &StableIdentityManifest) -> Result<(), Vec<String>> {
+    pub fn verify_rename_tracking(
+        &self,
+        before: &StableIdentityManifest,
+    ) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
 
         let before_by_id = before
@@ -1429,7 +1438,9 @@ struct CanonicalAttributeIdentity<'a> {
     syntax: &'a str,
 }
 
-fn canonical_attributes_identity(attributes: &[ContractAttribute]) -> Vec<CanonicalAttributeIdentity<'_>> {
+fn canonical_attributes_identity(
+    attributes: &[ContractAttribute],
+) -> Vec<CanonicalAttributeIdentity<'_>> {
     let mut result = attributes
         .iter()
         .map(|attribute| CanonicalAttributeIdentity {
@@ -1439,7 +1450,11 @@ fn canonical_attributes_identity(attributes: &[ContractAttribute]) -> Vec<Canoni
         .collect::<Vec<_>>();
     // Sort by name then syntax to make the fingerprint stable across attribute
     // declaration order, which is not a semantic concern for identity.
-    result.sort_by(|left, right| left.name.cmp(right.name).then(left.syntax.cmp(right.syntax)));
+    result.sort_by(|left, right| {
+        left.name
+            .cmp(right.name)
+            .then(left.syntax.cmp(right.syntax))
+    });
     result
 }
 

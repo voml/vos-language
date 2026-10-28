@@ -103,9 +103,7 @@ fn run(case: &Case) -> Vec<ContractDiagnostic> {
                 .expect("the fixture projects its operations");
             let semantics = operations
                 .iter()
-                .filter_map(|operation| {
-                    parse_operation_semantics_from_attributes(operation).ok()
-                })
+                .filter_map(|operation| parse_operation_semantics_from_attributes(operation).ok())
                 .collect::<Vec<_>>();
             build_operation_contracts(&[(0, &operations)], &semantics, &[], None)
                 .expect_err("the fixture must fail operation contract construction")
@@ -117,9 +115,7 @@ fn run(case: &Case) -> Vec<ContractDiagnostic> {
                 .expect("the fixture projects its operations");
             let semantics = operations
                 .iter()
-                .filter_map(|operation| {
-                    parse_operation_semantics_from_attributes(operation).ok()
-                })
+                .filter_map(|operation| parse_operation_semantics_from_attributes(operation).ok())
                 .collect::<Vec<_>>();
             let built = build_operation_contracts(&[(0, &operations)], &semantics, &[], None)
                 .expect("the fixture operations build");

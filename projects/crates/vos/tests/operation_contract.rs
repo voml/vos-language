@@ -119,7 +119,8 @@ fn unknown_parameter_types_are_rejected_instead_of_defaulting() {
     let operations = operations(source);
     let semantics = semantics_for(&operations, OperationEffect::Read, vec![]);
 
-    let diagnostics = build_operation_contracts(&[(0, &operations)], &semantics, &[], None).unwrap_err();
+    let diagnostics =
+        build_operation_contracts(&[(0, &operations)], &semantics, &[], None).unwrap_err();
     assert!(
         diagnostics.iter().any(|item| item.code == "RES001"),
         "unresolved types must surface as diagnostics, got {diagnostics:?}"
@@ -129,9 +130,13 @@ fn unknown_parameter_types_are_rejected_instead_of_defaulting() {
 #[test]
 fn missing_declared_effect_is_rejected() {
     let operations = operations(SERVICE_SOURCE);
-    let diagnostics =
-        build_operation_contracts(&[(0, &operations)], &[], &contract_types(SERVICE_SOURCE), None)
-            .unwrap_err();
+    let diagnostics = build_operation_contracts(
+        &[(0, &operations)],
+        &[],
+        &contract_types(SERVICE_SOURCE),
+        None,
+    )
+    .unwrap_err();
 
     assert_eq!(diagnostics.len(), 2);
     assert!(
@@ -264,7 +269,8 @@ fn declared_effects_are_carried_into_the_contract() {
             vec![],
         ),
     ];
-    let contracts = build_operation_contracts(&[(0, &operations)], &semantics, &types, None).unwrap();
+    let contracts =
+        build_operation_contracts(&[(0, &operations)], &semantics, &types, None).unwrap();
 
     let active = contracts
         .iter()

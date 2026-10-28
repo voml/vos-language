@@ -25,7 +25,8 @@ use vos::{
     ContractArtifact, ContractFormat, ContractPayload, ContractProducer, IDENTITY_MANIFEST_VERSION,
     IdentityManifest, MethodStreamMode, OperationContract, RESOLVED_CONTRACT_FORMAT_VERSION,
     ResolvedContract, ServiceContractDecl, ServiceMethodDecl, build_operation_contracts,
-    build_service_contracts, parse_oak, parse_operation_semantics_from_attributes, resolve_contract,
+    build_service_contracts, parse_oak, parse_operation_semantics_from_attributes,
+    resolve_contract,
 };
 
 const FORMAT_VERSION: &str = "vos-fingerprint-evolution-v0";
@@ -112,13 +113,9 @@ fn build(case: &Case) -> Outcome {
                 .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id))
         })
         .collect::<Vec<_>>();
-    let operation_contracts = build_operation_contracts(
-        &[(0, &operations)],
-        &semantics,
-        &contract.types,
-        None,
-    )
-    .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let operation_contracts =
+        build_operation_contracts(&[(0, &operations)], &semantics, &contract.types, None)
+            .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
 
     let services = input
         .project_services()
@@ -137,10 +134,9 @@ fn build(case: &Case) -> Outcome {
                 .map(|method| ServiceMethodDecl {
                     name: method.name.clone(),
                     request_type: method.parameters[0].type_expr.clone(),
-                    response_type: method
-                        .return_type
-                        .clone()
-                        .unwrap_or_else(|| panic!("{}: service method has no return type", case.id)),
+                    response_type: method.return_type.clone().unwrap_or_else(|| {
+                        panic!("{}: service method has no return type", case.id)
+                    }),
                     stream: if method.stream {
                         MethodStreamMode::ServerStream
                     } else {
@@ -153,9 +149,14 @@ fn build(case: &Case) -> Outcome {
                 .collect(),
         })
         .collect::<Vec<_>>();
-    let service_contracts =
-        build_service_contracts(&[(0, &services)], &declarations, &operation_contracts, &contract.types, None)
-            .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let service_contracts = build_service_contracts(
+        &[(0, &services)],
+        &declarations,
+        &operation_contracts,
+        &contract.types,
+        None,
+    )
+    .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
 
     let artifact = ContractArtifact::seal(
         ContractFormat::Iris,
@@ -181,7 +182,11 @@ fn bound_operation<'a>(
     method: &str,
     case: &Case,
 ) -> &'a OperationContract {
-    let name = case.bindings.get(method).map(String::as_str).unwrap_or(method);
+    let name = case
+        .bindings
+        .get(method)
+        .map(String::as_str)
+        .unwrap_or(method);
     by_name.get(name).copied().unwrap_or_else(|| {
         panic!(
             "{}: service method {method} binds unknown operation {name}",
@@ -248,9 +253,9 @@ fn fingerprint_evolution_matrix_matches_its_recorded_verdicts() {
                     "{}: schemaVerdict says same but the fingerprint moved",
                     case.id
                 );
-                stale_contract
-                    .validate()
-                    .unwrap_or_else(|error| panic!("{}: {} {}", case.id, error.code, error.message));
+                stale_contract.validate().unwrap_or_else(|error| {
+                    panic!("{}: {} {}", case.id, error.code, error.message)
+                });
             }
             "changed" => {
                 assert_ne!(
@@ -278,9 +283,9 @@ fn fingerprint_evolution_matrix_matches_its_recorded_verdicts() {
                     "{}: artifactVerdict says same but the fingerprint moved",
                     case.id
                 );
-                stale_artifact
-                    .validate()
-                    .unwrap_or_else(|error| panic!("{}: {} {}", case.id, error.code, error.message));
+                stale_artifact.validate().unwrap_or_else(|error| {
+                    panic!("{}: {} {}", case.id, error.code, error.message)
+                });
             }
             "changed" => {
                 assert_ne!(
@@ -340,7 +345,11 @@ fn matrix_case_ids_are_unique_and_sources_exist() {
     let directory = fixtures();
     let mut ids = BTreeSet::new();
     for case in &matrix.cases {
-        assert!(ids.insert(case.id.as_str()), "duplicate case id {}", case.id);
+        assert!(
+            ids.insert(case.id.as_str()),
+            "duplicate case id {}",
+            case.id
+        );
         assert!(
             directory.join(&case.source).is_file(),
             "{}: missing source {}",

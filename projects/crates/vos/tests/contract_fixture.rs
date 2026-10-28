@@ -197,7 +197,8 @@ fn method_bound_to_unknown_operation_is_reported() {
     let mut declared = declaration(&services[0], &operations);
     declared.methods[0].operation_id = missing.clone();
     let diagnostics =
-        build_service_contracts(&[(0, &services)], &[declared], &operations, &types, None).unwrap_err();
+        build_service_contracts(&[(0, &services)], &[declared], &operations, &types, None)
+            .unwrap_err();
 
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].code, "SVC004");
