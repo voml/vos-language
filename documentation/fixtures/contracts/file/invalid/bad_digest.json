@@ -1,0 +1,11 @@
+{
+  "formatVersion": "vos-file-descriptor-v0",
+  "identity": {
+    "digest": "BE45CB2605BF36BEbde684841a28f0fd43c69850a3dce5fedba69928ee3a8991",
+    "octets": 16
+  },
+  "metadata": {
+    "name": "ledger.bin",
+    "mediaType": "application/octet-stream"
+  }
+}

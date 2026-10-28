@@ -127,6 +127,8 @@ pub struct BoundFieldContract {
 pub enum ResolvedCanonicalType {
     /// Canonical scalar shared with the storage layer.
     Scalar(CanonicalScalar),
+    /// Large logical file described by [`crate::FileDescriptor`].
+    File,
     /// User-defined type with its durable identity.
     User {
         /// Canonical type path.
@@ -324,7 +326,7 @@ fn validate_resolved_type(
                 }
             }
         }
-        ResolvedCanonicalType::Scalar(_) => {}
+        ResolvedCanonicalType::Scalar(_) | ResolvedCanonicalType::File => {}
     }
     Ok(())
 }

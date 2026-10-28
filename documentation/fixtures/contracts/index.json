@@ -217,6 +217,44 @@
       "note": "Negative `bytes` wire artifacts rejected by exact code: version, encoding, odd length, non-lowercase hex and unknown fields"
     },
     {
+      "id": "types.file",
+      "kind": "type-fixture",
+      "stage": "resolved",
+      "entry": "file/schema.vos",
+      "manifest": "file/schema.manifest.json",
+      "files": [
+        "file/schema.vos",
+        "file/schema.manifest.json",
+        "file/generic_arguments.vos"
+      ],
+      "note": "`file` resolves to the logical descriptor type, and `file<...>` is rejected with `RES018` instead of sealed as a generic"
+    },
+    {
+      "id": "descriptors.file",
+      "kind": "value-fixture",
+      "stage": "resolved",
+      "entry": "file/descriptor.json",
+      "files": [
+        "file/descriptor.json"
+      ],
+      "note": "One reviewed `file` descriptor: manifest identity recomputed from the content octets, metadata kept separate, full and range windows, EOF offsets and the released-reference diagnostic"
+    },
+    {
+      "id": "descriptors.file-invalid",
+      "kind": "value-fixture",
+      "stage": "diagnostic",
+      "entry": "file/invalid.json",
+      "files": [
+        "file/invalid.json",
+        "file/invalid/stale_version.json",
+        "file/invalid/bad_digest.json",
+        "file/invalid/empty_name.json",
+        "file/invalid/empty_media_type.json",
+        "file/invalid/unknown_field.json"
+      ],
+      "note": "Negative `file` descriptors rejected by exact code: version, digest spelling, empty metadata and unknown fields"
+    },
+    {
       "id": "diagnostics.golden",
       "kind": "diagnostic-golden",
       "stage": "diagnostic",

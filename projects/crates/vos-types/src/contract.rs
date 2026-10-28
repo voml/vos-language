@@ -449,7 +449,7 @@ fn validate_explicit_reference(
     side: &str,
 ) -> Result<(), ArtifactError> {
     match canonical_type {
-        ResolvedCanonicalType::Scalar(_) => Ok(()),
+        ResolvedCanonicalType::Scalar(_) | ResolvedCanonicalType::File => Ok(()),
         ResolvedCanonicalType::User { path, type_id } => {
             if path.is_empty() || path.iter().any(String::is_empty) || *type_id == 0 {
                 return Err(ArtifactError {

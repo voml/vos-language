@@ -1,0 +1,31 @@
+{
+  "formatVersion": "vos-file-descriptor-invalid-v0",
+  "note": "Negative `file` descriptor artifacts. Each source must be rejected with the reviewed code so a host never accepts an unversioned, unnamed or unchecked descriptor.",
+  "cases": [
+    {
+      "id": "stale-version",
+      "source": "invalid/stale_version.json",
+      "expectCode": "FIL001"
+    },
+    {
+      "id": "bad-digest",
+      "source": "invalid/bad_digest.json",
+      "expectCode": "FIL002"
+    },
+    {
+      "id": "empty-name",
+      "source": "invalid/empty_name.json",
+      "expectCode": "FIL003"
+    },
+    {
+      "id": "empty-media-type",
+      "source": "invalid/empty_media_type.json",
+      "expectCode": "FIL003"
+    },
+    {
+      "id": "unknown-field",
+      "source": "invalid/unknown_field.json",
+      "expectCode": "FIL006"
+    }
+  ]
+}

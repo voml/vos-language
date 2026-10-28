@@ -428,6 +428,8 @@ pub(crate) fn resolve_type(
                     path: canonical_path.clone(),
                     type_id: *type_id,
                 })
+            } else if path.len() == 1 && path[0] == "file" {
+                Some(ResolvedCanonicalType::File)
             } else if path.len() == 1
                 && let Some(scalar) = CanonicalScalar::from_source_name(path[0].as_str())
             {
@@ -464,6 +466,13 @@ pub(crate) fn resolve_type(
                 diagnostics.push(diagnostic_with_span(
                     "RES017",
                     "bytes is a scalar and does not take type arguments",
+                    span,
+                ));
+                None
+            } else if path == &["file".to_owned()] {
+                diagnostics.push(diagnostic_with_span(
+                    "RES018",
+                    "file is a logical type and does not take type arguments",
                     span,
                 ));
                 None
