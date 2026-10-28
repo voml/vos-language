@@ -112,12 +112,13 @@ pub fn parse_operation_semantics_from_attributes(
     }
 
     let Some(effect) = effect else {
-        diagnostics.push(diagnostic(
+        diagnostics.push(diagnostic_with_span(
             "OPC001",
             &format!(
                 "operation {} has no declared effect",
                 operation.operation_id
             ),
+            Some(operation.span),
         ));
         return Err(diagnostics);
     };
@@ -207,22 +208,24 @@ pub fn build_operation_contracts(
     for (source_unit_id, unit_operations) in units {
         for operation in *unit_operations {
             if !seen.insert(operation.operation_id.clone()) {
-                diagnostics.push(diagnostic(
+                diagnostics.push(diagnostic_with_span(
                     "OPC003",
                     &format!(
                         "operation {} is declared in more than one unit",
                         operation.operation_id
                     ),
+                    Some(operation.span),
                 ));
                 continue;
             }
             let Some(entry) = declared.get(&operation.operation_id) else {
-                diagnostics.push(diagnostic(
+                diagnostics.push(diagnostic_with_span(
                     "OPC001",
                     &format!(
                         "operation {} has no declared effect",
                         operation.operation_id
                     ),
+                    Some(operation.span),
                 ));
                 continue;
             };
@@ -232,12 +235,17 @@ pub fn build_operation_contracts(
                 .parameters
                 .iter()
                 .map(|parameter| {
-                    resolve_type(&parameter.type_expr, namespace, &type_ids, &mut diagnostics).map(
-                        |canonical_type| OperationParameterContract {
-                            name: parameter.name.clone(),
-                            canonical_type,
-                        },
+                    resolve_type(
+                        &parameter.type_expr,
+                        namespace,
+                        &type_ids,
+                        Some(parameter.span),
+                        &mut diagnostics,
                     )
+                    .map(|canonical_type| OperationParameterContract {
+                        name: parameter.name.clone(),
+                        canonical_type,
+                    })
                 })
                 .collect::<Option<Vec<_>>>()
             else {
@@ -245,7 +253,13 @@ pub fn build_operation_contracts(
             };
             let result_type = match operation.return_type.as_ref() {
                 Some(result) => {
-                    match resolve_type(result, namespace, &type_ids, &mut diagnostics) {
+                    match resolve_type(
+                        result,
+                        namespace,
+                        &type_ids,
+                        Some(operation.span),
+                        &mut diagnostics,
+                    ) {
                         Some(result) => Some(result),
                         None => continue,
                     }
@@ -382,19 +396,21 @@ pub fn build_service_contracts(
     for (source_unit_id, unit_services) in units {
         for service in *unit_services {
             if !seen.insert(service.service_id.clone()) {
-                diagnostics.push(diagnostic(
+                diagnostics.push(diagnostic_with_span(
                     "SVC006",
                     &format!(
                         "service {} is declared in more than one unit",
                         service.service_id
                     ),
+                    Some(service.span),
                 ));
                 continue;
             }
             let Some(declaration) = declared.get(&service.service_id) else {
-                diagnostics.push(diagnostic(
+                diagnostics.push(diagnostic_with_span(
                     "SVC001",
                     &format!("service {} has no contract declaration", service.service_id),
+                    Some(service.span),
                 ));
                 continue;
             };
@@ -410,65 +426,76 @@ pub fn build_service_contracts(
                 .iter()
                 .map(|method| {
                     let Some(projected) = projected_methods.get(method.name.as_str()) else {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC018",
                             &format!(
                                 "service method {} is missing from the source declaration",
                                 method.name
                             ),
+                            Some(service.span),
                         ));
                         return None;
                     };
                     if projected.parameters.len() != 1 {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC020",
                             &format!(
                                 "service method {} must declare exactly one request parameter in source",
                                 method.name
                             ),
+                            Some(projected.span),
                         ));
                         return None;
                     }
                     let parameter = &projected.parameters[0];
-                    let request_type =
-                        resolve_type(&method.request_type, namespace, &type_ids, &mut diagnostics)?;
+                    let request_type = resolve_type(
+                        &method.request_type,
+                        namespace,
+                        &type_ids,
+                        Some(parameter.span),
+                        &mut diagnostics,
+                    )?;
                     let response_type = resolve_type(
                         &method.response_type,
                         namespace,
                         &type_ids,
+                        Some(projected.span),
                         &mut diagnostics,
                     )?;
                     if canonical_type_key(&parameter.type_expr)
                         != canonical_type_key(&method.request_type)
                     {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC021",
                             &format!(
                                 "service method {} request type does not match the source parameter",
                                 method.name
                             ),
+                            Some(projected.span),
                         ));
                         return None;
                     }
                     let Some(projected_response) = projected.return_type.as_ref() else {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC024",
                             &format!(
                                 "service method {} declares no return type in source",
                                 method.name
                             ),
+                            Some(projected.span),
                         ));
                         return None;
                     };
                     if canonical_type_key(projected_response)
                         != canonical_type_key(&method.response_type)
                     {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC022",
                             &format!(
                                 "service method {} response type does not match the source return type",
                                 method.name
                             ),
+                            Some(projected.span),
                         ));
                         return None;
                     }
@@ -478,22 +505,24 @@ pub fn build_service_contracts(
                         MethodStreamMode::Unary
                     };
                     if projected_stream != method.stream {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC023",
                             &format!(
                                 "service method {} stream marker does not match the source return type",
                                 method.name
                             ),
+                            Some(projected.span),
                         ));
                         return None;
                     }
                     if !operation_ids.contains(&method.operation_id) {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC004",
                             &format!(
                                 "service method {} binds unknown operation {}",
                                 method.name, method.operation_id
                             ),
+                            Some(projected.span),
                         ));
                         return None;
                     }
@@ -501,21 +530,23 @@ pub fn build_service_contracts(
                         bound.insert(method.operation_id.clone(), service.service_id.clone())
                         && owner != service.service_id
                     {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC005",
                             &format!(
                                 "operation {} is bound by more than one service",
                                 method.operation_id
                             ),
+                            Some(projected.span),
                         ));
                         return None;
                     }
                     let Ok(method_identity) =
                         MethodIdentityKey::new(service.service_id.clone(), &method.name)
                     else {
-                        diagnostics.push(diagnostic(
+                        diagnostics.push(diagnostic_with_span(
                             "SVC014",
                             "service method names must be non-empty without whitespace",
+                            Some(projected.span),
                         ));
                         return None;
                     };
@@ -542,9 +573,10 @@ pub fn build_service_contracts(
                     .iter()
                     .any(|method| method.name == *name)
                 {
-                    diagnostics.push(diagnostic(
+                    diagnostics.push(diagnostic_with_span(
                         "SVC019",
                         &format!("source method {name} has no contract declaration"),
+                        Some(service.span),
                     ));
                 }
             }

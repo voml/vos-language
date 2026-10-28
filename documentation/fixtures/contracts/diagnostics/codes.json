@@ -1,0 +1,65 @@
+{
+  "formatVersion": "vos-diagnostic-golden-v0",
+  "cases": [
+    {
+      "id": "operation-missing-effect",
+      "kind": "operation-semantics",
+      "source": "operation_missing_effect.vos",
+      "expect": [
+        {
+          "code": "OPC001",
+          "message": "operation op_40158cb3d189fa2ac6a579217337d8d5ceb45e727185a490c27fcd58fabceb46 has no declared effect",
+          "span": {
+            "start": 63,
+            "end": 98
+          }
+        }
+      ]
+    },
+    {
+      "id": "operation-unknown-parameter-type",
+      "kind": "operation-contracts",
+      "source": "operation_unknown_parameter_type.vos",
+      "expect": [
+        {
+          "code": "RES001",
+          "message": "unknown type Missing",
+          "span": {
+            "start": 90,
+            "end": 101
+          }
+        }
+      ]
+    },
+    {
+      "id": "service-unknown-binding",
+      "kind": "service-unknown-binding",
+      "source": "service_method_errors.vos",
+      "expect": [
+        {
+          "code": "SVC004",
+          "message": "service method fetch binds unknown operation op_0000000000000000000000000000000000000000000000000000000000000000",
+          "span": {
+            "start": 42,
+            "end": 65
+          }
+        }
+      ]
+    },
+    {
+      "id": "service-request-mismatch",
+      "kind": "service-request-mismatch",
+      "source": "service_method_errors.vos",
+      "expect": [
+        {
+          "code": "SVC021",
+          "message": "service method fetch request type does not match the source parameter",
+          "span": {
+            "start": 42,
+            "end": 65
+          }
+        }
+      ]
+    }
+  ]
+}

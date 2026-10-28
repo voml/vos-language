@@ -1,4 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
+
+use core::range::Range;
+
 use vos_types::*;
 
 /// Binds a reviewable identity manifest to a schema projection.
@@ -331,10 +334,13 @@ pub fn resolve_contract_from_units(
                 .fields
                 .iter()
                 .filter_map(|field| {
+                    // Bound field contracts carry no source span, so a schema
+                    // reference diagnostic stays location-free.
                     let canonical_type = resolve_type(
                         &field.canonical_type,
                         &item.canonical_path[..item.canonical_path.len().saturating_sub(1)],
                         &type_ids,
+                        None,
                         &mut diagnostics,
                     )?;
                     Some(ResolvedFieldContract {
@@ -389,6 +395,7 @@ pub(crate) fn resolve_type(
     ty: &CanonicalType,
     namespace: &[String],
     type_ids: &BTreeMap<Vec<String>, u64>,
+    span: Option<Range<usize>>,
     diagnostics: &mut Vec<ContractDiagnostic>,
 ) -> Option<ResolvedCanonicalType> {
     match ty {
@@ -409,9 +416,10 @@ pub(crate) fn resolve_type(
                 }
             }
             if candidates.len() > 1 {
-                diagnostics.push(diagnostic(
+                diagnostics.push(diagnostic_with_span(
                     "RES002",
                     &format!("ambiguous type {}", path.join("::")),
+                    span,
                 ));
                 return None;
             }
@@ -425,23 +433,25 @@ pub(crate) fn resolve_type(
             {
                 Some(ResolvedCanonicalType::Scalar(scalar))
             } else {
-                diagnostics.push(diagnostic(
+                diagnostics.push(diagnostic_with_span(
                     "RES001",
                     &format!("unknown type {}", path.join("::")),
+                    span,
                 ));
                 None
             }
         }
         CanonicalType::Reference(inner) => Some(ResolvedCanonicalType::Reference(Box::new(
-            resolve_type(inner, namespace, type_ids, diagnostics)?,
+            resolve_type(inner, namespace, type_ids, span, diagnostics)?,
         ))),
         CanonicalType::Optional(inner) => Some(ResolvedCanonicalType::Optional(Box::new(
-            resolve_type(inner, namespace, type_ids, diagnostics)?,
+            resolve_type(inner, namespace, type_ids, span, diagnostics)?,
         ))),
         CanonicalType::List(inner) => Some(ResolvedCanonicalType::List(Box::new(resolve_type(
             inner,
             namespace,
             type_ids,
+            span,
             diagnostics,
         )?))),
         CanonicalType::Generic { path, arguments } => {
@@ -457,7 +467,7 @@ pub(crate) fn resolve_type(
                         .iter()
                         .map(|argument| match argument {
                             CanonicalTypeArgument::Type(ty) => {
-                                resolve_type(ty, namespace, type_ids, diagnostics)
+                                resolve_type(ty, namespace, type_ids, span, diagnostics)
                                     .map(ResolvedCanonicalTypeArgument::Type)
                             }
                             CanonicalTypeArgument::Literal(value) => {
@@ -693,5 +703,17 @@ fn diagnostic(code: &str, message: &str) -> ContractDiagnostic {
         code: code.to_owned(),
         message: message.to_owned(),
         span: None,
+    }
+}
+
+fn diagnostic_with_span(
+    code: &str,
+    message: &str,
+    span: Option<Range<usize>>,
+) -> ContractDiagnostic {
+    ContractDiagnostic {
+        code: code.to_owned(),
+        message: message.to_owned(),
+        span,
     }
 }
