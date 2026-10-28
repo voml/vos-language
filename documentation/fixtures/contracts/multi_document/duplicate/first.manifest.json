@@ -1,0 +1,17 @@
+{
+  "formatVersion": "vos-identity-manifest-v0",
+  "types": [
+    {
+      "canonicalPath": ["demo", "vault", "Account"],
+      "typeId": 7,
+      "kind": "class",
+      "fields": [
+        {
+          "canonicalName": "id",
+          "fieldId": 8,
+          "virtualFieldIndex": 0
+        }
+      ]
+    }
+  ]
+}

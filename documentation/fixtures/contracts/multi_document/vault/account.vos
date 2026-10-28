@@ -1,0 +1,6 @@
+namespace demo::vault
+
+class Account {
+    [primary] id: uuid,
+    email: utf8,
+}

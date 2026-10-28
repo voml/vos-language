@@ -1,0 +1,5 @@
+using "./account.vos"
+using "./ledger.vos"
+using "./service.vos"
+
+namespace demo::vault

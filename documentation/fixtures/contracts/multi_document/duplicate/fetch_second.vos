@@ -1,0 +1,8 @@
+namespace demo::vault
+
+class Token {
+    [primary] id: uuid,
+}
+
+[effect(read)]
+query fetch(id: uuid) -> uuid { id }

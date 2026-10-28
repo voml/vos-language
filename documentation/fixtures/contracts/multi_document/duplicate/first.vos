@@ -1,0 +1,5 @@
+namespace demo::vault
+
+class Account {
+    [primary] id: uuid,
+}

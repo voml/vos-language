@@ -1,0 +1,9 @@
+namespace demo::vault
+
+table Ledger {
+    [primary] id: uuid,
+    owner: Account,
+}
+
+[effect(write)] [capability(storage)]
+query record(account: Account) -> Ledger { Ledger }

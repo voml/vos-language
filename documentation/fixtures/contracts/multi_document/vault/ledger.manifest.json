@@ -1,0 +1,22 @@
+{
+  "formatVersion": "vos-identity-manifest-v0",
+  "types": [
+    {
+      "canonicalPath": ["demo", "vault", "Ledger"],
+      "typeId": 4,
+      "kind": "table",
+      "fields": [
+        {
+          "canonicalName": "id",
+          "fieldId": 5,
+          "virtualFieldIndex": 0
+        },
+        {
+          "canonicalName": "owner",
+          "fieldId": 6,
+          "virtualFieldIndex": 1
+        }
+      ]
+    }
+  ]
+}
