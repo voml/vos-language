@@ -7,6 +7,7 @@ use oak_vos::{VosDeclaration, VosField, VosRoot, VosSyntaxNode};
 mod contract;
 mod identity;
 mod projection;
+mod provider;
 pub mod resolve;
 
 pub use contract::{
@@ -19,6 +20,10 @@ pub use identity::{
 };
 pub use projection::{
     project_operations, project_operations_artifact, project_services, project_services_artifact,
+};
+pub use provider::{
+    IDENTITY_PROVIDER_FILE_NAME, IDENTITY_PROVIDER_FORMAT_VERSION, IdentityManifestProvider,
+    IdentityProviderState, ProvidedField, ProvidedType, RetiredSlot,
 };
 pub use resolve::{
     DeclKind, SourceDecls, SourceId, SymbolTable, collect_decls, extract_using_path_with_literals,
