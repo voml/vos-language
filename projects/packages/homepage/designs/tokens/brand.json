@@ -20,12 +20,15 @@
         "paper": "#171D26",
         "mist": "#1D2530",
         "page": "#10141B",
+        "fill": "#1D2530",
         "ink": "#F2F4F7",
         "graphite": "#2A3442"
     },
     "text": {
         "ink": "#F2F4F7",
         "steel": "#9AA5B4",
+        "tertiary": "#7A8699",
+        "muted": "#677183",
         "on-brand": "#18120E",
         "on-ink": "#F2F4F7"
     },

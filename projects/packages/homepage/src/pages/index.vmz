@@ -1,24 +1,26 @@
 <template>
+  <SiteHeader />
+  <main class="vos-main">
   <div class="vos-home">
     <section class="hero vos-rail">
       <div class="hero-copy">
-        <p class="vos-kicker"><span class="pulse" aria-hidden="true"></span> {heroKicker}</p>
+        <p class="vos-kicker"><span class="pulse" aria-hidden="true"></span> {{ heroKicker }}</p>
         <h1>
-          {heroTitleA}<br />
-          <span>{heroTitleB}</span>
+          {{ heroTitleA }}<br />
+          <span>{{ heroTitleB }}</span>
         </h1>
-        <p class="hero-lede">{heroLede}</p>
+        <p class="hero-lede">{{ heroLede }}</p>
         <div class="hero-actions vos-actions">
           <a href="/playground">
-            <Button type="button" variant="primary">{openPlayground} <span aria-hidden="true">↗</span></Button>
+            <Button type="button" variant="primary">{{ openPlayground }} <span aria-hidden="true">↗</span></Button>
           </a>
           <a href="/model">
-            <Button type="button" variant="secondary">{readModel}</Button>
+            <Button type="button" variant="secondary">{{ readModel }}</Button>
           </a>
         </div>
         <div class="hero-meta">
           <span class="meta-key">VOS / 0.1</span>
-          <span>{heroMeta}</span>
+          <span>{{ heroMeta }}</span>
         </div>
       </div>
 
@@ -33,7 +35,7 @@
           <span class="board-version">SCHEMA / V2</span>
         </div>
         <div class="board-body">
-          <div class="board-label">{boardLabel}</div>
+          <div class="board-label">{{ boardLabel }}</div>
           <div class="map">
             <span class="connector connector-main" aria-hidden="true"></span>
             <span class="connector connector-left" aria-hidden="true"></span>
@@ -61,9 +63,9 @@
             </div>
           </div>
           <div class="board-footer">
-            <span><b class="legend-dot cyan" aria-hidden="true"></b>{boardRelation}</span>
-            <span><b class="legend-dot orange" aria-hidden="true"></b>{boardPersistent}</span>
-            <span class="board-status">✓ {boardReady}</span>
+            <span><b class="legend-dot cyan" aria-hidden="true"></b>{{ boardRelation }}</span>
+            <span><b class="legend-dot orange" aria-hidden="true"></b>{{ boardPersistent }}</span>
+            <span class="board-status">✓ {{ boardReady }}</span>
           </div>
         </div>
       </div>
@@ -71,28 +73,28 @@
 
     <section class="system-strip">
       <div class="vos-rail strip-inner">
-        <p class="strip-lede">{stripTitle}</p>
+        <p class="strip-lede">{{ stripTitle }}</p>
         <div class="strip-stats">
-          <span><b>01</b>{stripNamespace}</span>
-          <span><b>02</b>{stripRelations}</span>
-          <span><b>03</b>{stripLifecycle}</span>
+          <span><b>01</b>{{ stripNamespace }}</span>
+          <span><b>02</b>{{ stripRelations }}</span>
+          <span><b>03</b>{{ stripLifecycle }}</span>
         </div>
       </div>
     </section>
 
     <section class="anatomy vos-rail section-block">
       <div class="section-intro">
-        <p class="vos-eyebrow">{anatomyEyebrow}</p>
-        <h2>{anatomyTitle}</h2>
-        <p>{anatomyLede}</p>
-        <div class="intro-note"><span aria-hidden="true">→</span>{anatomyNote}</div>
+        <p class="vos-eyebrow">{{ anatomyEyebrow }}</p>
+        <h2>{{ anatomyTitle }}</h2>
+        <p>{{ anatomyLede }}</p>
+        <div class="intro-note"><span aria-hidden="true">→</span>{{ anatomyNote }}</div>
       </div>
       <div class="schema-card">
         <div class="schema-card-head">
-          <span class="mono">{schemaCaption}</span>
-          <span class="schema-chip">{schemaChip}</span>
+          <span class="mono">{{ schemaCaption }}</span>
+          <span class="schema-chip">{{ schemaChip }}</span>
         </div>
-        <VosCodeBlock code={heroSample} caption={schemaCaption} copyLabel={copyLabel} onCopy={() => this.copyHero()} />
+        <VosCodeBlock :code="heroSample" :caption="schemaCaption" :copyLabel="copyLabel" @copy="() => this.copyHero()" />
         <div class="schema-card-foot">
           <span><b class="legend-dot orange" aria-hidden="true"></b>table</span>
           <span><b class="legend-dot cyan" aria-hidden="true"></b>reference</span>
@@ -103,28 +105,28 @@
 
     <section class="surfaces vos-rail section-block">
       <div class="section-intro wide-intro">
-        <p class="vos-eyebrow">{surfaceEyebrow}</p>
-        <h2>{surfaceTitle}</h2>
-        <p>{surfaceLede}</p>
+        <p class="vos-eyebrow">{{ surfaceEyebrow }}</p>
+        <h2>{{ surfaceTitle }}</h2>
+        <p>{{ surfaceLede }}</p>
       </div>
       <div class="surface-grid">
         <article class="surface-card" data-tone="orange">
           <div class="surface-card-top"><span class="surface-mark">NS</span><span class="surface-index">01</span></div>
-          <h3>{surfaceNamespaceTitle}</h3>
-          <p>{surfaceNamespaceBody}</p>
-          <code>{surfaceNamespaceCode}</code>
+          <h3>{{ surfaceNamespaceTitle }}</h3>
+          <p>{{ surfaceNamespaceBody }}</p>
+          <code>{{ surfaceNamespaceCode }}</code>
         </article>
         <article class="surface-card" data-tone="cyan">
           <div class="surface-card-top"><span class="surface-mark">TB</span><span class="surface-index">02</span></div>
-          <h3>{surfaceTableTitle}</h3>
-          <p>{surfaceTableBody}</p>
-          <code>{surfaceTableCode}</code>
+          <h3>{{ surfaceTableTitle }}</h3>
+          <p>{{ surfaceTableBody }}</p>
+          <code>{{ surfaceTableCode }}</code>
         </article>
         <article class="surface-card" data-tone="violet">
           <div class="surface-card-top"><span class="surface-mark">SV</span><span class="surface-index">03</span></div>
-          <h3>{surfaceServiceTitle}</h3>
-          <p>{surfaceServiceBody}</p>
-          <code>{surfaceServiceCode}</code>
+          <h3>{{ surfaceServiceTitle }}</h3>
+          <p>{{ surfaceServiceBody }}</p>
+          <code>{{ surfaceServiceCode }}</code>
         </article>
       </div>
     </section>
@@ -132,54 +134,54 @@
     <section class="lifecycle vos-rail section-block">
       <div class="lifecycle-head">
         <div class="section-intro">
-          <p class="vos-eyebrow">{lifecycleEyebrow}</p>
-          <h2>{lifecycleTitle}</h2>
+          <p class="vos-eyebrow">{{ lifecycleEyebrow }}</p>
+          <h2>{{ lifecycleTitle }}</h2>
         </div>
-        <p class="lifecycle-note">{lifecycleLede}</p>
+        <p class="lifecycle-note">{{ lifecycleLede }}</p>
       </div>
       <ol class="lifecycle-track">
         <li>
           <span class="step-number">01</span>
           <span class="step-line" aria-hidden="true"></span>
-          <strong>{lifecycleDefineTitle}</strong>
-          <p>{lifecycleDefineBody}</p>
+          <strong>{{ lifecycleDefineTitle }}</strong>
+          <p>{{ lifecycleDefineBody }}</p>
         </li>
         <li>
           <span class="step-number">02</span>
           <span class="step-line" aria-hidden="true"></span>
-          <strong>{lifecycleConnectTitle}</strong>
-          <p>{lifecycleConnectBody}</p>
+          <strong>{{ lifecycleConnectTitle }}</strong>
+          <p>{{ lifecycleConnectBody }}</p>
         </li>
         <li>
           <span class="step-number">03</span>
           <span class="step-line" aria-hidden="true"></span>
-          <strong>{lifecycleValidateTitle}</strong>
-          <p>{lifecycleValidateBody}</p>
+          <strong>{{ lifecycleValidateTitle }}</strong>
+          <p>{{ lifecycleValidateBody }}</p>
         </li>
         <li>
           <span class="step-number">04</span>
           <span class="step-line" aria-hidden="true"></span>
-          <strong>{lifecycleEvolveTitle}</strong>
-          <p>{lifecycleEvolveBody}</p>
+          <strong>{{ lifecycleEvolveTitle }}</strong>
+          <p>{{ lifecycleEvolveBody }}</p>
         </li>
       </ol>
     </section>
 
     <section class="toolchain vos-rail section-block">
       <div class="toolchain-copy">
-        <p class="vos-eyebrow">{toolchainEyebrow}</p>
-        <h2>{toolchainTitle}</h2>
-        <p>{toolchainLede}</p>
+        <p class="vos-eyebrow">{{ toolchainEyebrow }}</p>
+        <h2>{{ toolchainTitle }}</h2>
+        <p>{{ toolchainLede }}</p>
       </div>
       <div class="package-stack">
         <article>
           <div><span class="package-icon">TS</span><code>@voml/vos</code></div>
-          <p>{pkgVos}</p>
+          <p>{{ pkgVos }}</p>
           <span class="package-role">TYPE CHECKS · RUNTIME</span>
         </article>
         <article>
           <div><span class="package-icon rust">Rs</span><code>vos</code></div>
-          <p>{pkgRs}</p>
+          <p>{{ pkgRs }}</p>
           <span class="package-role">AST · NATIVE</span>
         </article>
       </div>
@@ -187,15 +189,17 @@
 
     <section class="final-cta vos-rail">
       <div>
-        <p class="vos-eyebrow">{finalEyebrow}</p>
-        <h2>{finalTitle}</h2>
-        <p>{finalLede}</p>
+        <p class="vos-eyebrow">{{ finalEyebrow }}</p>
+        <h2>{{ finalTitle }}</h2>
+        <p>{{ finalLede }}</p>
       </div>
       <a href="/playground">
-        <Button type="button" variant="primary">{finalCta} <span aria-hidden="true">↗</span></Button>
+        <Button type="button" variant="primary">{{ finalCta }} <span aria-hidden="true">↗</span></Button>
       </a>
     </section>
   </div>
+  </main>
+  <SiteFooter />
 </template>
 
 <style>
@@ -685,6 +689,8 @@ import {
 import { SAMPLE_HERO } from '../lib/samples.ts';
 import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
 
+const boot = { heroSample: SAMPLE_HERO };
+
 export default class IndexPage {
   heroKicker = '';
   heroTitleA = '';
@@ -740,7 +746,7 @@ export default class IndexPage {
   openPlayground = '';
   readModel = '';
   copyLabel = 'Copy';
-  heroSample = SAMPLE_HERO;
+  heroSample = boot.heroSample;
   _unwatchLocale = null;
 
   onMount() {

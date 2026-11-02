@@ -1,9 +1,5 @@
 <template>
-  <SiteHeader />
-  <main class="vos-main">
     <slot />
-  </main>
-  <SiteFooter />
 </template>
 
 <script client>

@@ -3,28 +3,28 @@
     <div class="footer-inner">
       <div class="footer-brand">
         <p class="footer-logo">VOS<span>.</span></p>
-        <p>{footerBlurbLabel}</p>
+        <p>{{ footerBlurbLabel }}</p>
       </div>
       <div class="footer-links">
         <div>
-          <p class="footer-label">{footerExploreLabel}</p>
-          <a href="/model">{navModelLabel}</a>
-          <a href="/playground">{navPlaygroundLabel}</a>
+          <p class="footer-label">{{ footerExploreLabel }}</p>
+          <a href="/model">{{ navModelLabel }}</a>
+          <a href="/playground">{{ navPlaygroundLabel }}</a>
         </div>
         <div>
-          <p class="footer-label">{footerRuntimeLabel}</p>
+          <p class="footer-label">{{ footerRuntimeLabel }}</p>
           <span>@voml/vos</span>
           <span>vos</span>
         </div>
         <div>
-          <p class="footer-label">{footerRelatedLabel}</p>
-          <span>{footerVonLabel}</span>
+          <p class="footer-label">{{ footerRelatedLabel }}</p>
+          <span>{{ footerVonLabel }}</span>
         </div>
       </div>
     </div>
     <div class="footer-bar">
-      <span>© {yearLabel} {footerCopyrightLabel}</span>
-      <span class="footer-mono">{footerMonoLabel}</span>
+      <span>© {{ yearLabel }} {{ footerCopyrightLabel }}</span>
+      <span class="footer-mono">{{ footerMonoLabel }}</span>
     </div>
   </footer>
 </template>

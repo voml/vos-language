@@ -1,74 +1,78 @@
 <template>
+  <SiteHeader />
+  <main class="vos-main">
   <div class="playground">
     <header class="page-head">
       <div>
-        <p class="vos-eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
-        <p class="lede">{lede}</p>
+        <p class="vos-eyebrow">{{ eyebrow }}</p>
+        <h1>{{ title }}</h1>
+        <p class="lede">{{ lede }}</p>
       </div>
-      <Button type="button" variant="secondary" onClick={() => this.resetSample()}>{resetLabel}</Button>
+      <Button type="button" variant="secondary" @click="() => this.resetSample()">{{ resetLabel }}</Button>
     </header>
 
     <div class="tabs" role="tablist">
       <Button
         type="button"
-        variant={sampleKind === 'persistence' ? 'primary' : 'ghost'}
-        onClick={() => this.selectSample('persistence')}
+        :variant="sampleKind === 'persistence' ? 'primary' : 'ghost'"
+        @click="() => this.selectSample('persistence')"
       >
-        {samplePersistence}
+        {{ samplePersistence }}
       </Button>
       <Button
         type="button"
-        variant={sampleKind === 'service' ? 'primary' : 'ghost'}
-        onClick={() => this.selectSample('service')}
+        :variant="sampleKind === 'service' ? 'primary' : 'ghost'"
+        @click="() => this.selectSample('service')"
       >
-        {sampleService}
+        {{ sampleService }}
       </Button>
     </div>
 
-    <p class="hint">{hint}</p>
+    <p class="hint">{{ hint }}</p>
 
     <div class="play-grid">
       <div class="editor">
         <span class="panel-label">
           <Icon name="tool.base64" size="sm" />
-          {sourceLabel}
+          {{ sourceLabel }}
         </span>
         <TextArea
-          label={sourceLabel}
+          :label="sourceLabel"
           controlId="vos-playground-source"
           descriptionId="vos-playground-source-desc"
-          description={hint}
-          value={source}
-          rows={18}
-          onInput={(e) => this.onSourceInput(e)}
+          :description="hint"
+          :value="source"
+          :rows="18"
+          @input="(e) => this.onSourceInput(e)"
         />
       </div>
 
       <div class="preview">
         <span class="panel-label">
           <Icon name="status.info" size="sm" />
-          {previewLabel}
+          {{ previewLabel }}
         </span>
         <VosCodeBlock
-          code={source}
-          caption={previewLabel}
-          copyLabel={copyLabel}
-          onCopy={() => this.copySource()}
+          :code="source"
+          :caption="previewLabel"
+          :copyLabel="copyLabel"
+          @copy="() => this.copySource()"
         />
       </div>
     </div>
 
-    <div class="status" data-ok={resultOk ? 'true' : 'false'}>
+    <div class="status" :data-ok="resultOk ? 'true' : 'false'">
       <strong>
-        <Icon name={resultOk ? 'status.success' : 'status.warning'} size="sm" />
+        <Icon :name="resultOk ? 'status.success' : 'status.warning'" size="sm" />
         {resultOk ? okLabel : failedLabel}
       </strong>
-      <ul if={!resultOk}>
-        <li each={diagnostics} as="item" key={item}>{item}</li>
+      <ul v-if="!resultOk">
+        <li :each="diagnostics" as="item" :key="item">{{ item }}</li>
       </ul>
     </div>
   </div>
+  </main>
+  <SiteFooter />
 </template>
 
 <style>
@@ -197,9 +201,11 @@ import {
 } from '#locales/common';
 import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
 
+const boot = { source: SAMPLES.persistence };
+
 export default class PlaygroundPage {
   sampleKind = 'persistence';
-  source = SAMPLES.persistence;
+  source = boot.source;
   resultOk = true;
   diagnostics = [];
   eyebrow = '';

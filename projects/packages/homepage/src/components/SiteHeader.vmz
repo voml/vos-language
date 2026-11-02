@@ -1,43 +1,43 @@
 <template>
   <header class="site-header">
     <div class="header-inner">
-      <a class="logo" href="/" aria-label={homeAriaLabel}>
-        <span class="logo-mark">{brandShortLabel}</span>
+      <a class="logo" href="/" :aria-label="homeAriaLabel">
+        <span class="logo-mark">{{ brandShortLabel }}</span>
         <span class="logo-divider" aria-hidden="true"></span>
-        <span class="logo-caption">{brandFullLabel}</span>
+        <span class="logo-caption">{{ brandFullLabel }}</span>
       </a>
 
-      <nav class="nav" aria-label={navPrimaryLabel}>
-        <a href="/">{navHomeLabel}</a>
-        <a href="/model">{navModelLabel}</a>
+      <nav class="nav" :aria-label="navPrimaryLabel">
+        <a href="/">{{ navHomeLabel }}</a>
+        <a href="/model">{{ navModelLabel }}</a>
       </nav>
 
       <div class="header-aside">
         <span class="header-status"><i aria-hidden="true"></i> schema language</span>
         <details class="site-language">
-          <summary aria-label={selectLanguageLabel}>
+          <summary :aria-label="selectLanguageLabel">
             <Icon name="nav.home" size="sm" />
-            <span>{langSummary}</span>
+            <span>{{ langSummary }}</span>
           </summary>
           <div class="site-language__menu">
             <button
               type="button"
-              aria-current={localeId === 'zh-hans' ? 'true' : null}
-              onClick={() => this.switchLocale('zh-hans')}
+              :aria-current="localeId === 'zh-hans' ? 'true' : null"
+              @click="() => this.switchLocale('zh-hans')"
             >
-              {langZhFullLabel}
+              {{ langZhFullLabel }}
             </button>
             <button
               type="button"
-              aria-current={localeId === 'en-us' ? 'true' : null}
-              onClick={() => this.switchLocale('en-us')}
+              :aria-current="localeId === 'en-us' ? 'true' : null"
+              @click="() => this.switchLocale('en-us')"
             >
-              {langEnLabel}
+              {{ langEnLabel }}
             </button>
           </div>
         </details>
         <a class="header-cta" href="/playground">
-          {navTryLabel}
+          {{ navTryLabel }}
           <Icon name="action.search" size="sm" />
         </a>
       </div>

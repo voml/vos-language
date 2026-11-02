@@ -2,29 +2,29 @@
   <div class="model-sections">
     <section class="section">
       <header class="section-head">
-        <h2>{primitivesTitle}</h2>
-        <p>{primitivesLede}</p>
+        <h2>{{ primitivesTitle }}</h2>
+        <p>{{ primitivesLede }}</p>
       </header>
       <div class="grid">
         <article data-tone="navy">
           <span class="mark">Ns</span>
-          <h3>{namespaceTitle}</h3>
-          <p>{namespaceBody}</p>
+          <h3>{{ namespaceTitle }}</h3>
+          <p>{{ namespaceBody }}</p>
         </article>
         <article data-tone="indigo">
           <span class="mark">Tb</span>
-          <h3>{tableTitle}</h3>
-          <p>{tableBody}</p>
+          <h3>{{ tableTitle }}</h3>
+          <p>{{ tableBody }}</p>
         </article>
         <article data-tone="cyan">
           <span class="mark">Rf</span>
-          <h3>{referenceTitle}</h3>
-          <p>{referenceBody}</p>
+          <h3>{{ referenceTitle }}</h3>
+          <p>{{ referenceBody }}</p>
         </article>
         <article data-tone="amber">
           <span class="mark">Sv</span>
-          <h3>{serviceTitle}</h3>
-          <p>{serviceBody}</p>
+          <h3>{{ serviceTitle }}</h3>
+          <p>{{ serviceBody }}</p>
         </article>
       </div>
     </section>
@@ -33,10 +33,10 @@
       <div class="relations-layout">
         <div>
           <header class="section-head">
-            <h2>{relationsTitle}</h2>
-            <p>{relationsLede}</p>
+            <h2>{{ relationsTitle }}</h2>
+            <p>{{ relationsLede }}</p>
           </header>
-          <p class="note">{relationsNote}</p>
+          <p class="note">{{ relationsNote }}</p>
         </div>
         <div class="frame">
           <RelationDiagram />
@@ -46,29 +46,29 @@
 
     <section class="section">
       <header class="section-head">
-        <h2>{lifecycleTitle}</h2>
-        <p>{lifecycleLede}</p>
+        <h2>{{ lifecycleTitle }}</h2>
+        <p>{{ lifecycleLede }}</p>
       </header>
       <ol class="flow">
         <li>
           <span class="index">01</span>
-          <strong>{defineTitle}</strong>
-          <p>{defineBody}</p>
+          <strong>{{ defineTitle }}</strong>
+          <p>{{ defineBody }}</p>
         </li>
         <li>
           <span class="index">02</span>
-          <strong>{connectTitle}</strong>
-          <p>{connectBody}</p>
+          <strong>{{ connectTitle }}</strong>
+          <p>{{ connectBody }}</p>
         </li>
         <li>
           <span class="index">03</span>
-          <strong>{validateTitle}</strong>
-          <p>{validateBody}</p>
+          <strong>{{ validateTitle }}</strong>
+          <p>{{ validateBody }}</p>
         </li>
         <li>
           <span class="index">04</span>
-          <strong>{evolveTitle}</strong>
-          <p>{evolveBody}</p>
+          <strong>{{ evolveTitle }}</strong>
+          <p>{{ evolveBody }}</p>
         </li>
       </ol>
     </section>

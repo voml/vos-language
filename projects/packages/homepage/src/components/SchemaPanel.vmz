@@ -1,7 +1,7 @@
 <template>
   <figure class="schema-panel">
-    <figcaption if={caption}>{caption}</figcaption>
-    <VosCodeBlock code={code} caption={caption} copyLabel={copyLabel} onCopy={() => this.copyCode()} />
+    <figcaption v-if="caption">{{ caption }}</figcaption>
+    <VosCodeBlock :code="code" :caption="caption" :copyLabel="copyLabel" @copy="() => this.copyCode()" />
   </figure>
 </template>
 

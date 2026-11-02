@@ -16,16 +16,17 @@
         "serve": "vmz serve . --out-dir dist/browser"
     },
     "dependencies": {
+        "@vmz/core": "0.3.12",
+        "@vmz/plugin-shiki": "0.3.12",
+        "@vmz/ui": "0.3.12",
+        "@vmz/ui-icons": "0.3.12",
         "@voml/vos": "workspace:*",
         "@voml/vos-language": "workspace:*",
         "@voml/vos-textmate": "workspace:*",
-        "@vmz/core": "0.1.12",
-        "@vmz/plugin-shiki": "0.1.12",
-        "@vmz/ui": "0.1.12",
-        "@vmz/ui-icons": "0.1.12",
         "shiki": "^3.12.2"
     },
     "devDependencies": {
-        "@vmz/vmz": "0.1.12"
+        "@vmz/plugin": "0.3.12",
+        "@vmz/vmz": "0.3.12"
     }
 }

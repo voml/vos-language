@@ -1,27 +1,31 @@
 <template>
+  <SiteHeader />
+  <main class="vos-main">
   <div class="model-page">
     <header class="page-head vos-rail">
-      <p class="vos-eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
-      <p class="lede">{lede}</p>
+      <p class="vos-eyebrow">{{ eyebrow }}</p>
+      <h1>{{ title }}</h1>
+      <p class="lede">{{ lede }}</p>
     </header>
 
     <section class="overview vos-rail">
       <RelationDiagram />
-      <SchemaPanel code={heroSample} caption={schemaCaption} copyLabel={copyLabel} />
+      <SchemaPanel :code="heroSample" :caption="schemaCaption" :copyLabel="copyLabel" />
     </section>
 
     <ModelSections />
 
     <div class="footer-cta vos-rail vos-actions">
       <a href="/playground">
-        <Button type="button" variant="primary">{openPlayground}</Button>
+        <Button type="button" variant="primary">{{ openPlayground }}</Button>
       </a>
       <a href="/">
-        <Button type="button" variant="ghost">{backHome}</Button>
+        <Button type="button" variant="ghost">{{ backHome }}</Button>
       </a>
     </div>
   </div>
+  </main>
+  <SiteFooter />
 </template>
 
 <style>
@@ -81,6 +85,8 @@ import {
 import { SAMPLE_HERO } from '../lib/samples.ts';
 import { readLocaleId, withLocaleHint, watchDocumentLocale } from '../lib/locale-copy.ts';
 
+const boot = { heroSample: SAMPLE_HERO };
+
 export default class ModelPage {
   eyebrow = '';
   title = '';
@@ -89,7 +95,7 @@ export default class ModelPage {
   backHome = '';
   schemaCaption = '';
   copyLabel = 'Copy';
-  heroSample = SAMPLE_HERO;
+  heroSample = boot.heroSample;
   _unwatchLocale = null;
 
   onMount() {
