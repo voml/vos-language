@@ -3,7 +3,7 @@
 //! Emitters may produce source, SQL, OpenAPI, docs, or other text artifacts —
 //! not only “code”. Default feature `aot` pre-parses `.dejavu` templates to IR
 //! at build time. Enable `dyn` (and disable default features) to parse from
-//! source on each render. See `docs/generator.md`.
+//! source on each render.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
