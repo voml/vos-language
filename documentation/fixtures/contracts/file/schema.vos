@@ -1,7 +1,0 @@
-namespace demo::files
-
-table Attachment {
-    [primary] id: uuid,
-    handle: file,
-    preview: file,
-}

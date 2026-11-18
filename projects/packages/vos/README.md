@@ -83,8 +83,8 @@ value and only exists inside a host callback.
   VOS artifact before a host consumes them; this package does not render VOS source text.
 - **No invented names.** `enums`, `flags`, `union` and the dynamic row builder are added only once their VOS contract
   is frozen.
-- **Narrow by design.** For conformance-grade parsing, the resolved contract, catalog identity and code generation,
-  use the `vos` crate in this repository's Rust workspace.
+- **Narrow by design.** For conformance-grade parsing, the resolved contract and catalog identity, use the Boost
+  `schema-input-vos` crate; for code generation, use this repository's `vos-generator` crate.
 
 ---
 

@@ -1,4 +1,0 @@
-# Missing @@id is illegal for table.
-table Project {
-    title: utf8
-}

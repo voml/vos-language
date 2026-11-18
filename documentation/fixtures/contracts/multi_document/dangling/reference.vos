@@ -1,5 +1,0 @@
-namespace demo::vault
-
-class Ledger {
-    owner: Account,
-}

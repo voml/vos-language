@@ -53,8 +53,8 @@ if (!result.ok) {
 ```
 
 The check runs in the Rust WebAssembly core staged into `lib/` by `scripts/build-wasm.mjs`; the TypeScript surface only
-loads and types it. Use the Rust facade for the canonical typed AST, full semantic diagnostics, catalog IR, or
-conformance-grade parsing.
+loads and types it. Use the Boost `schema-input-vos` chain for the canonical typed AST, full semantic diagnostics,
+catalog IR, or conformance-grade parsing.
 
 ## Run the homepage
 

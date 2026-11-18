@@ -12,7 +12,8 @@ readme = "readme.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-vos = { workspace = true }
+schema-input-vos = { workspace = true }
+vos-format = { workspace = true }
 wasm-bindgen = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

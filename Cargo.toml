@@ -20,7 +20,7 @@ uuid = { version = "1", features = ["v7", "rng-getrandom"] }
 getrandom = { version = "0.4", features = ["wasm_js"] }
 vos-generator = { path = "projects/crates/vos-generator" }
 vos-format = { path = "projects/crates/vos-format" }
-vos-types = { path = "projects/crates/vos-types" }
-vos = { path = "projects/crates/vos" }
 wasm-bindgen = "0.2"
-oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "820bb47292f08d4304607d730f7c32969e17639a" }
+oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "d1337eb4d289505c85d988cd8f80b96023f1e63a" }
+# VOS schema model and semantics are owned by the Boost `schema` tree.
+schema-input-vos = { git = "https://github.com/oovm/rust-boost.git", rev = "f05abe940baed0eed6fe65cb031964170b7b062c" }

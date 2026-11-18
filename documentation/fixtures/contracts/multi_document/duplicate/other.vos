@@ -1,5 +1,0 @@
-namespace demo::vault
-
-class Other {
-    [primary] id: uuid,
-}

@@ -1,7 +1,7 @@
 # UUID v7 (mandatory)
 
 VOS / Iris expose a single id generator: **`uuid()`** in operation programs and the
-equivalent host API on Rust (`vos::uuid()`, `iris::uuid()`).
+equivalent host API on Rust (`schema_input_vos::uuid()`, `iris::uuid()`).
 
 ## Contract
 
@@ -33,4 +33,4 @@ bug, not a stylistic choice.
 ## Fixtures
 
 Operation fixtures that call `uuid()` (`insert_construct`, etc.) assume v7 semantics.
-Hosts evaluating `uuid()` at runtime must match `vos::uuid()`.
+Hosts evaluating `uuid()` at runtime must match `schema_input_vos::uuid()`.

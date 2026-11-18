@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 publish = false
-description = "Internal VOS formatter — apps depend on the `vos` crate (`vos::format`) only"
+description = "VOS formatter built on the Oak CST — lossless edits and canonical style"
 readme = "readme.md"
 
 [dependencies]

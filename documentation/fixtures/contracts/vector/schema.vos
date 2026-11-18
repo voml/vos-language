@@ -1,7 +1,0 @@
-namespace demo::embeddings
-
-table Embedding {
-    [primary] id: uuid,
-    coarse: vector<3>,
-    fine: vector<8>,
-}

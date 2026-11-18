@@ -1,3 +1,0 @@
-class TypeArgument {
-    value: vector<utf8>,
-}

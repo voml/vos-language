@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 publish = false
-description = "Internal VOS generator — apps depend on the `vos` crate only (vos::generator)"
+description = "Dejavu-powered code generators for VOS — TypeScript, Rust, SQL DDL and JSON Schema"
 readme = "readme.md"
 
 [features]

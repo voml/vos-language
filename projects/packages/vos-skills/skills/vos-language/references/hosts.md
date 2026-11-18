@@ -41,7 +41,7 @@ tooling differs.
 |-----------------------------|-----------------------------------------------------------|---------------------------------------------------------------------------------|
 | **Any editor**              | [VS Code / Cursor extension](#editor-syntax-highlighting) | Edit `.vos` → run your stack's check → use generated code                       |
 | **TypeScript / JavaScript** | [`@voml/vos`](#typescript--javascript) modelling and [`@voml/vos-language`](#typescript--javascript) checks | `checkSource()` for quick feedback; use your app's generator for full semantics |
-| **Rust**                    | [`vos` crate](#rust)                                      | `parse_document` / product CLI for full diagnostics                             |
+| **Rust**                    | Boost [`schema-input-vos`](#rust)                         | `parse_oak` / product CLI for full diagnostics                                  |
 | **Iris ORM**                | [`@yydb/iris`](#iris-orm-typescript--rust-hosts)          | `.iris` schema (VOS syntax) → `iris check` / `iris generate`                    |
 | **YYDB / YYDS native**      | Product docs                                              | `.vos` is native DDL/operations — use host `check` / CLI                        |
 | **Other languages**         | [No local parser yet](#other-languages-c-kotlin-go-…)     | Edit `.vos` in repo; validate in CI or via Rust/product host                    |
@@ -92,25 +92,26 @@ if (!result.ok) {
 ```
 
 `checkSource` catches structural issues quickly (braces, top-level items, obvious service shape errors). For full AST,
-catalog identity, and conformance-grade errors, use the **Rust** `vos` crate or your product's check command.
+catalog identity, and conformance-grade errors, use the Boost **Rust** `schema-input-vos` crate or your product's
+check command.
 
 ---
 
 ### Rust
 
-Add the reference parser to `Cargo.toml`:
+VOS semantics are owned by the Boost `schema` tree. Pin it in `Cargo.toml`:
 
 ```toml
 [dependencies]
-vos = "0.1"
+schema-input-vos = { git = "https://github.com/oovm/rust-boost.git", rev = "<pinned revision>" }
 ```
 
 ```rust
-let input = vos::parse_oak(source) ?;
-let projection = input.project_schema() ?;
+let input = schema_input_vos::parse_oak(source)?;
+let projection = input.project_schema()?;
 ```
 
-Oak remains the only parser and syntax owner. Use this facade when embedding VOS semantics in a Rust service, CLI, or
+Oak remains the only parser and syntax owner. Use this chain when embedding VOS semantics in a Rust service, CLI, or
 custom toolchain. If you use **Iris** or **YYDB**, prefer their facade commands instead of traversing syntax internals.
 
 ---
@@ -152,7 +153,7 @@ Ask the user which YY product and CLI version they run if commands differ.
 There is no separate first-party VOS parser package in every language today. You can still:
 
 1. Author `.vos` files in your repo (same grammar everywhere).
-2. Run validation in CI via Rust `vos`, a product host, or codegen that fails on invalid input.
+2. Run validation in CI via Boost `schema-input-vos`, a product host, or codegen that fails on invalid input.
 3. Consume **generated** bindings produced by your stack's Dejavu / Iris / custom generator.
 
 Tell the agent which generator your project uses so it does not invent a second schema format.
@@ -188,7 +189,7 @@ Use generated types/clients in application code (TS, Rust, …)
 | `@game-gpt/vos-skills` | **This package** — AI help writing VOS (any language) |
 | `@voml/vos`            | TS/JS declaration and type modelling                  |
 | `@voml/vos-language`   | TS/JS lightweight source check                        |
-| `vos` (Rust)           | Full parser / AST / inspect                           |
+| Boost `schema-input-vos` (Rust) | Full semantics, identity and resolved contract |
 | `@yydb/iris-skills`    | Iris ORM agent workflows (optional add-on)            |
 | `@yydb/iris`           | Iris typed data access                                |
 

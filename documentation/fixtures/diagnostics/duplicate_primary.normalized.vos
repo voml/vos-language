@@ -1,4 +1,0 @@
-table User {
-    @@user_id: uuid,
-    @@account_id: uuid,
-}

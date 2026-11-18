@@ -142,34 +142,35 @@ change the language contract. The invariant is simple: **formal VOS, YYDB, and Y
 |----------------------------------------------|----------------------------------------------------------|
 | Let an agent design, review, or integrate VOS | [`@game-gpt/vos-skills`](./projects/packages/vos-skills)  |
 | Explore the language in a browser            | [vos-language.pages.dev](https://vos-language.pages.dev/) |
-| Parse VOS or integrate it into a Rust host   | [`projects/crates`](./projects/crates)                   |
+| Parse VOS or integrate it into a Rust host   | Boost [`schema-input-vos`](https://github.com/oovm/rust-boost) |
 | Check VOS source from TypeScript             | [`@voml/vos-language`](./projects/packages/vos-language) |
 | Model VOS types and tables in TypeScript     | [`@voml/vos`](./projects/packages/vos)                   |
 | Work on the TypeScript packages or homepage  | [`projects/packages`](./projects/packages)                   |
 | Add `.vos` highlighting to VS Code or Cursor | [`vos-on-vscode`](./projects/packages/vos-on-vscode)       |
 | Use the shared grammar with Shiki            | [`@game-gpt/vos-textmate`](projects/packages/vos-textmate) |
-| Validate another implementation              | [`documentation`](documentation/fixtures)   |
+| Validate another implementation              | [Boost `schema-input-vos` fixtures](https://github.com/oovm/rust-boost/tree/dev/projects/schema/schema.input.vos/tests/fixtures) |
 
-The Rust facade is the most complete parser and language implementation today. The TypeScript side splits into
-`@voml/vos` (declaration and type modelling) and `@voml/vos-language` (a lightweight source check); both are
-intentionally narrower than the Rust implementation and their READMEs state the supported surface explicitly.
+The Rust core of VOS is owned by the Boost `schema` tree (`schema-types` for the shared model and `schema-input-vos`
+for the semantic stages); this repository ships the wasm surface, the formatter and generator helpers, and the
+TypeScript packages. The TypeScript side splits into `@voml/vos` (declaration and type modelling) and
+`@voml/vos-language` (a lightweight source check); both are intentionally narrower than the Rust implementation and
+their READMEs state the supported surface explicitly.
 
 ## Repository map
 
 ```text
 vos-language/
 ├── projects/
-│   ├── crates/          Rust facade, parser, AST, inspect, and generation
+│   ├── crates/          Rust formatter, Dejavu generator, and wasm surface
 │   └── packages/        TypeScript API, grammar, extension, and site
-├── specifications/
-│   └── fixtures/        Shared source, AST, catalog, and diagnostic goldens
+├── documentation/       Language notes
 ├── scripts/             Repository automation
 └── projects/packages/vos-skills/   Agent Skills npm package (`@game-gpt/vos-skills`)
 ```
 
-Public applications should depend on the facade for their host: `vos` in Rust, or `@voml/vos` for modelling and
-`@voml/vos-language` for source checks in TypeScript. Internal Rust crates keep the implementation maintainable; they
-are not competing public APIs.
+Public applications should depend on the facade for their host: Boost `schema-input-vos` in Rust, or `@voml/vos` for
+modelling and `@voml/vos-language` for source checks in TypeScript. The remaining Rust crates in this repository keep
+the wasm surface, formatting and generation maintainable; they are not competing public APIs.
 
 ## Conformance is a product feature
 
@@ -177,12 +178,14 @@ Language implementations are measured against shared fixtures rather than prose 
 source, serialized AST, diagnostics, and catalog identity. This makes parser behavior reviewable and gives future hosts
 a concrete compatibility target.
 
+The contract conformance corpus and its golden updates now run with the Rust core in Boost:
+
 ```bash
-cd projects/crates
-cargo test -p vos-types -p vos --offline
+cargo test -p schema-types -p schema-input-vos
 ```
 
-See the [fixture guide](documentation/fixtures/README.md) before adding or updating goldens.
+See the [fixture guide](https://github.com/oovm/rust-boost/blob/dev/projects/schema/schema.input.vos/tests/fixtures/README.md)
+before adding or updating goldens.
 
 ## Contributing
 
@@ -191,7 +194,6 @@ behind the host facade, preserve stable diagnostic behavior, and avoid introduci
 generator or adapter.
 
 ```bash
-cd projects/crates
 cargo fmt --all -- --check
 cargo check --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings

@@ -1,6 +1,7 @@
 # `vos-format`
 
-Internal VOS formatter. Applications depend on the `vos` crate and call `vos::format`.
+VOS formatter. Consumers depend on this crate directly; schema semantics and the resolved contract come from the
+Boost `schema-input-vos` crate.
 
 Oak owns the VOS lexer, parser, CST, spans and recovery. This crate owns no lexer, parser or AST of its own: it consumes
 `oak-vos` output.
@@ -13,8 +14,8 @@ Oak owns the VOS lexer, parser, CST, spans and recovery. This crate owns no lexe
 | `Mode::Canonical` | Rewrites layout for `namespace`, `using`, `table` and `class`, and normalizes static paths to `::`. |
 
 ```rust
-let canonical = vos::format::format(source, vos::format::Mode::Canonical)?;
-let preserved = vos::format::format(source, vos::format::Mode::Preserve)?;
+let canonical = vos_format::format(source, vos_format::Mode::Canonical)?;
+let preserved = vos_format::format(source, vos_format::Mode::Preserve)?;
 assert_eq!(preserved, source);
 ```
 
@@ -25,4 +26,4 @@ formatting one.
 Declarations Oak does not decompose yet (`enums`, `flags`, `const`, `obsolete`, `service`, `micro`, `macro`, `query`,
 `udf`) are passed through verbatim, so canonical mode never loses or rewrites source it does not understand.
 
-See the [Rust workspace guide](../README.md) for architecture and development commands.
+See the repository readme for architecture and development commands.

@@ -1,2 +1,0 @@
-# `*` is only valid inside `x.{ … }` projections — not as a free expression.
-let bad = *

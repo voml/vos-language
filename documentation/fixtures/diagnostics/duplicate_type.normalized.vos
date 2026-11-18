@@ -1,7 +1,0 @@
-table User {
-    @@user_id: uuid,
-}
-
-class User {
-    name: utf8,
-}

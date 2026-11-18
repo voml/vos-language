@@ -54,7 +54,7 @@ Do not enable SPA fallback. `pnpm homepage` runs the `static` profile release em
 - Keep examples valid against the current language surface.
 - Explain VOS as a native schema and operation language, never as a SQL wrapper.
 - Keep English and Chinese locale keys aligned when changing visible content.
-- State TypeScript checker limitations honestly and point advanced parsing needs to the Rust facade.
+- State TypeScript checker limitations honestly and point advanced parsing needs to the Boost `schema-input-vos` chain.
 
 ## Structure
 

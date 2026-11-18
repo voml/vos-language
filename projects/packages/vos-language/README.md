@@ -3,7 +3,8 @@
 > **`.vos` source checks, catalog projection and formatting for TypeScript hosts, running on a Rust WebAssembly core.**
 
 The implementation is the Rust core, not TypeScript. The wasm module is exported from `projects/crates/vos-wasm` and
-the TypeScript surface only loads and types it — syntax and semantics stay owned by `oak-vos` and the `vos` facade.
+the TypeScript surface only loads and types it — syntax stays owned by `oak-vos` and semantics by the Boost
+`schema-input-vos` chain.
 Declaration and type modelling live in
 [`@voml/vos`](https://www.npmjs.com/package/@voml/vos).
 
@@ -44,7 +45,7 @@ type VosCheckResult = {
 
 ## 🗂️ Project the schema catalog
 
-`catalogSource` returns the `vos-types` `SchemaProjection` syntax artifact for the same source, so a host reads canonical
+`catalogSource` returns the `schema-types` `SchemaProjection` artifact for the same source, so a host reads canonical
 paths, field types and attributes without owning a second parser:
 
 ```ts
@@ -110,8 +111,8 @@ const result = await checkSource(source);
   number rather than guessed.
 - **No second implementation.** This package never re-implements VOS parsing, resolution, formatting or diagnostics in
   TypeScript, and never manages database lifecycle.
-- **Narrow by design.** For resolution, contract and generator APIs, use the `vos` crate in this repository's Rust
-  workspace.
+- **Narrow by design.** For resolution and the resolved contract, use the Boost `schema-input-vos` crate; for
+  artifact generation, use this repository's `vos-generator` crate.
 
 ---
 

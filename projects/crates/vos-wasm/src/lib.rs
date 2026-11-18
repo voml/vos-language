@@ -5,8 +5,9 @@
 //! loads it. The surface is deliberately a narrow JSON ABI so the host depends
 //! on no `js_sys` object shape.
 //!
-//! Syntax ownership stays with `oak-vos`; this crate only forwards the `vos`
-//! facade result and never owns a parser, a CST or an AST of its own.
+//! Syntax ownership stays with `oak-vos` and schema semantics with the Boost
+//! `schema-input-vos` chain; this crate only forwards their results and never
+//! owns a parser, a CST or an AST of its own.
 
 #![deny(missing_docs)]
 
@@ -18,7 +19,7 @@ use wasm_bindgen::prelude::*;
 /// `{"ok":false,"diagnostics":[{"message":"..."}]}` on failure.
 #[wasm_bindgen]
 pub fn check(source: &str) -> String {
-    match vos::validate_schema(source) {
+    match schema_input_vos::validate_schema(source) {
         Ok(_) => success(None),
         Err(message) => failure(vec![message]),
     }
@@ -33,11 +34,11 @@ pub fn check(source: &str) -> String {
 #[wasm_bindgen]
 pub fn format(source: &str, mode: &str) -> String {
     let mode = match mode {
-        "preserve" => vos::format::Mode::Preserve,
-        "canonical" => vos::format::Mode::Canonical,
+        "preserve" => vos_format::Mode::Preserve,
+        "canonical" => vos_format::Mode::Canonical,
         other => return failure(vec![format!("unknown VOS format mode `{other}`")]),
     };
-    match vos::format::format(source, mode) {
+    match vos_format::format(source, mode) {
         Ok(text) => success(Some(&text)),
         Err(message) => failure(vec![message]),
     }
@@ -51,7 +52,7 @@ pub fn format(source: &str, mode: &str) -> String {
 /// `{"ok":false,"diagnostics":[{"message":"..."}]}` on failure.
 #[wasm_bindgen]
 pub fn catalog(source: &str) -> String {
-    match vos::validate_schema(source) {
+    match schema_input_vos::validate_schema(source) {
         Ok(projection) => match serde_json::to_value(&projection) {
             Ok(catalog) => serde_json::json!({ "ok": true, "catalog": catalog }).to_string(),
             Err(error) => failure(vec![format!("VOS catalog serialization failed: {error}")]),

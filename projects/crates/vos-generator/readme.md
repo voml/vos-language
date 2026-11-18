@@ -19,7 +19,7 @@ conversion, and JSON template contexts.
 Generation consumes established VOS semantics; it does not own a private schema dialect or attach hidden meaning that
 parsers and other hosts cannot observe. Generated code is one possible artifact, not the definition of the language.
 
-Applications should access this crate through `vos::generator` from the public [`vos`](../vos) facade. The crate is
-internal and is not published independently.
+Hosts use this crate directly; the resolved contract and schema models it renders come from the Boost
+`schema-input-vos` chain. The crate is internal and is not published independently.
 
-See the [Rust workspace README](../README.md) for development and verification commands.
+See the repository readme for development and verification commands.
