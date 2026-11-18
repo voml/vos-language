@@ -23,5 +23,5 @@ vos-format = { path = "projects/crates/vos-format" }
 wasm-bindgen = "0.2"
 oak-vos = { git = "https://github.com/yggdrasil-language/oaks.git", rev = "d1337eb4d289505c85d988cd8f80b96023f1e63a" }
 # VOS schema model and semantics are owned by the Boost `schema` tree.
-schema-input-vos = { git = "https://github.com/oovm/rust-boost.git", rev = "f05abe940baed0eed6fe65cb031964170b7b062c" }
-schema-types = { git = "https://github.com/oovm/rust-boost.git", rev = "f05abe940baed0eed6fe65cb031964170b7b062c" }
+schema-input-vos = { git = "https://github.com/oovm/rust-boost.git", rev = "b3aa3726f72123a8a8b8d656ddfac895e1d3d5a9" }
+schema-types = { git = "https://github.com/oovm/rust-boost.git", rev = "b3aa3726f72123a8a8b8d656ddfac895e1d3d5a9" }
