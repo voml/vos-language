@@ -4,8 +4,9 @@
 use std::{fs, path::PathBuf};
 
 use schema_input_vos::{
-    BytesValue, FieldIdentity, FileDescriptor, FileManifestIdentity, FileMetadata, FileReadWindow, FileReference, IDENTITY_MANIFEST_VERSION,
-    IdentityManifest, ResolvedCanonicalType, ResolvedContract, TypeContractKind, TypeIdentity, parse_oak, resolve_contract,
+    BytesValue, FieldIdentity, FileDescriptor, FileManifestIdentity, FileMetadata, FileReadWindow,
+    FileReference, IDENTITY_MANIFEST_VERSION, IdentityManifest, ResolvedCanonicalType,
+    ResolvedContract, TypeContractKind, TypeIdentity, parse_oak, resolve_contract,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -15,7 +16,8 @@ fn fixtures() -> PathBuf {
 }
 
 fn read(relative: &str) -> String {
-    fs::read_to_string(fixtures().join(relative)).unwrap_or_else(|error| panic!("{relative} does not read: {error}"))
+    fs::read_to_string(fixtures().join(relative))
+        .unwrap_or_else(|error| panic!("{relative} does not read: {error}"))
 }
 
 fn manifest(path: &str, field: &str) -> IdentityManifest {
@@ -25,27 +27,52 @@ fn manifest(path: &str, field: &str) -> IdentityManifest {
             canonical_path: vec![path.to_owned()],
             type_id: 1,
             kind: TypeContractKind::Class,
-            fields: vec![FieldIdentity { canonical_name: field.to_owned(), field_id: 2, virtual_field_index: Some(0) }],
+            fields: vec![FieldIdentity {
+                canonical_name: field.to_owned(),
+                field_id: 2,
+                virtual_field_index: Some(0),
+            }],
         }],
     }
 }
 
 #[test]
 fn file_fields_resolve_to_the_descriptor_type_and_serialize_as_one_spelling() {
-    let projection = parse_oak(&read("schema.vos")).expect("Oak parses the file fixture").project_schema().expect("the file fixture projects");
-    let manifest = IdentityManifest::from_json(&read("schema.manifest.json")).expect("the file fixture manifest is strict");
+    let projection = parse_oak(&read("schema.vos"))
+        .expect("Oak parses the file fixture")
+        .project_schema()
+        .expect("the file fixture projects");
+    let manifest = IdentityManifest::from_json(&read("schema.manifest.json"))
+        .expect("the file fixture manifest is strict");
     let contract = resolve_contract(&projection, &manifest).expect("the file fixture resolves");
-    contract.validate().expect("the resolved file contract validates");
+    contract
+        .validate()
+        .expect("the resolved file contract validates");
 
-    let attachment =
-        contract.types.iter().find(|item| item.canonical_path == ["demo", "files", "Attachment"]).expect("the fixture table resolves");
+    let attachment = contract
+        .types
+        .iter()
+        .find(|item| item.canonical_path == ["demo", "files", "Attachment"])
+        .expect("the fixture table resolves");
     for name in ["handle", "preview"] {
-        let field = attachment.fields.iter().find(|field| field.canonical_name == name).unwrap_or_else(|| panic!("{name} survives resolution"));
-        assert_eq!(field.canonical_type, ResolvedCanonicalType::File, "{name} must resolve to the logical `file` type");
-        assert_eq!(serde_json::to_value(&field.canonical_type).unwrap(), json!("file"));
+        let field = attachment
+            .fields
+            .iter()
+            .find(|field| field.canonical_name == name)
+            .unwrap_or_else(|| panic!("{name} survives resolution"));
+        assert_eq!(
+            field.canonical_type,
+            ResolvedCanonicalType::File,
+            "{name} must resolve to the logical `file` type"
+        );
+        assert_eq!(
+            serde_json::to_value(&field.canonical_type).unwrap(),
+            json!("file")
+        );
     }
 
-    let decoded = ResolvedContract::from_json(&contract.to_json().unwrap()).expect("the artifact reads back");
+    let decoded =
+        ResolvedContract::from_json(&contract.to_json().unwrap()).expect("the artifact reads back");
     assert_eq!(decoded, contract);
 }
 
@@ -57,10 +84,14 @@ fn file_with_type_arguments_is_diagnosed_instead_of_sealed_as_a_generic() {
         .expect("the negative fixture projects");
     let manifest = manifest("BadFile", "handle");
 
-    let diagnostics = resolve_contract(&projection, &manifest).expect_err("`file` must not accept type arguments");
+    let diagnostics = resolve_contract(&projection, &manifest)
+        .expect_err("`file` must not accept type arguments");
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].code, "RES018");
-    assert_eq!(diagnostics[0].message, "file is a logical type and does not take type arguments");
+    assert_eq!(
+        diagnostics[0].message,
+        "file is a logical type and does not take type arguments"
+    );
 }
 
 #[derive(Deserialize)]
@@ -91,13 +122,17 @@ struct ReadCase {
 
 #[test]
 fn descriptor_fixture_recomputes_its_identity_and_honours_its_windows() {
-    let fixture: DescriptorFixture = serde_json::from_str(&read("descriptor.json")).expect("descriptor.json parses");
+    let fixture: DescriptorFixture =
+        serde_json::from_str(&read("descriptor.json")).expect("descriptor.json parses");
     assert_eq!(fixture.format_version, "vos-file-descriptor-fixture-v0");
     assert!(!fixture.note.trim().is_empty());
 
-    let content = BytesValue::from_wire(fixture.content).expect("the fixture content is a strict bytes value");
-    let descriptor = FileDescriptor::from_json(&serde_json::to_string(&fixture.descriptor).expect("the fixture descriptor serializes"))
-        .expect("the fixture descriptor is strict");
+    let content = BytesValue::from_wire(fixture.content)
+        .expect("the fixture content is a strict bytes value");
+    let descriptor = FileDescriptor::from_json(
+        &serde_json::to_string(&fixture.descriptor).expect("the fixture descriptor serializes"),
+    )
+    .expect("the fixture descriptor is strict");
 
     assert_eq!(
         descriptor.identity,
@@ -108,7 +143,10 @@ fn descriptor_fixture_recomputes_its_identity_and_honours_its_windows() {
         descriptor,
         FileDescriptor::describe(
             content.as_octets(),
-            FileMetadata { name: descriptor.metadata.name.clone(), media_type: descriptor.metadata.media_type.clone() }
+            FileMetadata {
+                name: descriptor.metadata.name.clone(),
+                media_type: descriptor.metadata.media_type.clone()
+            }
         )
     );
     assert_eq!(descriptor.full_window(), fixture.expect.full_window);
@@ -116,7 +154,9 @@ fn descriptor_fixture_recomputes_its_identity_and_honours_its_windows() {
     let mut reference = FileReference::live(descriptor.clone());
     for case in &fixture.expect.reads {
         assert_eq!(
-            reference.load(case.request).expect("a live reference reads"),
+            reference
+                .load(case.request)
+                .expect("a live reference reads"),
             case.window,
             "a {:?} request must resolve to the reviewed window",
             case.request
@@ -125,7 +165,13 @@ fn descriptor_fixture_recomputes_its_identity_and_honours_its_windows() {
     }
 
     reference.release();
-    assert_eq!(reference.load(descriptor.full_window()).expect_err("a released reference must not read").code, fixture.expect.released_code);
+    assert_eq!(
+        reference
+            .load(descriptor.full_window())
+            .expect_err("a released reference must not read")
+            .code,
+        fixture.expect.released_code
+    );
 }
 
 #[derive(Deserialize)]
@@ -146,7 +192,8 @@ struct InvalidCase {
 
 #[test]
 fn negative_descriptor_fixtures_are_rejected_with_the_reviewed_code() {
-    let index: InvalidIndex = serde_json::from_str(&read("invalid.json")).expect("invalid.json parses");
+    let index: InvalidIndex =
+        serde_json::from_str(&read("invalid.json")).expect("invalid.json parses");
     assert_eq!(index.format_version, "vos-file-descriptor-invalid-v0");
     assert!(!index.note.trim().is_empty());
     assert!(!index.cases.is_empty());

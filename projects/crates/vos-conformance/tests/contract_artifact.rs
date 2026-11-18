@@ -1,11 +1,21 @@
 use schema_types::{
-    CanonicalScalar, ContractArtifact, ContractFormat, ContractPayload, ContractProducer, MethodId, MethodIdentityKey, MethodStreamMode,
-    OperationCardinality, OperationContract, OperationEffect, OperationId, OperationIdentityKey, OperationKind, ResolvedCanonicalType,
-    ServiceContract, ServiceId, ServiceIdentityKey, ServiceMethodContract, contract_payload_fingerprint,
+    CanonicalScalar, ContractArtifact, ContractFormat, ContractPayload, ContractProducer, MethodId,
+    MethodIdentityKey, MethodStreamMode, OperationCardinality, OperationContract, OperationEffect,
+    OperationId, OperationIdentityKey, OperationKind, ResolvedCanonicalType, ServiceContract,
+    ServiceId, ServiceIdentityKey, ServiceMethodContract, contract_payload_fingerprint,
 };
 
 fn operation_id(name: &str) -> OperationId {
-    OperationId::derive(&OperationIdentityKey::new(&["demo".to_owned()], OperationKind::Query, name, vec![], "unit").unwrap())
+    OperationId::derive(
+        &OperationIdentityKey::new(
+            &["demo".to_owned()],
+            OperationKind::Query,
+            name,
+            vec![],
+            "unit",
+        )
+        .unwrap(),
+    )
 }
 
 fn create_operation() -> OperationContract {
@@ -26,7 +36,14 @@ fn create_operation() -> OperationContract {
 }
 
 fn service_id() -> ServiceId {
-    ServiceId::derive(&ServiceIdentityKey::new(vec!["demo".to_owned(), "auth".to_owned(), "IdentityService".to_owned()]).unwrap())
+    ServiceId::derive(
+        &ServiceIdentityKey::new(vec![
+            "demo".to_owned(),
+            "auth".to_owned(),
+            "IdentityService".to_owned(),
+        ])
+        .unwrap(),
+    )
 }
 
 fn service() -> ServiceContract {
@@ -34,7 +51,10 @@ fn service() -> ServiceContract {
 }
 
 fn service_named(name: &str) -> ServiceContract {
-    let service_id = ServiceId::derive(&ServiceIdentityKey::new(vec!["demo".to_owned(), "auth".to_owned(), name.to_owned()]).unwrap());
+    let service_id = ServiceId::derive(
+        &ServiceIdentityKey::new(vec!["demo".to_owned(), "auth".to_owned(), name.to_owned()])
+            .unwrap(),
+    );
     ServiceContract {
         service_id: service_id.clone(),
         name: name.to_owned(),
@@ -57,11 +77,18 @@ fn service_named(name: &str) -> ServiceContract {
 }
 
 fn payload() -> ContractPayload {
-    ContractPayload { operations: vec![create_operation()], services: vec![service()] }
+    ContractPayload {
+        operations: vec![create_operation()],
+        services: vec![service()],
+    }
 }
 
 fn artifact() -> ContractArtifact {
-    ContractArtifact::seal(ContractFormat::Iris, ContractProducer::new("fixture", "0"), payload())
+    ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload(),
+    )
 }
 
 #[test]
@@ -73,9 +100,18 @@ fn artifact_round_trips_with_stable_field_names() {
     assert_eq!(wire["producer"]["name"], "fixture");
     assert_eq!(wire["producer"]["version"], "0");
     assert_eq!(wire["fingerprint"], artifact.fingerprint);
-    assert_eq!(wire["payload"]["operations"][0]["operationId"], operation_id("create").as_str());
-    assert_eq!(wire["payload"]["services"][0]["serviceId"], service_id().as_str());
-    assert_eq!(wire["payload"]["services"][0]["methods"][0]["methodId"], service().methods[0].method_id.as_str());
+    assert_eq!(
+        wire["payload"]["operations"][0]["operationId"],
+        operation_id("create").as_str()
+    );
+    assert_eq!(
+        wire["payload"]["services"][0]["serviceId"],
+        service_id().as_str()
+    );
+    assert_eq!(
+        wire["payload"]["services"][0]["methods"][0]["methodId"],
+        service().methods[0].method_id.as_str()
+    );
 
     let json = artifact.to_json().unwrap();
     let decoded = ContractArtifact::from_json(&json).unwrap();
@@ -86,7 +122,12 @@ fn artifact_round_trips_with_stable_field_names() {
 #[test]
 fn old_and_unknown_versions_are_rejected() {
     let wire = serde_json::to_value(artifact()).unwrap();
-    for version in ["vos/iris.contract/v1", "vos/iris.contract", "vos/hades.contract/v0", ""] {
+    for version in [
+        "vos/iris.contract/v1",
+        "vos/iris.contract",
+        "vos/hades.contract/v0",
+        "",
+    ] {
         let mut tampered = wire.clone();
         tampered["version"] = serde_json::Value::String(version.to_owned());
         let error = ContractArtifact::from_json(&tampered.to_string()).unwrap_err();
@@ -95,7 +136,12 @@ fn old_and_unknown_versions_are_rejected() {
 
     let mut unknown_field = wire;
     unknown_field["terms"] = serde_json::Value::Array(vec![]);
-    assert_eq!(ContractArtifact::from_json(&unknown_field.to_string()).unwrap_err().code, "ART010");
+    assert_eq!(
+        ContractArtifact::from_json(&unknown_field.to_string())
+            .unwrap_err()
+            .code,
+        "ART010"
+    );
 }
 
 #[test]
@@ -106,7 +152,12 @@ fn stale_fingerprint_is_rejected() {
 
     let mut json = serde_json::to_value(artifact()).unwrap();
     json["payload"]["operations"][0]["effect"] = serde_json::Value::String("read".to_owned());
-    assert_eq!(ContractArtifact::from_json(&json.to_string()).unwrap_err().code, "ART020");
+    assert_eq!(
+        ContractArtifact::from_json(&json.to_string())
+            .unwrap_err()
+            .code,
+        "ART020"
+    );
 }
 
 #[test]
@@ -123,7 +174,8 @@ fn missing_producer_is_rejected() {
 #[test]
 fn invalid_payload_keeps_its_contract_diagnostic() {
     let mut payload = payload();
-    payload.services[0].methods[0].method_id = MethodId::parse(&format!("mtd_{}", "0".repeat(64))).unwrap();
+    payload.services[0].methods[0].method_id =
+        MethodId::parse(&format!("mtd_{}", "0".repeat(64))).unwrap();
     let artifact = ContractArtifact::seal(ContractFormat::Hermes, ContractProducer::vos(), payload);
     assert_eq!(artifact.validate().unwrap_err().code, "SVC015");
 }
@@ -131,9 +183,14 @@ fn invalid_payload_keeps_its_contract_diagnostic() {
 #[test]
 fn method_bound_to_a_missing_operation_is_rejected_after_reseal() {
     let mut payload = payload();
-    payload.services[0].methods[0].operation_id = OperationId::parse(&format!("op_{}", "0".repeat(64))).unwrap();
+    payload.services[0].methods[0].operation_id =
+        OperationId::parse(&format!("op_{}", "0".repeat(64))).unwrap();
 
-    let artifact = ContractArtifact::seal(ContractFormat::Iris, ContractProducer::new("fixture", "0"), payload);
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
     assert_eq!(artifact.validate().unwrap_err().code, "SVC004");
 }
 
@@ -142,7 +199,11 @@ fn duplicate_operation_ids_are_rejected_after_reseal() {
     let mut payload = payload();
     payload.operations.push(payload.operations[0].clone());
 
-    let artifact = ContractArtifact::seal(ContractFormat::Iris, ContractProducer::new("fixture", "0"), payload);
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
     assert_eq!(artifact.validate().unwrap_err().code, "OPC003");
 }
 
@@ -151,7 +212,11 @@ fn duplicate_service_identity_is_rejected_after_reseal() {
     let mut payload = payload();
     payload.services.push(payload.services[0].clone());
 
-    let artifact = ContractArtifact::seal(ContractFormat::Iris, ContractProducer::new("fixture", "0"), payload);
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
     assert_eq!(artifact.validate().unwrap_err().code, "SVC006");
 }
 
@@ -160,19 +225,39 @@ fn operation_bound_by_two_services_is_rejected_after_reseal() {
     let mut payload = payload();
     payload.services.push(service_named("OtherService"));
 
-    let artifact = ContractArtifact::seal(ContractFormat::Iris, ContractProducer::new("fixture", "0"), payload);
+    let artifact = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("fixture", "0"),
+        payload,
+    );
     assert_eq!(artifact.validate().unwrap_err().code, "SVC005");
 }
 
 #[test]
 fn fingerprint_binds_payload_only() {
-    let iris = ContractArtifact::seal(ContractFormat::Iris, ContractProducer::new("iris-host", "1"), payload());
-    let hermes = ContractArtifact::seal(ContractFormat::Hermes, ContractProducer::new("hermes-host", "9"), payload());
+    let iris = ContractArtifact::seal(
+        ContractFormat::Iris,
+        ContractProducer::new("iris-host", "1"),
+        payload(),
+    );
+    let hermes = ContractArtifact::seal(
+        ContractFormat::Hermes,
+        ContractProducer::new("hermes-host", "9"),
+        payload(),
+    );
     assert_eq!(iris.fingerprint, hermes.fingerprint);
     assert_eq!(iris.fingerprint, contract_payload_fingerprint(&payload()));
     assert_eq!(iris.fingerprint.len(), 64);
 
     let mut changed = payload();
     changed.operations[0].effect = OperationEffect::Pure;
-    assert_ne!(iris.fingerprint, ContractArtifact::seal(ContractFormat::Iris, ContractProducer::new("iris-host", "1"), changed).fingerprint);
+    assert_ne!(
+        iris.fingerprint,
+        ContractArtifact::seal(
+            ContractFormat::Iris,
+            ContractProducer::new("iris-host", "1"),
+            changed
+        )
+        .fingerprint
+    );
 }

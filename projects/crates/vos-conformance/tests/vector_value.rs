@@ -4,7 +4,12 @@
 use schema_types::{VECTOR_VALUE_FORMAT_VERSION, VectorElement, VectorValue, VectorValueWire};
 
 fn wire(dimension: u32, components: Vec<f32>) -> VectorValueWire {
-    VectorValueWire { format_version: VECTOR_VALUE_FORMAT_VERSION.to_owned(), element: "f32".to_owned(), dimension, components }
+    VectorValueWire {
+        format_version: VECTOR_VALUE_FORMAT_VERSION.to_owned(),
+        element: "f32".to_owned(),
+        dimension,
+        components,
+    }
 }
 
 #[test]
@@ -12,11 +17,19 @@ fn dimension_precision_and_component_order_survive_a_round_trip() {
     let value = VectorValue::new(3, vec![3.0, 1.0, 2.0]).unwrap();
     assert_eq!(value.dimension(), 3);
     assert_eq!(value.element(), VectorElement::F32);
-    assert_eq!(value.components(), &[3.0, 1.0, 2.0], "components keep their index order and are never sorted");
+    assert_eq!(
+        value.components(),
+        &[3.0, 1.0, 2.0],
+        "components keep their index order and are never sorted"
+    );
 
     let json = value.to_json().unwrap();
     assert_eq!(VectorValue::from_json(&json).unwrap(), value);
-    assert_eq!(value.to_wire(), wire(3, vec![3.0, 1.0, 2.0]), "the wire carries the precision and the dimension explicitly");
+    assert_eq!(
+        value.to_wire(),
+        wire(3, vec![3.0, 1.0, 2.0]),
+        "the wire carries the precision and the dimension explicitly"
+    );
 }
 
 #[test]
@@ -37,7 +50,10 @@ fn zero_dimension_is_rejected() {
 fn component_count_must_match_the_dimension() {
     let error = VectorValue::new(3, vec![1.0, 2.0]).unwrap_err();
     assert_eq!(error.code, "VEC002");
-    assert_eq!(error.message, "vector of dimension 3 must carry 3 components");
+    assert_eq!(
+        error.message,
+        "vector of dimension 3 must carry 3 components"
+    );
 
     let error = VectorValue::new(2, vec![1.0, 2.0, 3.0]).unwrap_err();
     assert_eq!(error.code, "VEC002");
@@ -48,7 +64,10 @@ fn non_finite_components_are_rejected() {
     for component in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
         let error = VectorValue::new(2, vec![1.0, component]).unwrap_err();
         assert_eq!(error.code, "VEC003");
-        assert!(error.message.contains("finite"), "the diagnostic must name the finite-value rule");
+        assert!(
+            error.message.contains("finite"),
+            "the diagnostic must name the finite-value rule"
+        );
     }
 }
 

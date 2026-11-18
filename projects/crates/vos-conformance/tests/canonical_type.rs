@@ -1,6 +1,6 @@
 use schema_types::{
-    CanonicalScalar, ResolvedCanonicalType, ResolvedCanonicalTypeArgument, ResolvedFieldContract, ResolvedTypeContract, TypeContractKind,
-    resolved_schema_fingerprint,
+    CanonicalScalar, ResolvedCanonicalType, ResolvedCanonicalTypeArgument, ResolvedFieldContract,
+    ResolvedTypeContract, TypeContractKind, resolved_schema_fingerprint,
 };
 
 fn scalar_type(scalar: CanonicalScalar) -> ResolvedCanonicalType {
@@ -36,8 +36,14 @@ fn every_canonical_scalar_round_trips_through_its_name() {
 
 #[test]
 fn source_aliases_normalize_to_canonical_scalars() {
-    assert_eq!(CanonicalScalar::from_source_name("d128"), Some(CanonicalScalar::Decimal));
-    assert_eq!(CanonicalScalar::from_source_name("decimal"), Some(CanonicalScalar::Decimal));
+    assert_eq!(
+        CanonicalScalar::from_source_name("d128"),
+        Some(CanonicalScalar::Decimal)
+    );
+    assert_eq!(
+        CanonicalScalar::from_source_name("decimal"),
+        Some(CanonicalScalar::Decimal)
+    );
     assert_eq!(CanonicalScalar::from_source_name("string"), None);
     assert_eq!(CanonicalScalar::from_source_name("number"), None);
     assert_eq!(CanonicalScalar::from_source_name("json"), None);
@@ -52,7 +58,10 @@ fn scalar_wire_form_is_a_tagged_name_not_a_path() {
     let decoded: ResolvedCanonicalType = serde_json::from_str(r#"{"scalar":"decimal"}"#).unwrap();
     assert_eq!(decoded, scalar_type(CanonicalScalar::Decimal));
 
-    assert!(serde_json::from_str::<ResolvedCanonicalType>(r#"{"scalar":"string"}"#).is_err(), "unknown scalars must not deserialize");
+    assert!(
+        serde_json::from_str::<ResolvedCanonicalType>(r#"{"scalar":"string"}"#).is_err(),
+        "unknown scalars must not deserialize"
+    );
     assert!(
         serde_json::from_str::<ResolvedCanonicalType>(r#"{"builtin":["uuid"]}"#).is_err(),
         "the removed path-shaped scalar form must not deserialize"
@@ -64,13 +73,31 @@ fn wrappers_and_user_references_compare_structurally() {
     let uuid = scalar_type(CanonicalScalar::Uuid);
     let text = scalar_type(CanonicalScalar::Utf8);
 
-    assert_eq!(ResolvedCanonicalType::Optional(Box::new(uuid.clone())), ResolvedCanonicalType::Optional(Box::new(uuid.clone())));
-    assert_ne!(ResolvedCanonicalType::Optional(Box::new(uuid.clone())), ResolvedCanonicalType::Optional(Box::new(text.clone())));
-    assert_ne!(ResolvedCanonicalType::List(Box::new(uuid.clone())), ResolvedCanonicalType::Optional(Box::new(uuid.clone())));
-    assert_ne!(ResolvedCanonicalType::Reference(Box::new(uuid.clone())), ResolvedCanonicalType::List(Box::new(uuid.clone())));
+    assert_eq!(
+        ResolvedCanonicalType::Optional(Box::new(uuid.clone())),
+        ResolvedCanonicalType::Optional(Box::new(uuid.clone()))
+    );
     assert_ne!(
-        ResolvedCanonicalType::User { path: vec!["T".to_owned()], type_id: 1 },
-        ResolvedCanonicalType::User { path: vec!["T".to_owned()], type_id: 2 }
+        ResolvedCanonicalType::Optional(Box::new(uuid.clone())),
+        ResolvedCanonicalType::Optional(Box::new(text.clone()))
+    );
+    assert_ne!(
+        ResolvedCanonicalType::List(Box::new(uuid.clone())),
+        ResolvedCanonicalType::Optional(Box::new(uuid.clone()))
+    );
+    assert_ne!(
+        ResolvedCanonicalType::Reference(Box::new(uuid.clone())),
+        ResolvedCanonicalType::List(Box::new(uuid.clone()))
+    );
+    assert_ne!(
+        ResolvedCanonicalType::User {
+            path: vec!["T".to_owned()],
+            type_id: 1
+        },
+        ResolvedCanonicalType::User {
+            path: vec!["T".to_owned()],
+            type_id: 2
+        }
     );
     assert_ne!(
         ResolvedCanonicalType::Generic {
@@ -87,10 +114,12 @@ fn wrappers_and_user_references_compare_structurally() {
 #[test]
 fn canonical_scalar_participates_in_the_resolved_fingerprint() {
     let uuid = resolved_schema_fingerprint(&contract_with(scalar_type(CanonicalScalar::Uuid)));
-    let uuid_again = resolved_schema_fingerprint(&contract_with(scalar_type(CanonicalScalar::Uuid)));
+    let uuid_again =
+        resolved_schema_fingerprint(&contract_with(scalar_type(CanonicalScalar::Uuid)));
     let text = resolved_schema_fingerprint(&contract_with(scalar_type(CanonicalScalar::Utf8)));
-    let optional_uuid =
-        resolved_schema_fingerprint(&contract_with(ResolvedCanonicalType::Optional(Box::new(scalar_type(CanonicalScalar::Uuid)))));
+    let optional_uuid = resolved_schema_fingerprint(&contract_with(
+        ResolvedCanonicalType::Optional(Box::new(scalar_type(CanonicalScalar::Uuid))),
+    ));
 
     assert_eq!(uuid, uuid_again);
     assert_eq!(uuid.len(), 64);

@@ -23,9 +23,11 @@ use std::{
 };
 
 use schema_input_vos::{
-    ContractArtifact, ContractFormat, ContractPayload, ContractProducer, IDENTITY_MANIFEST_VERSION, IdentityManifest, MethodStreamMode,
-    OperationContract, RESOLVED_CONTRACT_FORMAT_VERSION, ResolvedContract, ServiceContractDecl, ServiceMethodDecl, build_operation_contracts,
-    build_service_contracts, parse_oak, parse_operation_semantics_from_attributes, resolve_contract,
+    ContractArtifact, ContractFormat, ContractPayload, ContractProducer, IDENTITY_MANIFEST_VERSION,
+    IdentityManifest, MethodStreamMode, OperationContract, RESOLVED_CONTRACT_FORMAT_VERSION,
+    ResolvedContract, ServiceContractDecl, ServiceMethodDecl, build_operation_contracts,
+    build_service_contracts, parse_oak, parse_operation_semantics_from_attributes,
+    resolve_contract,
 };
 use serde::{Deserialize, Serialize};
 
@@ -75,34 +77,54 @@ fn matrix_path() -> PathBuf {
 }
 
 fn load_matrix() -> Matrix {
-    let matrix: Matrix = serde_json::from_str(&fs::read_to_string(matrix_path()).expect("fingerprint evolution matrix exists"))
-        .expect("matrix.json is a strict fingerprint evolution matrix");
-    assert_eq!(matrix.format_version, FORMAT_VERSION, "matrix must declare its own format version");
+    let matrix: Matrix = serde_json::from_str(
+        &fs::read_to_string(matrix_path()).expect("fingerprint evolution matrix exists"),
+    )
+    .expect("matrix.json is a strict fingerprint evolution matrix");
+    assert_eq!(
+        matrix.format_version, FORMAT_VERSION,
+        "matrix must declare its own format version"
+    );
     matrix
 }
 
 fn build(case: &Case) -> Outcome {
     let directory = fixtures();
-    let source = fs::read_to_string(directory.join(&case.source)).unwrap_or_else(|error| panic!("{}: {error}", case.source));
-    let manifest_json = fs::read_to_string(directory.join(&case.manifest)).unwrap_or_else(|error| panic!("{}: {error}", case.manifest));
-    let manifest = IdentityManifest::from_json(&manifest_json).unwrap_or_else(|error| panic!("{}: {}", case.manifest, error.message));
+    let source = fs::read_to_string(directory.join(&case.source))
+        .unwrap_or_else(|error| panic!("{}: {error}", case.source));
+    let manifest_json = fs::read_to_string(directory.join(&case.manifest))
+        .unwrap_or_else(|error| panic!("{}: {error}", case.manifest));
+    let manifest = IdentityManifest::from_json(&manifest_json)
+        .unwrap_or_else(|error| panic!("{}: {}", case.manifest, error.message));
 
     let input = parse_oak(&source).unwrap_or_else(|error| panic!("{}: {error}", case.id));
-    let projection = input.project_schema().unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
-    let contract = resolve_contract(&projection, &manifest).unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let projection = input
+        .project_schema()
+        .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let contract = resolve_contract(&projection, &manifest)
+        .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
 
-    let operations = input.project_operations().unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let operations = input
+        .project_operations()
+        .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
     let semantics = operations
         .iter()
         .map(|operation| {
-            parse_operation_semantics_from_attributes(operation).unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id))
+            parse_operation_semantics_from_attributes(operation)
+                .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id))
         })
         .collect::<Vec<_>>();
-    let operation_contracts = build_operation_contracts(&[(0, &operations)], &semantics, &contract.types, None)
-        .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let operation_contracts =
+        build_operation_contracts(&[(0, &operations)], &semantics, &contract.types, None)
+            .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
 
-    let services = input.project_services().unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
-    let by_name = operation_contracts.iter().map(|operation| (operation.name.as_str(), operation)).collect::<BTreeMap<_, _>>();
+    let services = input
+        .project_services()
+        .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let by_name = operation_contracts
+        .iter()
+        .map(|operation| (operation.name.as_str(), operation))
+        .collect::<BTreeMap<_, _>>();
     let declarations = services
         .iter()
         .map(|service| ServiceContractDecl {
@@ -113,34 +135,73 @@ fn build(case: &Case) -> Outcome {
                 .map(|method| ServiceMethodDecl {
                     name: method.name.clone(),
                     request_type: method.parameters[0].type_expr.clone(),
-                    response_type: method.return_type.clone().unwrap_or_else(|| panic!("{}: service method has no return type", case.id)),
-                    stream: if method.stream { MethodStreamMode::ServerStream } else { MethodStreamMode::Unary },
-                    operation_id: bound_operation(&by_name, method.name.as_str(), case).operation_id.clone(),
+                    response_type: method.return_type.clone().unwrap_or_else(|| {
+                        panic!("{}: service method has no return type", case.id)
+                    }),
+                    stream: if method.stream {
+                        MethodStreamMode::ServerStream
+                    } else {
+                        MethodStreamMode::Unary
+                    },
+                    operation_id: bound_operation(&by_name, method.name.as_str(), case)
+                        .operation_id
+                        .clone(),
                 })
                 .collect(),
         })
         .collect::<Vec<_>>();
-    let service_contracts = build_service_contracts(&[(0, &services)], &declarations, &operation_contracts, &contract.types, None)
-        .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
+    let service_contracts = build_service_contracts(
+        &[(0, &services)],
+        &declarations,
+        &operation_contracts,
+        &contract.types,
+        None,
+    )
+    .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));
 
     let artifact = ContractArtifact::seal(
         ContractFormat::Iris,
         ContractProducer::new("fixture", "0"),
-        ContractPayload { operations: operation_contracts, services: service_contracts },
+        ContractPayload {
+            operations: operation_contracts,
+            services: service_contracts,
+        },
     );
-    artifact.validate().unwrap_or_else(|error| panic!("{}: {} {}", case.id, error.code, error.message));
+    artifact
+        .validate()
+        .unwrap_or_else(|error| panic!("{}: {} {}", case.id, error.code, error.message));
 
-    Outcome { schema_fingerprint: contract.schema_fingerprint, types: contract.types, artifact }
+    Outcome {
+        schema_fingerprint: contract.schema_fingerprint,
+        types: contract.types,
+        artifact,
+    }
 }
 
-fn bound_operation<'a>(by_name: &'a BTreeMap<&'a str, &'a OperationContract>, method: &str, case: &Case) -> &'a OperationContract {
-    let name = case.bindings.get(method).map(String::as_str).unwrap_or(method);
-    by_name.get(name).copied().unwrap_or_else(|| panic!("{}: service method {method} binds unknown operation {name}", case.id))
+fn bound_operation<'a>(
+    by_name: &'a BTreeMap<&'a str, &'a OperationContract>,
+    method: &str,
+    case: &Case,
+) -> &'a OperationContract {
+    let name = case
+        .bindings
+        .get(method)
+        .map(String::as_str)
+        .unwrap_or(method);
+    by_name.get(name).copied().unwrap_or_else(|| {
+        panic!(
+            "{}: service method {method} binds unknown operation {name}",
+            case.id
+        )
+    })
 }
 
 fn assert_is_fingerprint(value: &str, label: &str) {
     assert_eq!(value.len(), 64, "{label} must be a 64 hex digest");
-    assert!(value.bytes().all(|byte| byte.is_ascii_hexdigit()), "{label} must be hexadecimal");
+    assert!(
+        value.bytes().all(|byte| byte.is_ascii_hexdigit()),
+        "{label} must be hexadecimal"
+    );
 }
 
 #[test]
@@ -148,7 +209,13 @@ fn fingerprint_evolution_matrix_matches_its_recorded_verdicts() {
     let mut matrix = load_matrix();
     let update = std::env::var_os("VOS_UPDATE_FIXTURES").is_some();
     let base_id = matrix.base.clone();
-    let base = build(matrix.cases.iter().find(|case| case.id == base_id).unwrap_or_else(|| panic!("matrix base case {base_id} is missing")));
+    let base = build(
+        matrix
+            .cases
+            .iter()
+            .find(|case| case.id == base_id)
+            .unwrap_or_else(|| panic!("matrix base case {base_id} is missing")),
+    );
     assert_is_fingerprint(&base.schema_fingerprint, "base schema fingerprint");
     assert_is_fingerprint(&base.artifact.fingerprint, "base artifact fingerprint");
 
@@ -187,7 +254,9 @@ fn fingerprint_evolution_matrix_matches_its_recorded_verdicts() {
                     "{}: schemaVerdict says same but the fingerprint moved",
                     case.id
                 );
-                stale_contract.validate().unwrap_or_else(|error| panic!("{}: {} {}", case.id, error.code, error.message));
+                stale_contract.validate().unwrap_or_else(|error| {
+                    panic!("{}: {} {}", case.id, error.code, error.message)
+                });
             }
             "changed" => {
                 assert_ne!(
@@ -215,7 +284,9 @@ fn fingerprint_evolution_matrix_matches_its_recorded_verdicts() {
                     "{}: artifactVerdict says same but the fingerprint moved",
                     case.id
                 );
-                stale_artifact.validate().unwrap_or_else(|error| panic!("{}: {} {}", case.id, error.code, error.message));
+                stale_artifact.validate().unwrap_or_else(|error| {
+                    panic!("{}: {} {}", case.id, error.code, error.message)
+                });
             }
             "changed" => {
                 assert_ne!(
@@ -243,9 +314,22 @@ fn fingerprint_evolution_matrix_matches_its_recorded_verdicts() {
 #[test]
 fn matrix_covers_every_schema_and_artifact_verdict_combination() {
     let matrix = load_matrix();
-    let combinations =
-        matrix.cases.iter().map(|case| (case.expect.schema_verdict.clone(), case.expect.artifact_verdict.clone())).collect::<BTreeSet<_>>();
-    for expected in [("same", "same"), ("changed", "same"), ("same", "changed"), ("changed", "changed")] {
+    let combinations = matrix
+        .cases
+        .iter()
+        .map(|case| {
+            (
+                case.expect.schema_verdict.clone(),
+                case.expect.artifact_verdict.clone(),
+            )
+        })
+        .collect::<BTreeSet<_>>();
+    for expected in [
+        ("same", "same"),
+        ("changed", "same"),
+        ("same", "changed"),
+        ("changed", "changed"),
+    ] {
         assert!(
             combinations.contains(&(expected.0.to_owned(), expected.1.to_owned())),
             "the matrix must cover schema {} and artifact {}",
@@ -262,13 +346,31 @@ fn matrix_case_ids_are_unique_and_sources_exist() {
     let directory = fixtures();
     let mut ids = BTreeSet::new();
     for case in &matrix.cases {
-        assert!(ids.insert(case.id.as_str()), "duplicate case id {}", case.id);
-        assert!(directory.join(&case.source).is_file(), "{}: missing source {}", case.id, case.source);
-        assert!(directory.join(&case.manifest).is_file(), "{}: missing manifest {}", case.id, case.manifest);
+        assert!(
+            ids.insert(case.id.as_str()),
+            "duplicate case id {}",
+            case.id
+        );
+        assert!(
+            directory.join(&case.source).is_file(),
+            "{}: missing source {}",
+            case.id,
+            case.source
+        );
+        assert!(
+            directory.join(&case.manifest).is_file(),
+            "{}: missing manifest {}",
+            case.id,
+            case.manifest
+        );
         for (method, bound) in &case.bindings {
             assert!(!method.is_empty(), "{}: empty method binding key", case.id);
             assert!(!bound.is_empty(), "{}: empty operation binding", case.id);
         }
     }
-    assert!(ids.contains(matrix.base.as_str()), "matrix base {} must be one of the cases", matrix.base);
+    assert!(
+        ids.contains(matrix.base.as_str()),
+        "matrix base {} must be one of the cases",
+        matrix.base
+    );
 }

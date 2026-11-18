@@ -1,6 +1,7 @@
 use schema_types::{
-    CanonicalScalar, OperationCardinality, OperationContract, OperationEffect, OperationId, OperationIdentityKey, OperationKind,
-    OperationParameterContract, OperationParameterKey, ResolvedCanonicalType, SemanticCapability, operation_contract_fingerprint,
+    CanonicalScalar, OperationCardinality, OperationContract, OperationEffect, OperationId,
+    OperationIdentityKey, OperationKind, OperationParameterContract, OperationParameterKey,
+    ResolvedCanonicalType, SemanticCapability, operation_contract_fingerprint,
 };
 
 fn operation(
@@ -20,9 +21,22 @@ fn operation(
         .collect::<Vec<_>>();
     let identity_parameters = parameters
         .iter()
-        .map(|parameter| OperationParameterKey::new(&parameter.name, &canonical_type_key(&parameter.canonical_type)).unwrap())
+        .map(|parameter| {
+            OperationParameterKey::new(
+                &parameter.name,
+                &canonical_type_key(&parameter.canonical_type),
+            )
+            .unwrap()
+        })
         .collect();
-    let identity = OperationIdentityKey::new(&[], OperationKind::Query, name, identity_parameters, result_key).unwrap();
+    let identity = OperationIdentityKey::new(
+        &[],
+        OperationKind::Query,
+        name,
+        identity_parameters,
+        result_key,
+    )
+    .unwrap();
     let cardinality = OperationContract::cardinality_of(&result);
     OperationContract {
         operation_id: OperationId::derive(&identity),
@@ -52,8 +66,13 @@ fn active() -> OperationContract {
         "active",
         OperationEffect::Read,
         vec![SemanticCapability::Storage],
-        &[("status", CanonicalScalar::Utf8), ("limit", CanonicalScalar::I64)],
-        Some(ResolvedCanonicalType::List(Box::new(ResolvedCanonicalType::Scalar(CanonicalScalar::Uuid)))),
+        &[
+            ("status", CanonicalScalar::Utf8),
+            ("limit", CanonicalScalar::I64),
+        ],
+        Some(ResolvedCanonicalType::List(Box::new(
+            ResolvedCanonicalType::Scalar(CanonicalScalar::Uuid),
+        ))),
         "[uuid]",
     )
 }
@@ -96,7 +115,10 @@ fn operation_contract_round_trips_with_stable_field_names() {
 fn unknown_fields_and_missing_fields_are_rejected() {
     let mut wire = serde_json::to_value(active()).unwrap();
     wire["body"] = serde_json::Value::String("User.filter".to_owned());
-    assert!(serde_json::from_value::<OperationContract>(wire.clone()).is_err(), "unknown contract fields must not be accepted");
+    assert!(
+        serde_json::from_value::<OperationContract>(wire.clone()).is_err(),
+        "unknown contract fields must not be accepted"
+    );
 
     let mut missing = serde_json::to_value(active()).unwrap();
     missing.as_object_mut().unwrap().remove("cardinality");
@@ -152,12 +174,27 @@ fn fingerprint_changes_with_semantics() {
 
 #[test]
 fn fingerprint_ignores_capability_order() {
-    let sorted =
-        operation("audit", OperationEffect::Read, vec![SemanticCapability::Aggregation, SemanticCapability::Storage], &[], None, "unit");
-    let reversed =
-        operation("audit", OperationEffect::Read, vec![SemanticCapability::Storage, SemanticCapability::Aggregation], &[], None, "unit");
+    let sorted = operation(
+        "audit",
+        OperationEffect::Read,
+        vec![SemanticCapability::Aggregation, SemanticCapability::Storage],
+        &[],
+        None,
+        "unit",
+    );
+    let reversed = operation(
+        "audit",
+        OperationEffect::Read,
+        vec![SemanticCapability::Storage, SemanticCapability::Aggregation],
+        &[],
+        None,
+        "unit",
+    );
 
-    assert_eq!(operation_contract_fingerprint(&[sorted]), operation_contract_fingerprint(&[reversed]));
+    assert_eq!(
+        operation_contract_fingerprint(&[sorted]),
+        operation_contract_fingerprint(&[reversed])
+    );
 }
 
 #[test]

@@ -41,7 +41,10 @@ fn service_artifact_fixture_matches_reviewed_golden() {
     let actual: serde_json::Value = serde_json::from_str(&artifact.to_json().unwrap()).unwrap();
     let expected: serde_json::Value = serde_json::from_str(golden).unwrap();
     assert_eq!(actual, expected);
-    assert_eq!(ServiceProjectionArtifact::from_json(golden).unwrap(), artifact);
+    assert_eq!(
+        ServiceProjectionArtifact::from_json(golden).unwrap(),
+        artifact
+    );
 }
 
 #[test]
@@ -51,7 +54,8 @@ fn oak_accepts_schema_and_operation_fixtures() {
     for category in ["schema", "operations", "services"] {
         for path in source_files(&root.join(category)) {
             let source = fs::read_to_string(&path).expect("fixture source");
-            parse(&source).unwrap_or_else(|error| panic!("Oak rejected {}: {error}", path.display()));
+            parse(&source)
+                .unwrap_or_else(|error| panic!("Oak rejected {}: {error}", path.display()));
             count += 1;
         }
     }
