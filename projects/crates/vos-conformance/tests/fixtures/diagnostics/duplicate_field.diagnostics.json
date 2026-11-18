@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "code": null,
+      "message": "duplicate field `user_name` on table `User`",
+      "span": {
+        "start": 59,
+        "end": 74
+      },
+      "hint": "rename or remove the duplicate field"
+    }
+  ]
+}

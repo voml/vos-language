@@ -1,0 +1,219 @@
+{
+  "formatVersion": "vos-fingerprint-evolution-v0",
+  "base": "schema.base",
+  "cases": [
+    {
+      "id": "schema.base",
+      "source": "base.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "same",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.field-reorder",
+      "source": "schema_field_reorder.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "same",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.field-reorder-slot-reassigned",
+      "source": "schema_field_reorder.vos",
+      "manifest": "schema_field_reorder.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "same",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.field-rename",
+      "source": "schema_field_rename.vos",
+      "manifest": "schema_field_rename.manifest.json",
+      "expect": {
+        "schemaFingerprint": "0d1117134bf1e88e57e3dfbf7a037658696cd680c3c8f93267e8abd954ab58e7",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "changed",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.field-add",
+      "source": "schema_field_add.vos",
+      "manifest": "schema_field_add.manifest.json",
+      "expect": {
+        "schemaFingerprint": "0924a14c8e2bcc71cde196e9a4aaa2d794d2966ff5c727536f9fb007f1933d3d",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "changed",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.field-remove",
+      "source": "schema_field_remove.vos",
+      "manifest": "schema_field_remove.manifest.json",
+      "expect": {
+        "schemaFingerprint": "d92b8e08703bb3e24151e05df9cf9641eb97bf3f7085eb7ec461dfbf16d1865d",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "changed",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.field-retype",
+      "source": "schema_field_retype.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "4e74b86d33c9a16b076c6697b5dc45439ea43cdc2a5ef30ec27b8b9c31b6b969",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "changed",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.field-attribute",
+      "source": "schema_field_attribute.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "8c794bd448a6a9a6e53f83c347e3d0b268a0d13374cd675c0d5db38c0318ad38",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "changed",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "schema.type-rename",
+      "source": "schema_type_rename.vos",
+      "manifest": "schema_type_rename.manifest.json",
+      "expect": {
+        "schemaFingerprint": "2ed9f70dcbb577e83a13f6e1060b4b85387f64b1e0ca59aa46a9296e92842b79",
+        "artifactFingerprint": "8f9c9890e715eb26c156effc0b323d615997ac1b3ac3cf8db2b213b4ed8bfa89",
+        "schemaVerdict": "changed",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "ops.effect",
+      "source": "ops_effect.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "1b120e07616c3acca892c240a70ed920967c51b5cc4d505e9f389463bf3dfdeb",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "ops.capability-added",
+      "source": "ops_capability.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "1ce27b831574f6d0ab253e18a507ee6488b7a9f64bbcd97a3e94d6e9df59eb54",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "ops.capability-order",
+      "source": "ops_capability_order.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "same",
+        "artifactVerdict": "same"
+      }
+    },
+    {
+      "id": "ops.parameter-rename",
+      "source": "ops_param_rename.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "d8855a3d49802174f3a1017c9c75156c166f955df866d2d76d9789c3ede2c740",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "ops.result-type",
+      "source": "ops_result_type.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "5a7d6d2e3cea668e57d3407b23a3dbbf322f249b7593d6f3d294afff90b25b1d",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "ops.declaration-kind",
+      "source": "ops_kind.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "c202a056c773529739ca0969a17bdff19d3d6f8a093878285ead0a56dfc842fa",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "svc.operation-binding",
+      "source": "base.vos",
+      "manifest": "base.manifest.json",
+      "bindings": {
+        "fetch": "record",
+        "record": "fetch"
+      },
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "88f5fca6784736c800c02dd43dc1c6b36b0ed60f4cf94ec329fcb593d4b5c7c1",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "svc.stream-mode",
+      "source": "svc_stream.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "0bded54ece11e7245222717e322241bcf005bfa1471ca0117cad609e7b71c714",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "svc.attributes",
+      "source": "svc_attribute.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "d331d121161620157cd51ea6d35cb296696b1f797d44f61e7b90dca6835184d6",
+        "schemaVerdict": "same",
+        "artifactVerdict": "changed"
+      }
+    },
+    {
+      "id": "artifact.declaration-order",
+      "source": "artifact_order.vos",
+      "manifest": "base.manifest.json",
+      "expect": {
+        "schemaFingerprint": "3a3cc630bb3c5469bde998a4a3e1066a0762c91248ea8fff73c28cc22dbdb3e2",
+        "artifactFingerprint": "e11bb5adf802153ca286f5faf24bf10ca9eaba8adf072949a339e7efc1fc2855",
+        "schemaVerdict": "same",
+        "artifactVerdict": "same"
+      }
+    }
+  ]
+}

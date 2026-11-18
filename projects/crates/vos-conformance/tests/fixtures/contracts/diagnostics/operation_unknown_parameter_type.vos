@@ -1,0 +1,8 @@
+namespace demo::diag
+
+class Token {
+    [primary] id: uuid,
+}
+
+[effect(read)]
+query fetch(id: Missing) -> uuid { id }

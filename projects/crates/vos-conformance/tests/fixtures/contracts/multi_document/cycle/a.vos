@@ -1,0 +1,7 @@
+using "./b.vos"
+
+namespace demo::vault
+
+class Account {
+    [primary] id: uuid,
+}

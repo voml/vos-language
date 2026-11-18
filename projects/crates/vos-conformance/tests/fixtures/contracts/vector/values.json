@@ -1,0 +1,50 @@
+{
+  "formatVersion": "vos-vector-value-fixture-v0",
+  "note": "Positive `vector<N>` value cases pin the element precision, the fixed dimension and the component order. JSON cannot spell NaN or infinity, so `nonFinite` lists the reviewed tokens that the conformance test maps to Rust values and must reject with `VEC003`.",
+  "cases": [
+    {
+      "id": "unit",
+      "wire": {
+        "formatVersion": "vos-vector-value-v0",
+        "element": "f32",
+        "dimension": 1,
+        "components": [1.0]
+      }
+    },
+    {
+      "id": "embedding-3",
+      "wire": {
+        "formatVersion": "vos-vector-value-v0",
+        "element": "f32",
+        "dimension": 3,
+        "components": [3.0, 1.0, 2.0]
+      }
+    },
+    {
+      "id": "f32-precision",
+      "wire": {
+        "formatVersion": "vos-vector-value-v0",
+        "element": "f32",
+        "dimension": 2,
+        "components": [0.1, -0.25]
+      }
+    }
+  ],
+  "nonFinite": [
+    {
+      "id": "nan",
+      "component": "nan",
+      "expectCode": "VEC003"
+    },
+    {
+      "id": "positive-infinity",
+      "component": "positive-infinity",
+      "expectCode": "VEC003"
+    },
+    {
+      "id": "negative-infinity",
+      "component": "negative-infinity",
+      "expectCode": "VEC003"
+    }
+  ]
+}

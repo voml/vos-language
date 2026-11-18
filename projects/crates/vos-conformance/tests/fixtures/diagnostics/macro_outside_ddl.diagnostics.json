@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "code": "VOS-DDL-SESSION-REQUIRED",
+      "message": "macro declaration changes database DDL",
+      "span": {
+        "start": 65,
+        "end": 70
+      },
+      "hint": "open a DDL session and apply the macro declaration"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# macro is DDL — must not appear in a query/operation program.
+macro public_name(value: utf8) -> utf8 {
+    value.trim()
+}
+
+public_name

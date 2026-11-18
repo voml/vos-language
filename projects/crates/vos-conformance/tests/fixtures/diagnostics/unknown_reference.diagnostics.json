@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "code": null,
+      "message": "unknown reference target `Missing`",
+      "span": {
+        "start": 30,
+        "end": 45
+      },
+      "hint": "declare the target `table` in this document or import it with `using`"
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "formatVersion": "vos-feature-matrix-v0",
+  "stages": [
+    "documented",
+    "parsed",
+    "projected",
+    "resolved",
+    "conformance",
+    "downstream-consumed"
+  ],
+  "features": [
+    {
+      "id": "namespace.single-unit",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Oak path is retained and VOS qualifies table/class paths within one source unit"
+    },
+    {
+      "id": "table-class.fields",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Names, spans, attributes, type wrappers and default syntax are available without durable identity"
+    },
+    {
+      "id": "field.type-wrappers",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Reference, optional, list and generic syntax are canonicalized without symbol resolution"
+    },
+    {
+      "id": "field.attributes.simple",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Primary and unique shorthand plus simple bracket attributes are preserved"
+    },
+    {
+      "id": "field.attributes.grouped",
+      "documented": true,
+      "parsed": true,
+      "projected": false,
+      "resolved": false,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Explicit diagnostic until Oak exposes structured attribute groups and arguments"
+    },
+    {
+      "id": "source-unit.artifact",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": false,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Strict syntax-projection envelope only"
+    },
+    {
+      "id": "using.multi-file-resolution",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "VFS + collect pass + resolve pass + cycle detection, pinned by the multi_document fixtures. Contract projection still rejects using declarations, so an import never feeds definition resolution, and the collected symbol table is not consumed by the contract API."
+    },
+    {
+      "id": "durable-identity.fingerprint",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": "partial",
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "SHA-256 operation_id is generated in OperationProjection, and the schema and artifact fingerprints plus their evolution verdicts are pinned by the fingerprint_evolution matrix. A per-source-unit fingerprint field is not part of the contract envelope yet."
+    },
+    {
+      "id": "operation-service.contract",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": true,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "Oak projects service attributes and method signatures, and build_service_contracts resolves them against the authored operation bindings while rejecting any declaration that disagrees with the source"
+    },
+    {
+      "id": "scalar.bytes-value",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": true,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "`bytes` resolves to the shared `CanonicalScalar::Bytes` scalar and its value wire is a strict lowercase-hex `BytesValue`, so no stage decodes octets as text. Inline versus object-reference placement is declared by the storage implementation through `BytesPlacementPolicy` and VOS owns no octet threshold."
+    },
+    {
+      "id": "logical.file-descriptor",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": true,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "`file` resolves to `ResolvedCanonicalType::File` and is described by `FileDescriptor`: a `FileManifestIdentity` over the complete octets plus separate name and media type metadata. Full reads, range reads, EOF, reference release and `file<...>` rejection are pinned by the `file` fixtures, while chunk layout and object keys stay with the storage implementation."
+    },
+    {
+      "id": "logical.vector-dimension",
+      "documented": true,
+      "parsed": true,
+      "projected": true,
+      "resolved": true,
+      "conformance": true,
+      "downstream-consumed": false,
+      "note": "`vector<N>` resolves to `Vector { element: f32, dimension: N }`, so element precision and dimension are part of the resolved contract. `vector<0>`, `vector<utf8>` and a bare `vector` are diagnosed with `RES019` and `RES020`, and `VectorValue` rejects a wrong component count, NaN and infinity. Distance metrics and ANN indexes stay out of the typed value contract."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+namespace demo::diag
+
+class Token {
+    [primary] id: uuid,
+}
+
+query bare(id: uuid) -> uuid { id }

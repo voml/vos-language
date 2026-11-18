@@ -1,0 +1,7 @@
+using "./a.vos"
+
+namespace demo::vault
+
+class Vault {
+    [primary] id: uuid,
+}

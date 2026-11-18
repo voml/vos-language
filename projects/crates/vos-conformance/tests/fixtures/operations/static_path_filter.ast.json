@@ -1,0 +1,180 @@
+{
+  "statements": [
+    {
+      "Let": {
+        "name": "users",
+        "ty": null,
+        "value": {
+          "Call": {
+            "callee": {
+              "Member": {
+                "object": {
+                  "Call": {
+                    "callee": {
+                      "Member": {
+                        "object": {
+                          "Call": {
+                            "callee": {
+                              "Member": {
+                                "object": {
+                                  "Call": {
+                                    "callee": {
+                                      "Member": {
+                                        "object": {
+                                          "Name": {
+                                            "name": "User",
+                                            "span": {
+                                              "start": 89,
+                                              "end": 93
+                                            }
+                                          }
+                                        },
+                                        "name": "filter",
+                                        "sep": "ColonColon",
+                                        "span": {
+                                          "start": 95,
+                                          "end": 101
+                                        }
+                                      }
+                                    },
+                                    "args": [
+                                      {
+                                        "Lambda": {
+                                          "params": [
+                                            "x"
+                                          ],
+                                          "body": {
+                                            "Member": {
+                                              "object": {
+                                                "Name": {
+                                                  "name": "x",
+                                                  "span": {
+                                                    "start": 107,
+                                                    "end": 108
+                                                  }
+                                                }
+                                              },
+                                              "name": "active",
+                                              "sep": "Dot",
+                                              "span": {
+                                                "start": 109,
+                                                "end": 115
+                                              }
+                                            }
+                                          },
+                                          "span": {
+                                            "start": 102,
+                                            "end": 115
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "span": {
+                                      "start": 95,
+                                      "end": 116
+                                    }
+                                  }
+                                },
+                                "name": "sort_by",
+                                "sep": "Dot",
+                                "span": {
+                                  "start": 122,
+                                  "end": 129
+                                }
+                              }
+                            },
+                            "args": [
+                              {
+                                "Lambda": {
+                                  "params": [
+                                    "x"
+                                  ],
+                                  "body": {
+                                    "Member": {
+                                      "object": {
+                                        "Name": {
+                                          "name": "x",
+                                          "span": {
+                                            "start": 135,
+                                            "end": 136
+                                          }
+                                        }
+                                      },
+                                      "name": "user_name",
+                                      "sep": "Dot",
+                                      "span": {
+                                        "start": 137,
+                                        "end": 146
+                                      }
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 130,
+                                    "end": 146
+                                  }
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 122,
+                              "end": 147
+                            }
+                          }
+                        },
+                        "name": "take",
+                        "sep": "Dot",
+                        "span": {
+                          "start": 153,
+                          "end": 157
+                        }
+                      }
+                    },
+                    "args": [
+                      {
+                        "Literal": {
+                          "Int": "20"
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 153,
+                      "end": 161
+                    }
+                  }
+                },
+                "name": "collect",
+                "sep": "Dot",
+                "span": {
+                  "start": 167,
+                  "end": 174
+                }
+              }
+            },
+            "args": [],
+            "span": {
+              "start": 167,
+              "end": 176
+            }
+          }
+        },
+        "span": {
+          "start": 77,
+          "end": 178
+        }
+      }
+    }
+  ],
+  "result": {
+    "Name": {
+      "name": "users",
+      "span": {
+        "start": 178,
+        "end": 184
+      }
+    }
+  },
+  "span": {
+    "start": 0,
+    "end": 184
+  }
+}

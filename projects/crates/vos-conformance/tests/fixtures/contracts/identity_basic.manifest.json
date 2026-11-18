@@ -1,0 +1,17 @@
+{
+  "formatVersion": "vos-identity-manifest-v0",
+  "types": [
+    {
+      "canonicalPath": ["T"],
+      "typeId": 1,
+      "kind": "class",
+      "fields": [
+        {
+          "canonicalName": "id",
+          "fieldId": 2,
+          "virtualFieldIndex": 0
+        }
+      ]
+    }
+  ]
+}

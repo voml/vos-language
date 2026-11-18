@@ -1,0 +1,61 @@
+{
+  "formatVersion": "vos-bytes-value-fixture-v0",
+  "note": "Positive `bytes` value cases. `data` is an exact octet sequence in the lowercase-hex wire encoding, never text. The `placement` expectation is produced by the fixture host policy below, which declares its own physical inline boundary. VOS owns no octet threshold: a host with a different `.yydb`, object-store or arena layout declares a different boundary and no contract value changes.",
+  "hostPlacement": {
+    "kind": "fixture-host-inline-limit",
+    "inlineLimitOctets": 16,
+    "note": "Declared by the fixture host only, and read by the conformance test through the `BytesPlacementPolicy` trait"
+  },
+  "cases": [
+    {
+      "id": "empty",
+      "octets": 0,
+      "wire": {
+        "formatVersion": "vos-bytes-value-v0",
+        "encoding": "hex",
+        "data": ""
+      },
+      "placement": "inline"
+    },
+    {
+      "id": "nul",
+      "octets": 3,
+      "wire": {
+        "formatVersion": "vos-bytes-value-v0",
+        "encoding": "hex",
+        "data": "000100"
+      },
+      "placement": "inline"
+    },
+    {
+      "id": "invalid-utf8",
+      "octets": 3,
+      "wire": {
+        "formatVersion": "vos-bytes-value-v0",
+        "encoding": "hex",
+        "data": "fffe80"
+      },
+      "placement": "inline"
+    },
+    {
+      "id": "utf8-looking-octets",
+      "octets": 2,
+      "wire": {
+        "formatVersion": "vos-bytes-value-v0",
+        "encoding": "hex",
+        "data": "c3a9"
+      },
+      "placement": "inline"
+    },
+    {
+      "id": "beyond-host-inline-boundary",
+      "octets": 65,
+      "wire": {
+        "formatVersion": "vos-bytes-value-v0",
+        "encoding": "hex",
+        "data": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40"
+      },
+      "placement": "object-reference"
+    }
+  ]
+}

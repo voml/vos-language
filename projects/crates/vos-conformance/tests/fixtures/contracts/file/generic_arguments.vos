@@ -1,0 +1,3 @@
+class BadFile {
+    handle: file<utf8>,
+}

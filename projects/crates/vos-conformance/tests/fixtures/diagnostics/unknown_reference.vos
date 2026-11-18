@@ -1,0 +1,4 @@
+table A {
+    @@id: uuid,
+    other: &Missing,
+}

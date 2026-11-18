@@ -1,0 +1,3 @@
+class ZeroDimension {
+    value: vector<0>,
+}

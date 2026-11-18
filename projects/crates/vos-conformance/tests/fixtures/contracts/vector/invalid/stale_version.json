@@ -1,0 +1,6 @@
+{
+  "formatVersion": "vos-vector-value-v1",
+  "element": "f32",
+  "dimension": 2,
+  "components": [1.0, 2.0]
+}

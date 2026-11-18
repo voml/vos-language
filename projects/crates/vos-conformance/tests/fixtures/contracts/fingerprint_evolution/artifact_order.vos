@@ -1,0 +1,22 @@
+namespace demo::vault
+
+class Account {
+    [primary] id: uuid,
+    email: utf8,
+}
+
+table Ledger {
+    [primary] id: uuid,
+    owner: Account,
+}
+
+[effect(write)] [capability(storage)]
+query record(account: Account) -> Ledger { Ledger }
+
+[effect(read)] [capability(search)] [capability(storage)]
+query fetch(id: uuid) -> Account? { Account }
+
+service Vault {
+    record(account: Account) -> Ledger
+    fetch(id: uuid) -> Account?
+}

@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "code": null,
+      "message": "table `Project` requires a primary key",
+      "span": {
+        "start": 37,
+        "end": 70
+      },
+      "hint": "add `@@field: Type` or `[primary] field: Type`"
+    }
+  ]
+}

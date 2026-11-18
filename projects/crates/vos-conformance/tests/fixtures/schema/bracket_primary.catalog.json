@@ -1,0 +1,38 @@
+{
+  "revisions": {
+    "ddl": 1,
+    "semantic": 1,
+    "layout_epoch": 0
+  },
+  "types": [
+    {
+      "type_id": 1,
+      "name": "Account",
+      "kind": "table",
+      "fields": [
+        {
+          "field_id": 1,
+          "virtual_field": 0,
+          "current_name": "id",
+          "source_order": 0,
+          "ty": {
+            "Builtin": "Utf8"
+          },
+          "attrs": [
+            "Primary"
+          ]
+        },
+        {
+          "field_id": 2,
+          "virtual_field": 1,
+          "current_name": "name",
+          "source_order": 1,
+          "ty": {
+            "Builtin": "Utf8"
+          },
+          "attrs": []
+        }
+      ]
+    }
+  ]
+}

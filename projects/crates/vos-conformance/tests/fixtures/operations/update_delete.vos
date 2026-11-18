@@ -1,0 +1,24 @@
+let user = User.get(user_id)?
+
+let updated = user.update {
+    user_name: "alice-renamed",
+    avatar: new_avatar,
+}
+
+let affected = User
+    .filter(x => !x.active)
+    .update({
+        disabled_at: now(),
+    })
+
+let bumped = User
+    .filter(x => x.login_count > 0)
+    .update(x => {
+        login_count: x.login_count + 1,
+    })
+
+let removed = Session
+    .filter(x => x.expires_at < now())
+    .delete()
+
+user.delete()

@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "code": null,
+      "message": "unknown type `Uuid`",
+      "span": {
+        "start": 14,
+        "end": 25
+      },
+      "hint": "builtin uuid is lowercase only"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+using "./missing.vos"
+
+namespace demo::vault
+
+class Account {
+    [primary] id: uuid,
+}

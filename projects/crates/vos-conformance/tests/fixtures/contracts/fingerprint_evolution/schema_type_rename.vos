@@ -1,0 +1,22 @@
+namespace demo::vault
+
+class Principal {
+    [primary] id: uuid,
+    email: utf8,
+}
+
+table Ledger {
+    [primary] id: uuid,
+    owner: Principal,
+}
+
+[effect(read)] [capability(search)] [capability(storage)]
+query fetch(id: uuid) -> Principal? { Principal }
+
+[effect(write)] [capability(storage)]
+query record(account: Principal) -> Ledger { Ledger }
+
+service Vault {
+    fetch(id: uuid) -> Principal?
+    record(account: Principal) -> Ledger
+}

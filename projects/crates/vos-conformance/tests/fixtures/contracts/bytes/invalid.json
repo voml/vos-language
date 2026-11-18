@@ -1,0 +1,36 @@
+{
+  "formatVersion": "vos-bytes-value-invalid-v0",
+  "note": "Negative `bytes` value cases. Each source is a wire artifact that must be rejected with the exact code, so a host never accepts a second spelling of one octet sequence.",
+  "cases": [
+    {
+      "id": "unknown-encoding",
+      "source": "invalid/unknown_encoding.json",
+      "expectCode": "BYT002"
+    },
+    {
+      "id": "odd-hex-length",
+      "source": "invalid/odd_hex.json",
+      "expectCode": "BYT003"
+    },
+    {
+      "id": "non-hex-digit",
+      "source": "invalid/non_hex.json",
+      "expectCode": "BYT004"
+    },
+    {
+      "id": "uppercase-hex",
+      "source": "invalid/uppercase_hex.json",
+      "expectCode": "BYT004"
+    },
+    {
+      "id": "unknown-field",
+      "source": "invalid/unknown_field.json",
+      "expectCode": "BYT005"
+    },
+    {
+      "id": "stale-version",
+      "source": "invalid/stale_version.json",
+      "expectCode": "BYT001"
+    }
+  ]
+}

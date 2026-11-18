@@ -1,0 +1,17 @@
+# Downstream conformance suite for the Boost-owned VOS core.
+# The full fixture corpus and contract/identity/fingerprint tests run here
+# against the pinned `schema-input-vos`; Boost keeps only smoke tests.
+[package]
+name = "vos-conformance"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+schema-input-vos = { workspace = true }
+schema-types = { workspace = true }
+oak-vos = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

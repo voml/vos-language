@@ -1,0 +1,9 @@
+namespace demo::vault
+
+service Vault {
+    fetch(id: uuid) -> Account?
+    record(account: Account) -> Ledger
+}
+
+[effect(read)] [capability(search)] [capability(storage)]
+query fetch(id: uuid) -> Account? { Account }

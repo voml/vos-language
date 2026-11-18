@@ -1,0 +1,8 @@
+namespace demo::diag
+
+service Vault {
+    fetch(id: uuid) -> uuid
+}
+
+[effect(read)]
+query fetch(id: uuid) -> uuid { id }

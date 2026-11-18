@@ -1,0 +1,31 @@
+{
+  "formatVersion": "vos-vector-value-invalid-v0",
+  "note": "Negative `vector<N>` value artifacts. Each source must be rejected with the reviewed code so a host never accepts an unresolvable element precision, a wrong component count or an unchecked file shape.",
+  "cases": [
+    {
+      "id": "dimension-mismatch",
+      "source": "invalid/dimension_mismatch.json",
+      "expectCode": "VEC002"
+    },
+    {
+      "id": "zero-dimension",
+      "source": "invalid/zero_dimension.json",
+      "expectCode": "VEC001"
+    },
+    {
+      "id": "unsupported-element",
+      "source": "invalid/unsupported_element.json",
+      "expectCode": "VEC004"
+    },
+    {
+      "id": "stale-version",
+      "source": "invalid/stale_version.json",
+      "expectCode": "VEC005"
+    },
+    {
+      "id": "unknown-field",
+      "source": "invalid/unknown_field.json",
+      "expectCode": "VEC006"
+    }
+  ]
+}
