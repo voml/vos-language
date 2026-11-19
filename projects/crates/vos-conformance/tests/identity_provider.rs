@@ -17,13 +17,13 @@ use schema_input_vos::{
     CANONICALIZATION_VERSION, CONTRACT_FORMAT_VERSION, CanonicalType, ContractEnvelope,
     FieldContract, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityChange, IdentityManifest,
     IdentityManifestProvider, LANGUAGE_VERSION, PROJECTION_STAGE, SchemaProjection, SourceUnit,
-    TypeContract, TypeContractKind, TypeIdentity, bind_identity, compare_identity, parse_oak,
+    TypeContract, TypeContractKind, TypeIdentity, bind_identity, compare_identity, parse_schema,
     resolve_contract_from_units,
 };
 
 fn project(source: &str) -> SchemaProjection {
-    parse_oak(source)
-        .expect("Oak parses the fixture source")
+    parse_schema(source)
+        .expect("`data.text` parses the fixture source")
         .project_schema()
         .expect("VOS projects the fixture source")
 }

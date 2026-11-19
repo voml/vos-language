@@ -26,7 +26,7 @@ use schema_input_vos::{
     ContractArtifact, ContractFormat, ContractPayload, ContractProducer, IDENTITY_MANIFEST_VERSION,
     IdentityManifest, MethodStreamMode, OperationContract, RESOLVED_CONTRACT_FORMAT_VERSION,
     ResolvedContract, ServiceContractDecl, ServiceMethodDecl, build_operation_contracts,
-    build_service_contracts, parse_oak, parse_operation_semantics_from_attributes,
+    build_service_contracts, parse_schema, parse_operation_semantics_from_attributes,
     resolve_contract,
 };
 use serde::{Deserialize, Serialize};
@@ -97,7 +97,7 @@ fn build(case: &Case) -> Outcome {
     let manifest = IdentityManifest::from_json(&manifest_json)
         .unwrap_or_else(|error| panic!("{}: {}", case.manifest, error.message));
 
-    let input = parse_oak(&source).unwrap_or_else(|error| panic!("{}: {error}", case.id));
+    let input = parse_schema(&source).unwrap_or_else(|error| panic!("{}: {error}", case.id));
     let projection = input
         .project_schema()
         .unwrap_or_else(|diagnostics| panic!("{}: {diagnostics:?}", case.id));

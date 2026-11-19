@@ -1,5 +1,7 @@
-# Copy to `config.toml` and replace `<your-path>` with your local absolute path.
-# CI resolves the Git dependency declared in `Cargo.toml`.
+# Copy to `config.toml` (git ignored) and replace `<your-path>` with your local absolute path.
+# CI resolves the pinned Boost revision only.
 
-[patch."https://github.com/yggdrasil-language/oaks.git"]
-oak-vos = { path = "<your-path>/oaks/examples/oak-vos" }
+[patch."https://github.com/oovm/rust-boost.git"]
+data-text-vos = { path = "<your-path>/rust-boost/projects/data/data.text.vos" }
+schema-input-vos = { path = "<your-path>/rust-boost/projects/schema/schema.input.vos" }
+schema-types = { path = "<your-path>/rust-boost/projects/schema/schema.types" }

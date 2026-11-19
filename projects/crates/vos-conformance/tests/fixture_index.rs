@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use schema_input_vos::{ContractArtifact, IdentityManifest, parse_oak, resolve_contract};
+use schema_input_vos::{ContractArtifact, IdentityManifest, parse_schema, resolve_contract};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -152,8 +152,8 @@ fn indexed_projection_and_resolution_goldens_still_reproduce() {
                 .as_deref()
                 .expect("a projection case names its golden"),
         );
-        let projection = parse_oak(&read(&case.entry))
-            .expect("Oak parses the indexed source")
+        let projection = parse_schema(&read(&case.entry))
+            .expect("`data.text` parses the indexed source")
             .project_schema()
             .expect("the indexed source projects");
         let actual: Value = serde_json::from_str(&projection.to_json().unwrap()).unwrap();
@@ -174,8 +174,8 @@ fn indexed_projection_and_resolution_goldens_still_reproduce() {
                 .as_deref()
                 .expect("a resolved case names its golden"),
         );
-        let projection = parse_oak(&read(&case.entry))
-            .expect("Oak parses the indexed source")
+        let projection = parse_schema(&read(&case.entry))
+            .expect("`data.text` parses the indexed source")
             .project_schema()
             .expect("the indexed source projects");
         let contract =
@@ -230,8 +230,8 @@ fn indexed_operation_sources_keep_their_leading_attributes() {
     let cases = cases_of(&index, "operation-projection");
     assert!(!cases.is_empty(), "no operation case is indexed");
     for case in cases {
-        let operations = parse_oak(&read(&case.entry))
-            .expect("Oak parses the indexed source")
+        let operations = parse_schema(&read(&case.entry))
+            .expect("`data.text` parses the indexed source")
             .project_operations()
             .expect("the indexed source projects operations");
         assert_eq!(

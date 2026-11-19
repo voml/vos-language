@@ -5,8 +5,8 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 publish = false
-description = "VOS formatter built on the Oak CST — lossless edits and canonical style"
+description = "VOS formatter built on the `data.text` CST — lossless edits and canonical style"
 readme = "readme.md"
 
 [dependencies]
-oak-vos = { workspace = true }
+data-text-vos = { workspace = true }

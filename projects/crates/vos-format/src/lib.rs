@@ -1,16 +1,16 @@
-//! VOS source formatting on the Oak-owned CST.
+//! VOS source formatting on the `data.text`-owned CST.
 //!
-//! Oak owns the VOS lexer, parser, CST, spans and recovery. This crate owns no
-//! lexer, no parser and no AST: it consumes `oak-vos` output only.
+//! `data.text` owns the VOS lexer, parser, CST, spans and recovery. This crate owns no
+//! lexer, no parser and no AST: it consumes `data-text-vos` output only.
 //!
 //! Two modes are defined by the language contract:
 //!
 //! - [`Mode::Preserve`] keeps the author's own spelling. It re-emits the exact
 //!   source bytes from the lossless CST, so `format_preserving` is a
-//!   round-trip check of the Oak CST rather than a rewrite.
-//! - [`Mode::Canonical`] rewrites layout for the declarations Oak decomposes
+//!   round-trip check of the `data.text` CST rather than a rewrite.
+//! - [`Mode::Canonical`] rewrites layout for the declarations `data.text` decomposes
 //!   structurally (`namespace`, `using`, `table`, `class`) and normalizes
-//!   static paths to `::`. Declarations Oak does not decompose yet
+//!   static paths to `::`. Declarations `data.text` does not decompose yet
 //!   (`enums`, `flags`, `const`, `obsolete`, `service`, `micro`, `macro`,
 //!   `query`, `udf`) are passed through verbatim, so canonical mode never loses
 //!   source it does not understand.

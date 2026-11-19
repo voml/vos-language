@@ -11,7 +11,7 @@
  *   - `toSource(...items)` — variadic alias, drops empty input silently.
  *     Convenient in the `emitSource(User, Account, LoginRequest)` call style.
  *
- * Formatting follows the Oak-backed `oak-vos` parser's canonical spellings:
+ * Formatting follows the `data.text`-backed `data-text-vos` parser's canonical spellings:
  *
  *   - `@@field` / `@field` sugar for fields whose attrs are exactly `primary`
  *     or `unique` (single attribute). Any other attribute set falls back to
@@ -185,7 +185,7 @@ function renderType(descriptor: AnyTypeDescriptor): string {
         default:
             // Plain builtin scalar kind — map through BUILTIN_SPELLING to pick
             // up the `datetimeUtc → DateTime<UTC>` spelling and any future
-            // special cases we add to Oak's surface.
+            // special cases we add to `data.text`'s surface.
             return BUILTIN_SPELLING[descriptor.kind] ?? descriptor.kind;
     }
 }

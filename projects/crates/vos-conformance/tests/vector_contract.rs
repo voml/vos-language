@@ -6,7 +6,7 @@ use std::{fs, path::PathBuf};
 use schema_input_vos::{
     ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityManifest,
     ResolvedCanonicalType, ResolvedContract, TypeContractKind, TypeIdentity, VectorElement,
-    VectorValue, VectorValueWire, parse_oak, resolve_contract,
+    VectorValue, VectorValueWire, parse_schema, resolve_contract,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -41,16 +41,16 @@ fn resolve(
     path: &str,
     field: &str,
 ) -> Result<ResolvedContract, Vec<ContractDiagnostic>> {
-    let projection = parse_oak(&read(relative))
-        .expect("Oak parses the fixture")
+    let projection = parse_schema(&read(relative))
+        .expect("`data.text` parses the fixture")
         .project_schema()
         .expect("the fixture projects");
     resolve_contract(&projection, &manifest(path, field))
 }
 
 fn resolved_fixture() -> ResolvedContract {
-    let projection = parse_oak(&read("schema.vos"))
-        .expect("Oak parses the vector fixture")
+    let projection = parse_schema(&read("schema.vos"))
+        .expect("`data.text` parses the vector fixture")
         .project_schema()
         .expect("the vector fixture projects");
     let manifest = IdentityManifest::from_json(&read("schema.manifest.json"))

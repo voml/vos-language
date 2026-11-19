@@ -1,4 +1,4 @@
-//! Operation programs are projected by Oak and consumed through the VOS facade.
+//! Operation programs are projected by `data.text` and consumed through the VOS facade.
 
 use std::{
     fs,
@@ -36,7 +36,7 @@ fn operation_fixtures_parse_into_programs() {
     for path in files {
         let source = fs::read_to_string(&path).expect("fixture source");
         let program = schema_input_vos::parse_program(&source)
-            .unwrap_or_else(|error| panic!("Oak rejected {}: {error}", path.display()));
+            .unwrap_or_else(|error| panic!("`data.text` rejected {}: {error}", path.display()));
         assert!(
             program.result.is_some(),
             "{} must end with a result expression",
@@ -50,7 +50,7 @@ fn operation_fixtures_parse_into_programs() {
 fn lazy_pipeline_program_exposes_statements_and_result() {
     let source = fs::read_to_string(operations_root().join("filter_map_collect.vos"))
         .expect("fixture source");
-    let program = schema_input_vos::parse_program(&source).expect("Oak projects the pipeline");
+    let program = schema_input_vos::parse_program(&source).expect("`data.text` projects the pipeline");
 
     assert!(program.micros.is_empty());
     assert_eq!(program.statements.len(), 3);
@@ -66,10 +66,10 @@ fn lazy_pipeline_program_exposes_statements_and_result() {
 
 #[test]
 fn operation_declarations_carry_their_body_programs() {
-    let input = schema_input_vos::parse_oak(
+    let input = schema_input_vos::parse_schema(
         "query active(status: utf8) -> [User] { User.filter(x => x.active).collect() }",
     )
-    .expect("Oak parses VOS");
+    .expect("`data.text` parses VOS");
 
     let program = input.declarations()[0]
         .body_program

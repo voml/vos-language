@@ -9,7 +9,7 @@
  * `.vos` source document the Rust engine's `ensure_schema` expects.
  *
  * The canonical VOS parser, resolver, catalog and semantic diagnostics live in
- * the Oak backed `oak-vos` pipeline exposed by the `vos` Rust facade.
+ * the `data.text` backed `data-text-vos` pipeline exposed by the `vos` Rust facade.
  */
 
 export { v, type VBuiltinName, type VItemName, type VWrapperName } from "./builtins.js";

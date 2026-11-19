@@ -12,6 +12,6 @@ publish = false
 [dependencies]
 schema-input-vos = { workspace = true }
 schema-types = { workspace = true }
-oak-vos = { workspace = true }
+data-text-vos = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

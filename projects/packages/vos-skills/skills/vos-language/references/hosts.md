@@ -41,7 +41,7 @@ tooling differs.
 |-----------------------------|-----------------------------------------------------------|---------------------------------------------------------------------------------|
 | **Any editor**              | [VS Code / Cursor extension](#editor-syntax-highlighting) | Edit `.vos` → run your stack's check → use generated code                       |
 | **TypeScript / JavaScript** | [`@voml/vos`](#typescript--javascript) modelling and [`@voml/vos-language`](#typescript--javascript) checks | `checkSource()` for quick feedback; use your app's generator for full semantics |
-| **Rust**                    | Boost [`schema-input-vos`](#rust)                         | `parse_oak` / product CLI for full diagnostics                                  |
+| **Rust**                    | Boost [`schema-input-vos`](#rust)                         | `parse_schema` / product CLI for full diagnostics                                  |
 | **Iris ORM**                | [`@yydb/iris`](#iris-orm-typescript--rust-hosts)          | `.iris` schema (VOS syntax) → `iris check` / `iris generate`                    |
 | **YYDB / YYDS native**      | Product docs                                              | `.vos` is native DDL/operations — use host `check` / CLI                        |
 | **Other languages**         | [No local parser yet](#other-languages-c-kotlin-go-…)     | Edit `.vos` in repo; validate in CI or via Rust/product host                    |
@@ -107,11 +107,11 @@ schema-input-vos = { git = "https://github.com/oovm/rust-boost.git", rev = "<pin
 ```
 
 ```rust
-let input = schema_input_vos::parse_oak(source)?;
+let input = schema_input_vos::parse_schema(source)?;
 let projection = input.project_schema()?;
 ```
 
-Oak remains the only parser and syntax owner. Use this chain when embedding VOS semantics in a Rust service, CLI, or
+`data.text` remains the only parser and syntax owner. Use this chain when embedding VOS semantics in a Rust service, CLI, or
 custom toolchain. If you use **Iris** or **YYDB**, prefer their facade commands instead of traversing syntax internals.
 
 ---

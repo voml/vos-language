@@ -1,4 +1,4 @@
-//! Facade schema validation goes through Oak and the VOS schema contract.
+//! Facade schema validation goes through `data.text` and the VOS schema contract.
 
 use schema_input_vos::validate_schema;
 

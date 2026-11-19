@@ -1,14 +1,14 @@
-//! Preserve mode: re-emit the exact source bytes from the Oak CST.
+//! Preserve mode: re-emit the exact source bytes from the `data.text` CST.
 
-use oak_vos::{VosRoot, VosSyntaxElement, VosSyntaxNode};
+use data_text_vos::{VosRoot, VosSyntaxElement, VosSyntaxNode};
 
-/// Re-emit `source` from its Oak CST.
+/// Re-emit `source` from its `data.text` CST.
 ///
-/// The result must equal the input byte for byte. A mismatch means Oak's CST
+/// The result must equal the input byte for byte. A mismatch means `data.text`'s CST
 /// dropped or rewrote trivia, which is a losslessness defect in the frontend,
 /// not something this crate may compensate for.
 pub fn format_preserving(source: &str) -> Result<String, String> {
-    let root = oak_vos::parse(source)?;
+    let root = data_text_vos::parse(source)?;
     Ok(cst_text(&root))
 }
 

@@ -3,7 +3,7 @@
 > **`.vos` source checks, catalog projection and formatting for TypeScript hosts, running on a Rust WebAssembly core.**
 
 The implementation is the Rust core, not TypeScript. The wasm module is exported from `projects/crates/vos-wasm` and
-the TypeScript surface only loads and types it — syntax stays owned by `oak-vos` and semantics by the Boost
+the TypeScript surface only loads and types it — syntax stays owned by `data-text-vos` and semantics by the Boost
 `schema-input-vos` chain.
 Declaration and type modelling live in
 [`@voml/vos`](https://www.npmjs.com/package/@voml/vos).
@@ -76,10 +76,10 @@ Two modes, mapped one to one onto `vos-format::Mode`:
 
 | Mode | Contract |
 | ---- | -------- |
-| `preserve` | Replays the author's own spelling byte for byte from the Oak lossless CST. |
-| `canonical` | Rewrites the layout of the declarations Oak decomposes, and normalizes static paths to `::`. |
+| `preserve` | Replays the author's own spelling byte for byte from the `data.text` lossless CST. |
+| `canonical` | Rewrites the layout of the declarations `data.text` decomposes, and normalizes static paths to `::`. |
 
-`canonical` is the default. Declarations Oak does not decompose yet are passed through verbatim, and type aliases such
+`canonical` is the default. Declarations `data.text` does not decompose yet are passed through verbatim, and type aliases such
 as `vec<3>` keep the author's spelling — rewriting them is a VOS semantic decision, not a formatting one.
 
 ## ⚙️ Initialising the wasm core

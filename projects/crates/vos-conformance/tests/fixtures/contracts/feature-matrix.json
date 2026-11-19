@@ -17,7 +17,7 @@
       "resolved": "partial",
       "conformance": true,
       "downstream-consumed": false,
-      "note": "Oak path is retained and VOS qualifies table/class paths within one source unit"
+      "note": "`data.text` path is retained and VOS qualifies table/class paths within one source unit"
     },
     {
       "id": "table-class.fields",
@@ -57,7 +57,7 @@
       "resolved": false,
       "conformance": true,
       "downstream-consumed": false,
-      "note": "Explicit diagnostic until Oak exposes structured attribute groups and arguments"
+      "note": "Explicit diagnostic until `data.text` exposes structured attribute groups and arguments"
     },
     {
       "id": "source-unit.artifact",
@@ -97,7 +97,7 @@
       "resolved": true,
       "conformance": true,
       "downstream-consumed": false,
-      "note": "Oak projects service attributes and method signatures, and build_service_contracts resolves them against the authored operation bindings while rejecting any declaration that disagrees with the source"
+      "note": "`data.text` projects service attributes and method signatures, and build_service_contracts resolves them against the authored operation bindings while rejecting any declaration that disagrees with the source"
     },
     {
       "id": "scalar.bytes-value",

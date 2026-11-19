@@ -16,7 +16,7 @@ use schema_input_vos::{
     CanonicalType, ContractArtifact, ContractFormat, ContractPayload, ContractProducer, DeclKind,
     IdentityBoundProjection, IdentityManifest, MethodStreamMode, ResolvedCanonicalType,
     ResolvedContract, ServiceContractDecl, ServiceMethodDecl, bind_identity,
-    build_operation_contracts, build_service_contracts, parse_oak,
+    build_operation_contracts, build_service_contracts, parse_schema,
     parse_operation_semantics_from_attributes, resolve_contract_from_units, resolve_using_tree,
     vfs::{FsVfs, VfsErrorKind},
 };
@@ -37,8 +37,8 @@ fn canonical(path: &Path) -> PathBuf {
 /// Parses one fixture document and binds it to its reviewed identity manifest.
 fn bound(source: &str, manifest: &str) -> IdentityBoundProjection {
     let source_path = fixtures().join(source);
-    let projection = parse_oak(&read(&source_path))
-        .expect("Oak parses the fixture document")
+    let projection = parse_schema(&read(&source_path))
+        .expect("`data.text` parses the fixture document")
         .project_schema()
         .expect("the fixture document projects into a schema");
     let manifest = IdentityManifest::from_json(&read(&fixtures().join(manifest)))
@@ -159,10 +159,10 @@ fn cross_document_type_reference_resolves_to_the_owning_unit() {
 #[test]
 fn service_binds_an_operation_declared_in_another_document() {
     let types = vault_contract().types;
-    let service_input = parse_oak(&read(&fixtures().join("vault/service.vos")))
-        .expect("Oak parses the service document");
-    let ledger_input = parse_oak(&read(&fixtures().join("vault/ledger.vos")))
-        .expect("Oak parses the ledger document");
+    let service_input = parse_schema(&read(&fixtures().join("vault/service.vos")))
+        .expect("`data.text` parses the service document");
+    let ledger_input = parse_schema(&read(&fixtures().join("vault/ledger.vos")))
+        .expect("`data.text` parses the ledger document");
 
     let service_operations = service_input
         .project_operations()
@@ -354,10 +354,10 @@ fn duplicate_type_and_field_ids_across_documents_are_diagnosed() {
 
 #[test]
 fn operation_declared_in_two_documents_is_diagnosed_as_opc003() {
-    let first = parse_oak(&read(&fixtures().join("duplicate/fetch_first.vos")))
-        .expect("Oak parses the first operation document");
-    let second = parse_oak(&read(&fixtures().join("duplicate/fetch_second.vos")))
-        .expect("Oak parses the second operation document");
+    let first = parse_schema(&read(&fixtures().join("duplicate/fetch_first.vos")))
+        .expect("`data.text` parses the first operation document");
+    let second = parse_schema(&read(&fixtures().join("duplicate/fetch_second.vos")))
+        .expect("`data.text` parses the second operation document");
     let first_operations = first.project_operations().expect("fetch projects");
     let second_operations = second.project_operations().expect("fetch projects");
     assert_eq!(

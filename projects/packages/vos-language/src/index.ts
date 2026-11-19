@@ -4,7 +4,7 @@
  * 实现是 **Rust 导出的 WebAssembly**：`lib/vos_wasm_bg.wasm` 由
  * `projects/crates/vos-wasm` 经 `scripts/build-wasm.mjs` 生成，`lib/` 是产物目录，
  * 不进版本库。本文件只做加载与类型化包装，**不**在 TypeScript 里重新实现任何
- * VOS 解析或检查逻辑——语法与语义的真相源始终是 Rust 侧（`oak-vos` + `vos`）。
+ * VOS 解析或检查逻辑——语法与语义的真相源始终是 Rust 侧（`data-text-vos` + `vos`）。
  *
  * 格式化面在 `@voml/vos-language/formatter`，见 `./formatter.js`。
  */

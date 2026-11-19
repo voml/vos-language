@@ -9,7 +9,7 @@ The exported surface is a narrow JSON ABI (`check(source)`, `format(source, mode
 `catalog(source)`, each returning a string) so the host does not depend on generated JavaScript
 object shapes.
 
-Syntax ownership stays with `oak-vos`; this crate owns no parser, CST or AST.
+Syntax ownership stays with `data-text-vos`; this crate owns no parser, CST or AST.
 
 ## Build
 

@@ -1,11 +1,11 @@
-//! Cross-host contract fixture: Oak source to a sealed `/v0` contract artifact.
+//! Cross-host contract fixture: `data.text` source to a sealed `/v0` contract artifact.
 
 use schema_input_vos::{
     CanonicalType, ContractArtifact, ContractFormat, ContractPayload, ContractProducer,
     FieldIdentity, IDENTITY_MANIFEST_VERSION, IdentityManifest, MethodStreamMode,
     OperationContract, OperationEffect, OperationId, OperationSemantics, ResolvedTypeContract,
     ServiceContractDecl, ServiceMethodDecl, ServiceProjection, TypeContractKind, TypeIdentity,
-    build_operation_contracts, build_service_contracts, parse_oak, resolve_contract,
+    build_operation_contracts, build_service_contracts, parse_schema, resolve_contract,
 };
 
 const SOURCE: &str = include_str!("fixtures/contracts/operations_services.vos");
@@ -46,14 +46,14 @@ fn manifest() -> IdentityManifest {
 }
 
 fn schema_types() -> Vec<ResolvedTypeContract> {
-    let input = parse_oak(SOURCE).unwrap();
+    let input = parse_schema(SOURCE).unwrap();
     resolve_contract(&input.project_schema().unwrap(), &manifest())
         .unwrap()
         .types
 }
 
 fn operation_contracts() -> Vec<OperationContract> {
-    let input = parse_oak(SOURCE).unwrap();
+    let input = parse_schema(SOURCE).unwrap();
     let operations = input.project_operations().unwrap();
     let semantics = operations
         .iter()
@@ -104,7 +104,7 @@ fn declaration(
 }
 
 fn artifact() -> ContractArtifact {
-    let input = parse_oak(SOURCE).unwrap();
+    let input = parse_schema(SOURCE).unwrap();
     let services = input.project_services().unwrap();
     let operations = operation_contracts();
     let types = schema_types();
@@ -185,7 +185,7 @@ fn hermes_golden_seals_the_iris_payload_under_its_own_format() {
 
 #[test]
 fn method_bound_to_unknown_operation_is_reported() {
-    let input = parse_oak(SOURCE).unwrap();
+    let input = parse_schema(SOURCE).unwrap();
     let services = input.project_services().unwrap();
     let operations = operation_contracts();
     let types = schema_types();

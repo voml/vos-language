@@ -2,8 +2,8 @@
 
 Executable examples of what VOS source means.
 
-The fixture suite is the conformance bridge between Oak, the VOS semantic consumer, and future hosts. It provides
-source files and exact expected outputs for normalization, Oak structure, diagnostics, resolved contracts, and catalog
+The fixture suite is the conformance bridge between `data.text`, the VOS semantic consumer, and future hosts. It provides
+source files and exact expected outputs for normalization, `data.text` structure, diagnostics, resolved contracts, and catalog
 identity.
 
 ## How a case is assembled
@@ -13,8 +13,8 @@ Each case starts with a stem and may have several companions:
 ```text
 stem.vos                 source under test
 stem.normalized.vos      canonical UTF-8, LF-only source without a BOM
-stem.ast.json            serialized Oak Builder output for a successful parse
-stem.diagnostics.json    ordered Oak/VOS diagnostics
+stem.ast.json            serialized `data.text` Builder output for a successful parse
+stem.diagnostics.json    ordered `data.text`/VOS diagnostics
 stem.catalog.json        stable field/catalog identity when applicable
 stem.kind.json           explicit parser selection in mixed directories
 ```
@@ -24,15 +24,15 @@ empty `errors` array for successful cases.
 
 ## Fixture families
 
-| Directory                      | Focus                                    | Oak/VOS entry                       |
+| Directory                      | Focus                                    | `data.text`/VOS entry                       |
 |--------------------------------|------------------------------------------|-------------------------------------|
-| [`schema`](./schema)           | Schema and DDL documents                 | Oak VOS frontend                    |
-| [`operations`](./operations)   | Expressions and object/method operations | Oak VOS frontend                    |
-| [`services`](./services)       | Service declarations and projections     | Oak VOS frontend                    |
-| [`diagnostics`](./diagnostics) | Invalid or warning-bearing source        | Oak diagnostics                     |
+| [`schema`](./schema)           | Schema and DDL documents                 | `data.text` VOS frontend                    |
+| [`operations`](./operations)   | Expressions and object/method operations | `data.text` VOS frontend                    |
+| [`services`](./services)       | Service declarations and projections     | `data.text` VOS frontend                    |
+| [`diagnostics`](./diagnostics) | Invalid or warning-bearing source        | `data.text` diagnostics                     |
 | [`contracts`](./contracts)     | Resolved contracts and sealed artifacts  | VOS semantic consumer               |
 
-Under `operations/`, the Oak VOS operation surface is expected; elsewhere the Oak VOS schema surface is expected. A
+Under `operations/`, the `data.text` VOS operation surface is expected; elsewhere the `data.text` VOS schema surface is expected. A
 `stem.kind.json` sidecar can make
 the choice explicit:
 
@@ -51,12 +51,12 @@ normalized source, not the platform-specific input bytes.
 
 ### AST JSON
 
-Oak Builder output and VOS resolved artifacts are the golden representations. Source text and spans remain owned by Oak.
+`data.text` Builder output and VOS resolved artifacts are the golden representations. Source text and spans remain owned by `data.text`.
 Changes are reviewed as language-contract changes rather than formatting noise.
 
 ### Diagnostics
 
-Diagnostics use the Oak/VOS structured diagnostic contract:
+Diagnostics use the `data.text`/VOS structured diagnostic contract:
 
 ```json
 {

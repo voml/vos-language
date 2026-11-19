@@ -1,4 +1,4 @@
-//! Canonical mode: structural layout for the declarations Oak decomposes.
+//! Canonical mode: structural layout for the declarations `data.text` decomposes.
 //!
 //! Layout rules are derived from the canonical DDL example in
 //! `vos/documentation/ddl.md` and the existing schema fixtures: one declaration
@@ -7,21 +7,21 @@
 //! kept verbatim.
 //!
 //! Static paths are normalized to `::` (`paths.md`): `namespace` and `using`
-//! are emitted from Oak's resolved path segments, and named types are rendered
+//! are emitted from `data.text`'s resolved path segments, and named types are rendered
 //! from `VosTypeSyntax` rather than copied from source trivia.
 //!
-//! Declarations Oak does not decompose yet are passed through verbatim. Type
+//! Declarations `data.text` does not decompose yet are passed through verbatim. Type
 //! aliases such as `vec<3>` are kept as written: rewriting them to the builtin
 //! spelling is a VOS semantic decision, not a formatting one.
 
-use oak_vos::{VosDeclaration, VosDeclarationKind, VosField, VosTypeArgument, VosTypeSyntax};
+use data_text_vos::{VosDeclaration, VosDeclarationKind, VosField, VosTypeArgument, VosTypeSyntax};
 
 /// Indentation unit for block bodies.
 const INDENT: &str = "    ";
 
 /// Canonical layout for `source`.
 pub fn format_canonical(source: &str) -> Result<String, String> {
-    let root = oak_vos::parse(source)?;
+    let root = data_text_vos::parse(source)?;
     if root.declarations.is_empty() {
         return Ok(source.to_owned());
     }
@@ -72,7 +72,7 @@ fn render_field(field: &VosField) -> String {
     line
 }
 
-/// Attribute groups are re-emitted from Oak's exact attribute text, so custom
+/// Attribute groups are re-emitted from `data.text`'s exact attribute text, so custom
 /// arguments and author grouping survive canonical mode.
 fn render_attributes(field: &VosField) -> String {
     if field.attributes.is_empty() {

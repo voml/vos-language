@@ -6,7 +6,7 @@ use std::{fs, path::PathBuf};
 use schema_input_vos::{
     BytesValue, FieldIdentity, FileDescriptor, FileManifestIdentity, FileMetadata, FileReadWindow,
     FileReference, IDENTITY_MANIFEST_VERSION, IdentityManifest, ResolvedCanonicalType,
-    ResolvedContract, TypeContractKind, TypeIdentity, parse_oak, resolve_contract,
+    ResolvedContract, TypeContractKind, TypeIdentity, parse_schema, resolve_contract,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -38,8 +38,8 @@ fn manifest(path: &str, field: &str) -> IdentityManifest {
 
 #[test]
 fn file_fields_resolve_to_the_descriptor_type_and_serialize_as_one_spelling() {
-    let projection = parse_oak(&read("schema.vos"))
-        .expect("Oak parses the file fixture")
+    let projection = parse_schema(&read("schema.vos"))
+        .expect("`data.text` parses the file fixture")
         .project_schema()
         .expect("the file fixture projects");
     let manifest = IdentityManifest::from_json(&read("schema.manifest.json"))
@@ -78,8 +78,8 @@ fn file_fields_resolve_to_the_descriptor_type_and_serialize_as_one_spelling() {
 
 #[test]
 fn file_with_type_arguments_is_diagnosed_instead_of_sealed_as_a_generic() {
-    let projection = parse_oak(&read("generic_arguments.vos"))
-        .expect("Oak parses the negative fixture")
+    let projection = parse_schema(&read("generic_arguments.vos"))
+        .expect("`data.text` parses the negative fixture")
         .project_schema()
         .expect("the negative fixture projects");
     let manifest = manifest("BadFile", "handle");

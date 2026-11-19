@@ -5,7 +5,7 @@
 //! loads it. The surface is deliberately a narrow JSON ABI so the host depends
 //! on no `js_sys` object shape.
 //!
-//! Syntax ownership stays with `oak-vos` and schema semantics with the Boost
+//! Syntax ownership stays with `data-text-vos` and schema semantics with the Boost
 //! `schema-input-vos` chain; this crate only forwards their results and never
 //! owns a parser, a CST or an AST of its own.
 
@@ -28,8 +28,8 @@ pub fn check(source: &str) -> String {
 /// Formats VOS source and returns a JSON envelope.
 ///
 /// `mode` selects the spelling contract: `"preserve"` replays the exact source
-/// bytes from the Oak lossless CST, and `"canonical"` rewrites the layout of the
-/// declarations Oak decomposes structurally. Shape: `{"ok":true,"text":"..."}`
+/// bytes from the `data.text` lossless CST, and `"canonical"` rewrites the layout of the
+/// declarations `data.text` decomposes structurally. Shape: `{"ok":true,"text":"..."}`
 /// on success, and `{"ok":false,"diagnostics":[{"message":"..."}]}` on failure.
 #[wasm_bindgen]
 pub fn format(source: &str, mode: &str) -> String {

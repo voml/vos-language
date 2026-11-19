@@ -12,7 +12,7 @@ use std::{fs, path::PathBuf};
 
 use schema_input_vos::{
     CanonicalType, ContractDiagnostic, MethodStreamMode, OperationId, ServiceContractDecl,
-    ServiceMethodDecl, build_operation_contracts, build_service_contracts, parse_oak,
+    ServiceMethodDecl, build_operation_contracts, build_service_contracts, parse_schema,
     parse_operation_semantics_from_attributes,
 };
 use serde::{Deserialize, Serialize};
@@ -81,7 +81,7 @@ fn run(case: &Case) -> Vec<ContractDiagnostic> {
     let source = read(&fixtures().join(&case.source));
     match case.kind.as_str() {
         "operation-semantics" => {
-            let input = parse_oak(&source).expect("Oak parses the fixture");
+            let input = parse_schema(&source).expect("`data.text` parses the fixture");
             let operations = input
                 .project_operations()
                 .expect("the fixture projects its operations");
@@ -95,7 +95,7 @@ fn run(case: &Case) -> Vec<ContractDiagnostic> {
                 .collect()
         }
         "operation-contracts" => {
-            let input = parse_oak(&source).expect("Oak parses the fixture");
+            let input = parse_schema(&source).expect("`data.text` parses the fixture");
             let operations = input
                 .project_operations()
                 .expect("the fixture projects its operations");
@@ -107,7 +107,7 @@ fn run(case: &Case) -> Vec<ContractDiagnostic> {
                 .expect_err("the fixture must fail operation contract construction")
         }
         "service-unknown-binding" | "service-request-mismatch" => {
-            let input = parse_oak(&source).expect("Oak parses the fixture");
+            let input = parse_schema(&source).expect("`data.text` parses the fixture");
             let operations = input
                 .project_operations()
                 .expect("the fixture projects its operations");

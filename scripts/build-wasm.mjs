@@ -8,8 +8,8 @@
  *  2. `wasm-bindgen <artifact> --target web --out-dir <package>/lib`
  *
  * Running from outside the repository keeps the developer-only
- * `.cargo/config.toml` `[patch]` (which points at a sibling Oak checkout that
- * usually does not exist) from shadowing the `oak-vos` revision pinned in
+ * `.cargo/config.toml` `[patch]` (which points at a sibling `data.text` checkout that
+ * usually does not exist) from shadowing the `data-text-vos` revision pinned in
  * `Cargo.toml`. `getrandom` needs its WebAssembly backend flag because `uuid`
  * pulls it into the graph.
  */

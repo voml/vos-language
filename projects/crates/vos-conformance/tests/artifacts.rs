@@ -2,7 +2,7 @@ use schema_input_vos::{
     CanonicalScalar, ContractDiagnostic, FieldIdentity, IDENTITY_MANIFEST_VERSION,
     IdentityBoundProjection, IdentityChange, IdentityHistory, IdentityManifest,
     ResolvedCanonicalType, ResolvedContract, SchemaProjection, TypeContractKind, TypeIdentity,
-    bind_identity, compare_identity, evolve_identity, parse_oak, resolve_contract,
+    bind_identity, compare_identity, evolve_identity, parse_schema, resolve_contract,
     resolve_contract_from_bound, resolve_contract_from_units, resolved_schema_fingerprint,
     schema_fingerprint,
 };
@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 fn projection_artifact_matches_reviewed_golden() {
     let source = include_str!("fixtures/contracts/projection_basic.vos");
     let golden = include_str!("fixtures/contracts/projection_basic.contract.json");
-    let input = parse_oak(source).expect("Oak parses fixture");
+    let input = parse_schema(source).expect("`data.text` parses fixture");
     let contract = input
         .project_schema()
         .expect("VOS projects supported fixture");
@@ -54,7 +54,7 @@ fn strict_reader_rejects_unknown_fields_versions_and_invalid_spans() {
 #[test]
 fn diagnostics_use_byte_span_objects_including_null() {
     let source = "class 用户 { 名字: uuid 名字: utf8 }";
-    let diagnostics = parse_oak(source).unwrap().project_schema().unwrap_err();
+    let diagnostics = parse_schema(source).unwrap().project_schema().unwrap_err();
     assert_eq!(diagnostics.len(), 1);
     let start = source.rfind("名字").unwrap();
     let actual = serde_json::to_value(&diagnostics[0]).unwrap();
@@ -84,7 +84,7 @@ fn unsupported_declarations_never_disappear_from_a_successful_contract() {
         "const NAME: utf8 = \"value\";",
     ] {
         let source = format!("class T {{ id: uuid }}\n{declaration}");
-        let input = parse_oak(&source).unwrap();
+        let input = parse_schema(&source).unwrap();
         let diagnostics = input
             .project_schema()
             .expect_err("unsupported declaration cannot be dropped");
@@ -94,20 +94,20 @@ fn unsupported_declarations_never_disappear_from_a_successful_contract() {
 
 #[test]
 fn attribute_without_structured_name_is_rejected() {
-    // Empty bracket — Oak exposes no name, so VOS cannot classify the attribute.
+    // Empty bracket — `data.text` exposes no name, so VOS cannot classify the attribute.
     let source = "class T { [] id: uuid }";
-    let diagnostics = parse_oak(source).unwrap().project_schema().unwrap_err();
+    let diagnostics = parse_schema(source).unwrap().project_schema().unwrap_err();
     assert_eq!(diagnostics[0].code, "VOS005");
 }
 
 #[test]
 fn attribute_groups_and_arguments_survive_oak_projection() {
-    // Oak builder exposes the first identifier as `name` for both plain and
+    // `data.text` builder exposes the first identifier as `name` for both plain and
     // argument-bearing attributes, so both shapes survive into the VOS
     // projection with their full source syntax preserved.
     for attribute in ["[primary, wire]", "[backfill(\"value\")]"] {
         let source = format!("class T {{ {attribute} id: uuid }}");
-        let projection = parse_oak(&source).unwrap().project_schema().unwrap();
+        let projection = parse_schema(&source).unwrap().project_schema().unwrap();
         assert_eq!(
             projection.types[0].fields[0].attributes[0].syntax,
             attribute
@@ -139,7 +139,7 @@ fn feature_matrix_keeps_projection_separate_from_resolution_and_consumption() {
 
 #[test]
 fn identity_manifest_binding_ignores_manifest_and_source_order() {
-    let input = parse_oak("class B { b: utf8, a: uuid }\nclass A { id: uuid }").unwrap();
+    let input = parse_schema("class B { b: utf8, a: uuid }\nclass A { id: uuid }").unwrap();
     let projection = input.project_schema().unwrap();
     let manifest = IdentityManifest {
         format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
@@ -184,7 +184,7 @@ fn identity_manifest_binding_ignores_manifest_and_source_order() {
 
 #[test]
 fn identity_manifest_rejects_missing_unknown_duplicate_and_zero_ids() {
-    let projection = parse_oak("class A { id: uuid }")
+    let projection = parse_schema("class A { id: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -233,7 +233,7 @@ fn identity_manifest_rejects_missing_unknown_duplicate_and_zero_ids() {
 
 #[test]
 fn identity_manifest_rejects_rename_without_explicit_evolution_map() {
-    let projection = parse_oak("class A { renamed: uuid }")
+    let projection = parse_schema("class A { renamed: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -265,11 +265,11 @@ fn identity_manifest_rejects_rename_without_explicit_evolution_map() {
 
 #[test]
 fn identity_fingerprint_ignores_source_manifest_and_slot_order() {
-    let first_projection = parse_oak("class B { b: utf8, a: uuid }\nclass A { id: uuid }")
+    let first_projection = parse_schema("class B { b: utf8, a: uuid }\nclass A { id: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
-    let second_projection = parse_oak("class A { id: uuid }\nclass B { a: uuid, b: utf8 }")
+    let second_projection = parse_schema("class A { id: uuid }\nclass B { a: uuid, b: utf8 }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -345,7 +345,7 @@ fn identity_fingerprint_ignores_source_manifest_and_slot_order() {
 
 #[test]
 fn identity_fingerprint_changes_for_semantic_changes() {
-    let projection = parse_oak("class A { id: uuid }")
+    let projection = parse_schema("class A { id: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -363,7 +363,7 @@ fn identity_fingerprint_changes_for_semantic_changes() {
         }],
     };
     let baseline = schema_fingerprint(&bind_identity(&projection, &manifest).unwrap());
-    let changed_projection = parse_oak("class A { id: utf8 }")
+    let changed_projection = parse_schema("class A { id: utf8 }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -373,11 +373,11 @@ fn identity_fingerprint_changes_for_semantic_changes() {
 
 #[test]
 fn identity_fingerprint_ignores_provenance_spans_and_attribute_syntax_spacing() {
-    let first_projection = parse_oak("class A { [primary] id: uuid }")
+    let first_projection = parse_schema("class A { [primary] id: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
-    let second_projection = parse_oak("class A {\n  [primary]\n  id: uuid\n}")
+    let second_projection = parse_schema("class A {\n  [primary]\n  id: uuid\n}")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -403,7 +403,7 @@ fn identity_fingerprint_ignores_provenance_spans_and_attribute_syntax_spacing() 
 fn identity_manifest_fixture_binds_and_produces_fingerprint() {
     let source = include_str!("fixtures/contracts/projection_basic.vos");
     let manifest_json = include_str!("fixtures/contracts/identity_basic.manifest.json");
-    let projection = parse_oak(source).unwrap().project_schema().unwrap();
+    let projection = parse_schema(source).unwrap().project_schema().unwrap();
     let manifest = IdentityManifest::from_json(manifest_json).unwrap();
     let bound = bind_identity(&projection, &manifest).unwrap();
     let fingerprint = schema_fingerprint(&bound);
@@ -426,7 +426,7 @@ fn identity_manifest_reader_rejects_unknown_fields() {
 
 #[test]
 fn identity_evolution_reports_explicit_changes_and_tombstones() {
-    let previous_projection = parse_oak("class A { id: uuid, old: utf8 }")
+    let previous_projection = parse_schema("class A { id: uuid, old: utf8 }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -450,7 +450,7 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
             ],
         }],
     };
-    let current_projection = parse_oak("class Renamed { new_id: uuid, extra: bool }")
+    let current_projection = parse_schema("class Renamed { new_id: uuid, extra: bool }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -513,7 +513,7 @@ fn identity_evolution_reports_explicit_changes_and_tombstones() {
 #[test]
 fn identity_evolution_rejects_implicit_id_rebinding() {
     let previous = bind_identity(
-        &parse_oak("class A { id: uuid }")
+        &parse_schema("class A { id: uuid }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -533,7 +533,7 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
     )
     .unwrap();
     let current_type_rebound = bind_identity(
-        &parse_oak("class A { id: uuid }")
+        &parse_schema("class A { id: uuid }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -556,7 +556,7 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
     assert!(diagnostics.iter().any(|item| item.code == "ID012"));
 
     let current_field_rebound = bind_identity(
-        &parse_oak("class A { id: uuid }")
+        &parse_schema("class A { id: uuid }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -582,7 +582,7 @@ fn identity_evolution_rejects_implicit_id_rebinding() {
 #[test]
 fn identity_history_records_tombstones_and_rejects_reuse() {
     let previous = bind_identity(
-        &parse_oak("class A { id: uuid, old: utf8 }")
+        &parse_schema("class A { id: uuid, old: utf8 }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -618,7 +618,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
         retired_fields: Vec::new(),
     };
     let current = bind_identity(
-        &parse_oak("class A { id: uuid }")
+        &parse_schema("class A { id: uuid }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -705,7 +705,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     }
 
     let reused = bind_identity(
-        &parse_oak("class A { id: uuid, replacement: bool }")
+        &parse_schema("class A { id: uuid, replacement: bool }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -735,7 +735,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
     assert!(diagnostics.iter().any(|item| item.code == "ID016"));
 
     let reused_slot = bind_identity(
-        &parse_oak("class A { id: uuid, replacement: bool }")
+        &parse_schema("class A { id: uuid, replacement: bool }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -768,7 +768,7 @@ fn identity_history_records_tombstones_and_rejects_reuse() {
 #[test]
 fn identity_history_tombstones_all_fields_when_type_is_removed() {
     let previous = bind_identity(
-        &parse_oak("class A { id: uuid, label: utf8 }")
+        &parse_schema("class A { id: uuid, label: utf8 }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -822,7 +822,7 @@ fn identity_history_tombstones_all_fields_when_type_is_removed() {
 #[test]
 fn identity_type_resolution_binds_user_types_and_keeps_builtins() {
     let projection =
-        parse_oak("class Address { city: utf8 }\nclass User { address: Address?, id: uuid }")
+        parse_schema("class Address { city: utf8 }\nclass User { address: Address?, id: uuid }")
             .unwrap()
             .project_schema()
             .unwrap();
@@ -873,7 +873,7 @@ fn identity_type_resolution_binds_user_types_and_keeps_builtins() {
 
 #[test]
 fn identity_type_resolution_rejects_unknown_user_types() {
-    let projection = parse_oak("class User { address: Missing }")
+    let projection = parse_schema("class User { address: Missing }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -898,7 +898,7 @@ fn identity_type_resolution_rejects_unknown_user_types() {
 #[test]
 fn relative_and_qualified_types_resolve_to_the_same_namespace_identity() {
     let source = "namespace demo\nclass Address { city: utf8 }\nclass User { local: Address?, qualified: demo::Address }";
-    let projection = parse_oak(source).unwrap().project_schema().unwrap();
+    let projection = parse_schema(source).unwrap().project_schema().unwrap();
     let manifest = IdentityManifest {
         format_version: IDENTITY_MANIFEST_VERSION.to_owned(),
         types: vec![
@@ -946,11 +946,11 @@ fn relative_and_qualified_types_resolve_to_the_same_namespace_identity() {
 
 #[test]
 fn multi_unit_resolution_joins_global_symbol_table_without_reparsing() {
-    let users = parse_oak("namespace demo\nclass User { address: Address }")
+    let users = parse_schema("namespace demo\nclass User { address: Address }")
         .unwrap()
         .project_schema()
         .unwrap();
-    let addresses = parse_oak("namespace demo\nclass Address { city: utf8 }")
+    let addresses = parse_schema("namespace demo\nclass Address { city: utf8 }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -996,7 +996,7 @@ fn multi_unit_resolution_joins_global_symbol_table_without_reparsing() {
 
 #[test]
 fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
-    let projection = parse_oak("class A { id: uuid }")
+    let projection = parse_schema("class A { id: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -1021,7 +1021,7 @@ fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
     let mut different_version = first.clone();
     different_version.manifest_version = "other-manifest".to_owned();
     let duplicate_ids = bind_identity(
-        &parse_oak("class B { id: uuid }")
+        &parse_schema("class B { id: uuid }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -1059,7 +1059,7 @@ fn multi_unit_resolution_rejects_duplicate_paths_ids_and_versions() {
 
 #[test]
 fn resolved_contract_is_a_strict_versioned_artifact() {
-    let projection = parse_oak("class T { id: uuid }")
+    let projection = parse_schema("class T { id: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -1123,7 +1123,7 @@ fn resolved_contract_fixture_matches_reviewed_golden() {
         "fixtures/contracts/identity_basic.manifest.json"
     ))
     .unwrap();
-    let projection = parse_oak(source).unwrap().project_schema().unwrap();
+    let projection = parse_schema(source).unwrap().project_schema().unwrap();
     let contract = resolve_contract(&projection, &manifest).unwrap();
     let actual: Value = serde_json::from_str(&contract.to_json().unwrap()).unwrap();
     let expected: Value = serde_json::from_str(include_str!(
@@ -1139,7 +1139,7 @@ fn resolved_contract_fixture_matches_reviewed_golden() {
 
 #[test]
 fn resolved_contract_rejects_dangling_user_type_references() {
-    let projection = parse_oak("class A { target: B }\nclass B { id: uuid }")
+    let projection = parse_schema("class A { target: B }\nclass B { id: uuid }")
         .unwrap()
         .project_schema()
         .unwrap();
@@ -1205,7 +1205,7 @@ fn resolved_contract_rejects_dangling_user_type_references() {
 #[test]
 fn builtin_aliases_resolve_to_one_canonical_spelling() {
     let projection =
-        parse_oak("class T { amount: d128, created: DateTime<UTC>, updated: datetime }")
+        parse_schema("class T { amount: d128, created: DateTime<UTC>, updated: datetime }")
             .unwrap()
             .project_schema()
             .unwrap();
@@ -1266,7 +1266,7 @@ fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
         }],
     };
     let decimal = resolve_contract(
-        &parse_oak("class T { amount: decimal }")
+        &parse_schema("class T { amount: decimal }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -1274,7 +1274,7 @@ fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
     )
     .unwrap();
     let alias = resolve_contract(
-        &parse_oak("class T { amount: d128 }")
+        &parse_schema("class T { amount: d128 }")
             .unwrap()
             .project_schema()
             .unwrap(),
@@ -1284,7 +1284,7 @@ fn resolved_fingerprint_uses_canonical_types_not_source_aliases() {
     assert_eq!(decimal.schema_fingerprint, alias.schema_fingerprint);
     let resolved = resolve_contract_from_bound(
         &bind_identity(
-            &parse_oak("class T { amount: decimal }")
+            &parse_schema("class T { amount: decimal }")
                 .unwrap()
                 .project_schema()
                 .unwrap(),
