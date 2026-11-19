@@ -36,3 +36,6 @@ pnpm-lock.yaml
 *.jar
 *.war
 *.ear
+
+# npm secrets (nifty)
+.secrets/
