@@ -1,8 +1,8 @@
-// Operation declarations with leading effect and capability attributes.
-// Validates that Oak parses declaration-level attributes for non-service operations.
-//
-// `table Todo` stays first: an attribute that directly follows the `namespace`
-// declaration is dropped before it reaches the operation projection.
+# Operation declarations with leading effect and capability attributes.
+# Validates that Oak parses declaration-level attributes for non-service operations.
+#
+# `table Todo` stays first: an attribute that directly follows the `namespace`
+# declaration is dropped before it reaches the operation projection.
 
 namespace demo::todo
 
