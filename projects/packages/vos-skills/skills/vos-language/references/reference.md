@@ -31,6 +31,22 @@ table OrganizationMember {
 Prefer `schemas/<domain>/*.vos` or the layout the user's project already uses — do not impose a repo-specific tree
 unless they ask.
 
+## Native types vs SQL gateway types
+
+Keep these layers apart when a project also exposes a SQL gateway:
+
+| Layer | What it is | Where it appears |
+|-------|------------|------------------|
+| Native VOS scalars | `i8`…`i64`, `u8`…`u32`, `f32`/`f64`, `bool`, `utf8`, `utf16`, `bytes`, `uuid`, `date`, `time`, `datetime`, `decimal` | Declared in `.vos` tables |
+| Native VOS composites | `[T]`, `T?`, `&T`, `file`, `vector<N>`, named user types | Declared in `.vos` tables |
+| SQL gateway simulated | `json` / `jsonb`, `array_agg(...)` arrays, gateway `decimal`/`time` spellings | SQL DDL and SQL result metadata only |
+| Query-time dynamic | `any` | Values flowing through expressions such as `->` / `->>` |
+
+`jsonb` is **simulated**: the SQL gateway stores it as UTF-8 text and only reports the
+PostgreSQL `jsonb` OID on the wire. There is no native json type. In a `.vos` table, store JSON
+as `utf8` (use `[utf8]` only when the value really is a string array). `any` is not a declarable
+column type either; it is the dynamic value type used while evaluating an expression.
+
 ## Compatibility (for the user's team)
 
 **Usually backward compatible**
@@ -63,6 +79,7 @@ reverse-engineering schema from the remote catalog back into VOS without review.
 ## Common mistakes to catch
 
 - `Uuid` instead of `uuid`
+- Declaring `jsonb` or `any` as a field type (store JSON as `utf8`; `any` is query-time only)
 - `enum` instead of `enums`, or `type` instead of `class`
 - `T[]` instead of `[T]`
 - Missing primary key on a `table`
