@@ -28,7 +28,7 @@
     "dependencies": {
     },
     "devDependencies": {
-        "@doki-land/nifty": "^0.1.3"
+        "@doki-land/nifty": "^0.1.17"
     },
     "packageManager": "pnpm@10.0.0"
 }
